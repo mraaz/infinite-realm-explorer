@@ -1,5 +1,4 @@
-
-import create from 'zustand';
+import { create } from 'zustand';
 import { produce } from 'immer';
 import { questions, Question, Pillar } from '@/data/questions';
 
