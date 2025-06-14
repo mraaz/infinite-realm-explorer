@@ -8,9 +8,11 @@ const QuestionnaireHeader = ({ currentQuestion, totalQuestions }: { currentQuest
         <Sparkles className="h-7 w-7 text-purple-600" />
         <span className="text-xl font-semibold text-gray-800">LifePath</span>
       </div>
-      <div className="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
-        Question {currentQuestion} of {totalQuestions}
-      </div>
+      { totalQuestions > 0 && (
+        <div className="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
+          Question {currentQuestion} of {totalQuestions}
+        </div>
+      )}
     </header>
   );
 };
