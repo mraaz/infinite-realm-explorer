@@ -1,27 +1,44 @@
-
+import { useState } from 'react';
 import Header from '@/components/Header';
 import { Share2, Download } from 'lucide-react';
+import { NewQuadrantChart, PillarProgress } from '@/components/NewQuadrantChart';
 
 const Results = () => {
   // Mock data based on the image for placeholder content
   const insightSyntheses = [
     {
-      title: "Observation: The Burnout Risk",
+      title: "The Burnout Risk",
       description: "Your profile shows a pattern of high professional output (e.g., 55 hours/week) combined with low personal energy reserves. This is a classic indicator of potential burnout, where performance is sustained at the cost of personal wellbeing."
     },
     {
-      title: "Observation: The Anxious Saver",
+      title: "The Anxious Saver",
       description: "Your profile shows excellent saving habits, which is a ripper strength. However, this is paired with low confidence about your financial future. This suggests your financial stress may be linked to your mindset or overall plan, rather than your actions."
     },
     {
-      title: "Observation: Social Battery Drain",
+      title: "Social Battery Drain",
       description: "Your profile indicates you are spending a fair dinkum amount of time in social situations, but your sense of true belonging and connection remains low. This pattern can often lead to feeling drained rather than energised by your social life."
     },
     {
-      title: "Observation: Untapped Support System",
+      title: "Untapped Support System",
       description: "Your strong sense of connection is a powerful asset. Your profile suggests you are facing significant stress in your career or finances, but you have a bonza support system you can lean on to navigate these challenges."
     }
   ];
+
+  const [activePillar, setActivePillar] = useState<string | undefined>(undefined);
+
+  const progress: PillarProgress = {
+    basics: 75,
+    career: 80,
+    financials: 60,
+    health: 90,
+    connections: 70,
+  };
+
+  const handlePillarClick = (pillar: string) => {
+    setActivePillar(current => (current === pillar ? undefined : pillar));
+  };
+  
+  const answers = {};
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
@@ -39,15 +56,24 @@ const Results = () => {
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
           <div className="bg-white/60 backdrop-blur-sm p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200/80">
             <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Your Current Self</h2>
-            <div className="h-80 flex items-center justify-center bg-gray-100/50 rounded-lg text-gray-500 font-medium">
-              [Chart Placeholder]
+            <div className="h-96 flex items-center justify-center rounded-lg">
+              <NewQuadrantChart 
+                progress={progress}
+                answers={answers}
+                onPillarClick={handlePillarClick}
+                activePillar={activePillar}
+              />
             </div>
           </div>
 
           <div className="bg-white/60 backdrop-blur-sm p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200/80">
             <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Your Future Self</h2>
-            <div className="h-80 flex flex-col items-center justify-center bg-gray-100/50 rounded-lg text-gray-500 font-medium">
-                <div className="text-center">[Chart Placeholder]</div>
+            <div className="h-96 flex flex-col items-center justify-center rounded-lg">
+                <NewQuadrantChart 
+                  progress={progress}
+                  answers={answers}
+                  isFuture={true}
+                />
                 <button className="mt-4 bg-purple-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-purple-700 transition">Let's chat about the future</button>
             </div>
           </div>
