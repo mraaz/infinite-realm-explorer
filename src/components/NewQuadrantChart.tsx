@@ -1,10 +1,9 @@
-
 import { useEffect, useState, useRef, memo } from "react"
 import type React from "react"
 
 import { Target, Heart, Users, PiggyBank } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useMobile } from "@/hooks/use-mobile"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export interface PillarProgress {
   basics: number
@@ -56,7 +55,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
   })
   const [hoveredPillar, setHoveredPillar] = useState<string | null>(null)
   const chartRef = useRef<SVGSVGElement>(null)
-  const isMobile = useMobile()
+  const isMobile = useIsMobile()
 
   // Calculate size based on viewport
   const baseSize = 400
