@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Header from '@/components/Header';
 import { Share2, Download } from 'lucide-react';
 import { NewQuadrantChart, PillarProgress } from '@/components/NewQuadrantChart';
+import { Link } from 'react-router-dom';
 
 const Results = () => {
   // Mock data based on the image for placeholder content
@@ -74,7 +75,13 @@ const Results = () => {
                   answers={answers}
                   isFuture={true}
                 />
-                <button className="mt-4 bg-purple-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-purple-700 transition">Let's chat about the future</button>
+                <Link 
+                  to="/future-questionnaire" 
+                  state={{ progress }}
+                  className="mt-4 bg-purple-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-purple-700 transition"
+                >
+                  Let's chat about the future
+                </Link>
             </div>
           </div>
         </section>

@@ -1,0 +1,85 @@
+
+import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import Header from '@/components/Header';
+import { PillarProgress } from '@/components/NewQuadrantChart';
+import PriorityRanking from '@/components/PriorityRanking';
+import { Button } from '@/components/ui/button';
+
+export type Priorities = {
+  mainFocus: string;
+  secondaryFocus: string;
+  maintenance: string[];
+};
+
+const FutureQuestionnaire = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { progress } = (location.state || { progress: null }) as { progress: PillarProgress | null };
+    
+    const [phase, setPhase] = useState(1);
+    const [priorities, setPriorities] = useState<Priorities | null>(null);
+
+    const handlePrioritiesComplete = (p: Priorities) => {
+        setPriorities(p);
+        setPhase(2);
+    };
+
+    if (!progress) {
+        return (
+            <div className="min-h-screen flex flex-col bg-gray-50">
+                <Header />
+                <main className="flex-grow flex flex-col items-center justify-center px-4 text-center">
+                    <h1 className="text-2xl font-bold text-gray-800">Error</h1>
+                    <p className="text-gray-600 mt-2">Progress data not found. Please go back to the results page and try again.</p>
+                    <Button onClick={() => navigate('/results')} className="mt-4">Back to Results</Button>
+                </main>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen flex flex-col bg-gray-50">
+            <Header />
+            <main className="flex-grow flex flex-col items-center px-4 py-8 md:py-12">
+                <div className="w-full max-w-4xl bg-white p-6 md:p-10 rounded-xl shadow-lg border border-gray-200/80">
+                    <div className="text-center mb-8">
+                        <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">
+                            Designing Your 5-Year Future
+                        </h1>
+                        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                            Your baseline gives us a great snapshot of today. Now, let's design your future.
+                        </p>
+                    </div>
+                    
+                    {phase === 1 && progress && (
+                        <PriorityRanking progress={progress} onComplete={handlePrioritiesComplete} />
+                    )}
+                    {phase === 2 && (
+                        <div className="text-center">
+                            <h2 className="text-2xl font-bold text-gray-800">Phase 2: Deep Dive</h2>
+                            <p className="text-gray-600 mt-2">Next, we'll ask some questions about your main and secondary focus areas.</p>
+                             <Button onClick={() => setPhase(3)} className="mt-6">Continue</Button>
+                        </div>
+                    )}
+                     {phase === 3 && (
+                        <div className="text-center">
+                            <h2 className="text-2xl font-bold text-gray-800">Phase 3: Maintenance Baseline</h2>
+                            <p className="text-gray-600 mt-2">Now, let's define what "good enough" looks like for your other pillars.</p>
+                             <Button onClick={() => setPhase(4)} className="mt-6">Continue</Button>
+                        </div>
+                    )}
+                     {phase === 4 && (
+                        <div className="text-center">
+                            <h2 className="text-2xl font-bold text-gray-800">Ready to see your Future Self?</h2>
+                            <p className="text-gray-600 mt-2">We've mapped out your priorities. You can now see what your 5-year future could look like.</p>
+                             <Button onClick={() => navigate('/results')} className="mt-6">Show Me My Future Self</Button>
+                        </div>
+                    )}
+                </div>
+            </main>
+        </div>
+    );
+};
+
+export default FutureQuestionnaire;
