@@ -69,20 +69,23 @@ const Results = () => {
     connections: 0,
   });
 
-  let futureSelfArchitect: { mainFocus: string; identity: string; system: string; proof: string; } | undefined = initialArchitect;
+  let futureSelfArchitect: { mainFocus: string; identity: string; system: string; proof: string; }[] | undefined;
 
   if (futureQuestionnaire && futureQuestionnaire.priorities && futureQuestionnaire.architect) {
       const { priorities, architect: architectAnswers } = futureQuestionnaire;
       const mainFocus = priorities.mainFocus;
 
-      if (architectAnswers && architectAnswers.identity && mainFocus) {
-          // Architect flow data
-          futureSelfArchitect = {
-              mainFocus: mainFocus,
-              identity: architectAnswers.identity,
-              system: architectAnswers.system,
-              proof: architectAnswers.proof,
-          };
+      const architects = Array.isArray(architectAnswers) ? architectAnswers : [architectAnswers];
+
+      if (mainFocus) {
+          futureSelfArchitect = architects
+            .map(arch => ({
+                mainFocus: mainFocus,
+                identity: arch.identity,
+                system: arch.system,
+                proof: arch.proof,
+            }))
+            .filter(a => a.identity && a.system && a.proof);
       }
   }
 
@@ -100,8 +103,8 @@ const Results = () => {
     navigate('/future-questionnaire', { state: { ...location.state, progress, isArchitect: false } });
   };
 
-  const handleStartArchitectQuestionnaire = () => {
-    navigate('/future-questionnaire', { state: { ...location.state, progress, isArchitect: true } });
+  const handleStartArchitectQuestionnaire = (index?: number) => {
+    navigate('/future-questionnaire', { state: { ...location.state, progress, isArchitect: true, editHabitIndex: index } });
   };
 
   const handleDownloadReport = async () => {
@@ -180,7 +183,7 @@ const Results = () => {
           <PdfFooter />
         </div>
         <ResultsActions 
-          isArchitectComplete={!!futureSelfArchitect}
+          isArchitectComplete={!!futureSelfArchitect && futureSelfArchitect.length > 0}
           onDownload={handleDownloadReport}
         />
       </main>

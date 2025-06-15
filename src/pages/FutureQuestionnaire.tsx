@@ -47,7 +47,7 @@ const ARCHITECT_STEPS = [
 const FutureQuestionnaire = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { progress, isArchitect } = (location.state || { progress: null, isArchitect: false }) as { progress: PillarProgress | null, isArchitect: boolean };
+    const { progress, isArchitect, editHabitIndex } = (location.state || { progress: null, isArchitect: false, editHabitIndex: undefined }) as { progress: PillarProgress | null, isArchitect: boolean, editHabitIndex?: number };
     
     const [step, setStep] = useState(1);
     const [priorities, setPriorities] = useState<Priorities | null>(null);
@@ -55,11 +55,15 @@ const FutureQuestionnaire = () => {
     const [architectAnswers, setArchitectAnswers] = useState<ArchitectAnswers>({ identity: '', system: '', proof: '' });
 
     useEffect(() => {
-        // Pre-fill architect answers when editing
-        if (isArchitect && location.state?.futureQuestionnaire?.architect) {
-            setArchitectAnswers(location.state.futureQuestionnaire.architect);
+        // Pre-fill architect answers when editing an existing habit
+        if (isArchitect && location.state?.futureQuestionnaire?.architect && typeof editHabitIndex === 'number') {
+            const architectData = location.state.futureQuestionnaire.architect;
+            const habits = Array.isArray(architectData) ? architectData : [architectData];
+            if (habits[editHabitIndex]) {
+                setArchitectAnswers(habits[editHabitIndex]);
+            }
         }
-    }, [isArchitect, location.state]);
+    }, [isArchitect, location.state, editHabitIndex]);
 
     useEffect(() => {
         if (isArchitect && progress && !priorities) {
@@ -120,10 +124,19 @@ const FutureQuestionnaire = () => {
     };
 
     const handleConfirm = () => {
+        const existingArchitectData = location.state?.futureQuestionnaire?.architect;
+        let allHabits = existingArchitectData ? (Array.isArray(existingArchitectData) ? [...existingArchitectData] : [existingArchitectData]) : [];
+        
+        if (typeof editHabitIndex === 'number' && editHabitIndex < allHabits.length) {
+            allHabits[editHabitIndex] = architectAnswers;
+        } else {
+            allHabits.push(architectAnswers);
+        }
+
         const futureQuestionnaireAnswers = {
             priorities,
             answers: isArchitect ? {} : answers,
-            architect: isArchitect ? architectAnswers : undefined,
+            architect: isArchitect ? allHabits.filter(h => h.identity || h.system || h.proof) : undefined,
         };
         console.log("Future Questionnaire Answers:", futureQuestionnaireAnswers);
         // Pass the completed data back to the results page, preserving existing state
