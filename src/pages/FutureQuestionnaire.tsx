@@ -60,12 +60,12 @@ const FutureQuestionnaire = () => {
             answers,
         };
         console.log("Future Questionnaire Answers:", futureQuestionnaireAnswers);
-        // Pass the completed data back to the results page
-        navigate('/results', { state: { futureQuestionnaire: futureQuestionnaireAnswers, progress } });
+        // Pass the completed data back to the results page, preserving existing state
+        navigate('/results', { state: { ...location.state, futureQuestionnaire: futureQuestionnaireAnswers } });
     };
 
     const handleConfirmCancel = () => {
-        navigate('/results');
+        navigate('/results', { state: location.state });
     };
 
     if (!progress) {

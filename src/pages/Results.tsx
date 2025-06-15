@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import Header from '@/components/Header';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -9,7 +8,7 @@ import ChartsSection from '@/components/results/ChartsSection';
 import InsightSynthesis from '@/components/results/InsightSynthesis';
 import FutureSelfArchitectSection from '@/components/results/FutureSelfArchitectSection';
 import ResultsActions from '@/components/results/ResultsActions';
-import ResultsFooter from '@/components/results/ResultsFooter';
+import ResultsFooter from '@/components/ResultsFooter';
 import insightSyntheses from '@/data/insights.json';
 
 const Results = () => {
@@ -42,8 +41,8 @@ const Results = () => {
     };
   })();
 
-  // Test data for the future self chart as requested.
-  const futureProgress: PillarProgress = {
+  // Default data for the future self chart.
+  const defaultFutureProgress: PillarProgress = {
     basics: 80,
     career: 95,
     financials: 85,
@@ -53,7 +52,9 @@ const Results = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { futureQuestionnaire, futureSelfArchitect: initialArchitect } = location.state || {};
+  const { futureQuestionnaire, futureSelfArchitect: initialArchitect, futureProgress: locationFutureProgress } = location.state || {};
+
+  const futureProgress = locationFutureProgress || defaultFutureProgress;
 
   let futureSelfArchitect: { mainFocus: string; identity: string; system: string; proof: string; } | undefined = initialArchitect;
 
@@ -88,8 +89,12 @@ const Results = () => {
     navigate('/questionnaire', { state: { retake: true } });
   };
 
-  const handleStartFutureQuestionnaire = () => {
-    navigate('/future-questionnaire', { state: { progress } });
+  const handleSetFutureTargets = () => {
+    navigate('/future-targets', { state: { ...location.state, currentProgress: progress } });
+  };
+
+  const handleStartArchitectQuestionnaire = () => {
+    navigate('/future-questionnaire', { state: { ...location.state, progress } });
   };
 
   return (
@@ -104,12 +109,12 @@ const Results = () => {
           onPillarClick={handlePillarClick}
           activePillar={activePillar}
           onRetakeCurrent={handleRetakeCurrent}
-          onStartFutureQuestionnaire={handleStartFutureQuestionnaire}
+          onStartFutureQuestionnaire={handleSetFutureTargets}
         />
         <InsightSynthesis insights={insightSyntheses} />
         <FutureSelfArchitectSection
           architect={futureSelfArchitect}
-          onStart={handleStartFutureQuestionnaire}
+          onStart={handleStartArchitectQuestionnaire}
         />
         <ResultsActions />
       </main>
