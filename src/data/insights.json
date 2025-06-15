@@ -2,18 +2,26 @@
 [
   {
     "title": "The Burnout Risk",
-    "description": "Your profile shows a pattern of high professional output (e.g., 55 hours/week) combined with low personal energy reserves. This is a classic indicator of potential burnout, where performance is sustained at the cost of personal wellbeing."
+    "description": "Your profile shows a pattern of high professional output (e.g., 55 hours/week) combined with low personal energy reserves. This is a classic indicator of potential burnout, where performance is sustained at the cost of personal wellbeing.",
+    "icon": "AlertTriangle",
+    "color": "text-orange-400"
   },
   {
     "title": "The Anxious Saver",
-    "description": "Your profile shows excellent saving habits, which is a ripper strength. However, this is paired with low confidence about your financial future. This suggests your financial stress may be linked to your mindset or overall plan, rather than your actions."
+    "description": "Your profile shows excellent saving habits, which is a ripper strength. However, this is paired with low confidence about your financial future. This suggests your financial stress may be linked to your mindset or overall plan, rather than your actions.",
+    "icon": "Bulb",
+    "color": "text-blue-400"
   },
   {
     "title": "Social Battery Drain",
-    "description": "Your profile indicates you are spending a fair dinkum amount of time in social situations, but your sense of true belonging and connection remains low. This pattern can often lead to feeling drained rather than energised by your social life."
+    "description": "Your profile indicates you are spending a fair dinkum amount of time in social situations, but your sense of true belonging and connection remains low. This pattern can often lead to feeling drained rather than energised by your social life.",
+    "icon": "SquareCode",
+    "color": "text-orange-400"
   },
   {
     "title": "Untapped Support System",
-    "description": "Your strong sense of connection is a powerful asset. Your profile suggests you are facing significant stress in your career or finances, but you have a bonza support system you can lean on to navigate these challenges."
+    "description": "Your strong sense of connection is a powerful asset. Your profile suggests you are facing significant stress in your career or finances, but you have a bonza support system you can lean on to navigate these challenges.",
+    "icon": "Users",
+    "color": "text-green-500"
   }
 ]
