@@ -140,7 +140,7 @@ const Results = () => {
       architect: updatedArchitect,
     };
 
-    useQuestionnaireStore.getState().setFutureQuestionnaire(updatedFq);
+    actions.setFutureQuestionnaire(updatedFq);
 
     navigate('/results', {
       state: { ...location.state, futureQuestionnaire: updatedFq },
