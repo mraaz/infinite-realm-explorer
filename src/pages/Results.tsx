@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import Header from '@/components/Header';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -27,7 +26,7 @@ const Results = () => {
   const mockProgress: PillarProgress = {
     basics: 75,
     career: 80,
-    financials: 60,
+    finances: 60,
     health: 90,
     connections: 70,
   };
@@ -41,7 +40,7 @@ const Results = () => {
     return {
       basics: 75, // Placeholder for basics as its scoring is not defined in getProgress
       career: pillarPercentages.Career ?? 0,
-      financials: pillarPercentages.Finances ?? 0,
+      finances: pillarPercentages.Finances ?? 0,
       health: pillarPercentages.Health ?? 0,
       connections: pillarPercentages.Connections ?? 0,
     };
@@ -51,7 +50,7 @@ const Results = () => {
   const defaultFutureProgress: PillarProgress = {
     basics: 80,
     career: 95,
-    financials: 85,
+    finances: 85,
     health: 90,
     connections: 80,
   };
@@ -65,7 +64,7 @@ const Results = () => {
   const futureProgress = locationFutureProgress || (isFutureQuestionnaireComplete ? defaultFutureProgress : {
     basics: 0,
     career: 0,
-    financials: 0,
+    finances: 0,
     health: 0,
     connections: 0,
   });

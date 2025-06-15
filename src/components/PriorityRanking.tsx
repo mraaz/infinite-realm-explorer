@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Briefcase, Landmark, Heart, Users, ArrowRight } from 'lucide-react';
+import { Target, PiggyBank, Heart, Users, ArrowRight } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
 import { Pillar, PillarInfo, PriorityRankingProps } from './priority-ranking/types';
 import PillarCard from './priority-ranking/PillarCard';
@@ -8,15 +8,15 @@ import DropZone from './priority-ranking/DropZone';
 import { PillarProgress } from './NewQuadrantChart';
 
 const pillarDetails: Record<Pillar, { icon: JSX.Element }> = {
-  Career: { icon: <Briefcase className="h-6 w-6 text-purple-600" /> },
-  Financials: { icon: <Landmark className="h-6 w-6 text-blue-600" /> },
+  Career: { icon: <Target className="h-6 w-6 text-purple-600" /> },
+  Finances: { icon: <PiggyBank className="h-6 w-6 text-blue-600" /> },
   Health: { icon: <Heart className="h-6 w-6 text-green-600" /> },
   Connections: { icon: <Users className="h-6 w-6 text-orange-600" /> },
 };
 
 export const PriorityRanking = ({ progress, onComplete, value }: PriorityRankingProps) => {
   const initialPillars = useMemo(() => {
-    return (['Career', 'Financials', 'Health', 'Connections'] as Pillar[]).map(p => ({
+    return (['Career', 'Finances', 'Health', 'Connections'] as Pillar[]).map(p => ({
       id: p,
       name: p,
       score: progress[p.toLowerCase() as keyof PillarProgress] ?? 0,

@@ -1,7 +1,7 @@
 
 import { PillarProgress } from '@/components/NewQuadrantChart';
 
-export type Pillar = 'Career' | 'Financials' | 'Health' | 'Connections';
+export type Pillar = 'Career' | 'Finances' | 'Health' | 'Connections';
 
 export type PillarInfo = {
   id: Pillar;

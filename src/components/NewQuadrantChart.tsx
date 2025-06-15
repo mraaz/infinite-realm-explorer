@@ -8,7 +8,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 export interface PillarProgress {
   basics: number
   career: number
-  financials: number
+  finances: number
   health: number
   connections: number
 }
@@ -49,7 +49,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
   const [animatedProgress, setAnimatedProgress] = useState<PillarProgress>({
     basics: 0,
     career: 0,
-    financials: 0,
+    finances: 0,
     health: 0,
     connections: 0,
   })
@@ -65,7 +65,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
   const innerRadius = radius * 0.375
 
   // Calculate overall score
-  const overallScore = Math.round((progress.career + progress.financials + progress.health + progress.connections) / 4)
+  const overallScore = Math.round((progress.career + progress.finances + progress.health + progress.connections) / 4)
   const [animatedOverallScore, setAnimatedOverallScore] = useState(0)
 
   // Animate progress changes
@@ -79,7 +79,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
     const stepSizes = {
       basics: (progress.basics - animatedProgress.basics) / steps,
       career: (progress.career - animatedProgress.career) / steps,
-      financials: (progress.financials - animatedProgress.financials) / steps,
+      finances: (progress.finances - animatedProgress.finances) / steps,
       health: (progress.health - animatedProgress.health) / steps,
       connections: (progress.connections - animatedProgress.connections) / steps,
     }
@@ -101,7 +101,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
         setAnimatedProgress((prev) => ({
           basics: prev.basics + stepSizes.basics,
           career: prev.career + stepSizes.career,
-          financials: prev.financials + stepSizes.financials,
+          finances: prev.finances + stepSizes.finances,
           health: prev.health + stepSizes.health,
           connections: prev.connections + stepSizes.connections,
         }))
@@ -131,9 +131,9 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
         description: "Your professional growth and goals",
       },
       {
-        key: "financials",
+        key: "finances",
         name: "Finances",
-        score: Math.round(scores.financials),
+        score: Math.round(scores.finances),
         color: "#2563eb", // Blue
         hoverColor: "#3b82f6", // Lighter blue
         icon: <PiggyBank className="w-6 h-6" />,
