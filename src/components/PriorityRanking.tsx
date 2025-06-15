@@ -1,4 +1,3 @@
-
 import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Briefcase, Landmark, Heart, Users, ArrowRight } from 'lucide-react';
@@ -134,7 +133,7 @@ export const PriorityRanking = ({ progress, onComplete, value }: PriorityRanking
                         <div
                             {...provided.droppableProps}
                             ref={provided.innerRef}
-                            className={`p-2 rounded-lg min-h-[100px] ${snapshot.isDraggingOver ? 'bg-blue-50' : 'bg-gray-50/50'}`}
+                            className={`p-2 rounded-lg min-h-[100px] flex flex-col gap-3 ${snapshot.isDraggingOver ? 'bg-blue-50' : 'bg-gray-50/50'}`}
                         >
                             {unassigned.map((pillar, index) => (
                             <Draggable key={pillar.id} draggableId={pillar.id} index={index}>
@@ -144,9 +143,7 @@ export const PriorityRanking = ({ progress, onComplete, value }: PriorityRanking
                                     {...providedDraggable.draggableProps}
                                     {...providedDraggable.dragHandleProps}
                                 >
-                                    <div className="mb-3">
-                                        <PillarCard pillar={pillar} recommendedPillars={recommendedPillars} />
-                                    </div>
+                                    <PillarCard pillar={pillar} recommendedPillars={recommendedPillars} />
                                 </div>
                                 )}
                             </Draggable>

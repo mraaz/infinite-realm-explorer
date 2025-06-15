@@ -12,7 +12,7 @@ const DropZone = ({ title, droppableId, pillars, recommendedPillars }: { title: 
         <div
           {...provided.droppableProps}
           ref={provided.innerRef}
-          className={`p-4 w-full min-h-[110px] bg-gray-50/50 border-2 border-dashed rounded-lg flex flex-col justify-center items-center ${snapshot.isDraggingOver ? 'border-purple-400 bg-purple-50' : 'border-gray-300'}`}
+          className={`p-4 w-full min-h-[110px] bg-gray-50/50 border-2 border-dashed rounded-lg flex flex-col justify-center items-center gap-2 ${snapshot.isDraggingOver ? 'border-purple-400 bg-purple-50' : 'border-gray-300'}`}
         >
           {pillars.length === 0 ? (
             <p className="text-gray-400">Drag pillar here</p>
@@ -24,7 +24,7 @@ const DropZone = ({ title, droppableId, pillars, recommendedPillars }: { title: 
                     ref={providedDraggable.innerRef}
                     {...providedDraggable.draggableProps}
                     {...providedDraggable.dragHandleProps}
-                    className="w-full mb-2"
+                    className="w-full"
                   >
                     <PillarCard pillar={pillar} recommendedPillars={recommendedPillars} />
                   </div>
