@@ -1,9 +1,9 @@
-
 import { useState } from 'react';
 import Header from '@/components/Header';
-import { Share2, Download } from 'lucide-react';
+import { Share2, Download, RefreshCw } from 'lucide-react';
 import { NewQuadrantChart, PillarProgress } from '@/components/NewQuadrantChart';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 const Results = () => {
   // Mock data based on the image for placeholder content
@@ -75,45 +75,47 @@ const Results = () => {
         </section>
 
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
-          <div className="bg-white/60 backdrop-blur-sm p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200/80 flex flex-col justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Your Current Self</h2>
-              <div className="h-96 flex items-center justify-center rounded-lg">
+          <div className="relative group bg-white/60 backdrop-blur-sm p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200/80">
+            <Button
+              onClick={handleRetakeCurrent}
+              variant="secondary"
+              size="sm"
+              className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retake
+            </Button>
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Your Current Self</h2>
+            <div className="h-96 flex items-center justify-center rounded-lg">
+              <NewQuadrantChart 
+                progress={progress}
+                answers={answers}
+                onPillarClick={handlePillarClick}
+                activePillar={activePillar}
+              />
+            </div>
+          </div>
+
+          <div className="relative group bg-white/60 backdrop-blur-sm p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200/80">
+            <Button
+              onClick={handleRetakeFuture}
+              variant="secondary"
+              size="sm"
+              className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retake
+            </Button>
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Your Future Self</h2>
+            <div className="h-96 flex flex-col items-center justify-center rounded-lg">
                 <NewQuadrantChart 
-                  progress={progress}
+                  progress={futureProgress}
                   answers={answers}
+                  isFuture={true}
                   onPillarClick={handlePillarClick}
                   activePillar={activePillar}
                 />
-              </div>
             </div>
-            <button
-              onClick={handleRetakeCurrent}
-              className="mt-4 bg-gray-200 text-gray-800 px-6 py-2 rounded-lg font-semibold hover:bg-gray-300 transition w-full"
-            >
-              Retake Questionnaire
-            </button>
-          </div>
-
-          <div className="bg-white/60 backdrop-blur-sm p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200/80 flex flex-col justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Your Future Self</h2>
-              <div className="h-96 flex flex-col items-center justify-center rounded-lg">
-                  <NewQuadrantChart 
-                    progress={futureProgress}
-                    answers={answers}
-                    isFuture={true}
-                    onPillarClick={handlePillarClick}
-                    activePillar={activePillar}
-                  />
-              </div>
-            </div>
-            <button
-              onClick={handleRetakeFuture}
-              className="mt-4 bg-gray-200 text-gray-800 px-6 py-2 rounded-lg font-semibold hover:bg-gray-300 transition w-full"
-            >
-              Retake Future Questionnaire
-            </button>
           </div>
         </section>
 
