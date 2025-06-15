@@ -1,5 +1,6 @@
+
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Settings, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -33,7 +34,7 @@ const FutureSelfArchitectSection = ({ architect, onStart, isQuestionnaireComplet
 
   return (
     <section className="mb-16 flex justify-center">
-      <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/80 w-full max-w-3xl">
+      <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/80 w-full max-w-3xl flex flex-col">
         <CardContent className="p-6 md:p-8">
           <div className="flex items-center gap-3 text-2xl font-bold text-gray-800 mb-6">
             <div className="bg-blue-100 p-2 rounded-lg">
@@ -66,31 +67,36 @@ const FutureSelfArchitectSection = ({ architect, onStart, isQuestionnaireComplet
                   <p className="text-gray-700 italic">"{architect.proof}"</p>
                 </div>
               </div>
-
-              <Button onClick={onStart} variant="outline" className="w-full !mt-8 no-print h-11 rounded-md px-8">
-                Edit Your Identity System
-              </Button>
             </div>
           ) : (
             <div>
               <p className="text-gray-600 mb-4">Goals are fleeting, but your identity is who you are. Instead of setting a target, let's define the identity of your future self and build the systems that make success inevitable.</p>
-              <div className="bg-gray-100/50 p-4 rounded-lg mb-4">
+              <div className="bg-gray-100/50 p-4 rounded-lg">
                   <p className="font-semibold text-gray-700">Ready to design your future identity?</p>
                   <p className="text-gray-600 text-sm">Create a personalised identity system based on your main focus area that will help you achieve your goals through consistent habits and mindset shifts.</p>
               </div>
-              <Button
-                onClick={handleStartClick}
-                className={cn(
-                  "w-full justify-between no-print h-11 rounded-md px-8",
-                  !isQuestionnaireComplete && "opacity-50 cursor-not-allowed"
-                )}
-              >
-                  <span>Design Your Future Self</span>
-                  <ArrowRight />
-              </Button>
             </div>
           )}
         </CardContent>
+
+        <CardFooter className="p-6 pt-0 md:p-8 md:pt-0">
+          {architect ? (
+            <Button onClick={onStart} variant="outline" className="w-full no-print h-11 px-8 rounded-md">
+              Edit Your Identity System
+            </Button>
+          ) : (
+            <Button
+              onClick={handleStartClick}
+              className={cn(
+                "w-full justify-between no-print h-11 px-8 rounded-md",
+                !isQuestionnaireComplete && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <span>Design Your Future Self</span>
+              <ArrowRight />
+            </Button>
+          )}
+        </CardFooter>
       </Card>
     </section>
   );
