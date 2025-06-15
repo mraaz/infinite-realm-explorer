@@ -1,4 +1,3 @@
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Settings } from 'lucide-react';
@@ -68,7 +67,7 @@ const FutureSelfArchitectSection = ({ architect, onStart, isQuestionnaireComplet
                 </div>
               </div>
 
-              <Button onClick={onStart} variant="outline" className="w-full !mt-8 no-print">
+              <Button onClick={onStart} variant="outline" size="lg" className="w-full !mt-8 no-print">
                 Edit Your Identity System
               </Button>
             </div>
