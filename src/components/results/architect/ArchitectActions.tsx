@@ -2,6 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { PlusCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 interface ArchitectActionsProps {
   habitsCount: number;
@@ -22,6 +23,21 @@ const ArchitectActions = ({
   onEditClick,
   onAddClick,
 }: ArchitectActionsProps) => {
+  const { toast } = useToast();
+
+  const handleAddClick = () => {
+    if (!isQuestionnaireComplete || !canAddHabit) {
+      if (!canAddHabit) {
+        toast({
+          title: "Sorry, it's hard to manage more than two habits at a time.",
+          description: "Complete an existing habit to add a new one.",
+        });
+      }
+      return;
+    }
+    onAddClick();
+  };
+
   if (habitsCount > 0) {
     return (
       <div className="w-full flex flex-col sm:flex-row gap-2">
@@ -35,12 +51,11 @@ const ArchitectActions = ({
           Edit This Habit
         </Button>
         <Button
-          onClick={onAddClick}
+          onClick={handleAddClick}
           className={cn(
             "w-full justify-center no-print h-11 px-8 rounded-md",
             (!isQuestionnaireComplete || !canAddHabit) && "opacity-50 cursor-not-allowed"
           )}
-          disabled={!isQuestionnaireComplete || !canAddHabit}
         >
           <PlusCircle className="mr-2" />
           Add Another Habit
@@ -49,14 +64,24 @@ const ArchitectActions = ({
     );
   }
 
+  const handleInitialAddClick = () => {
+    if (!isQuestionnaireComplete) {
+      toast({
+        title: "Action Required",
+        description: "Please complete the Future Self Questionnaire before you can proceed.",
+      });
+      return;
+    }
+    onAddClick();
+  };
+
   return (
     <Button
-      onClick={onAddClick}
+      onClick={handleInitialAddClick}
       className={cn(
         "w-full justify-between no-print h-11 px-8 rounded-md",
         !isQuestionnaireComplete && "opacity-50 cursor-not-allowed"
       )}
-      disabled={!isQuestionnaireComplete}
     >
       <span>Design Your Future Self</span>
       <ArrowRight />
