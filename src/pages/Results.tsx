@@ -13,6 +13,7 @@ import ResultsFooter from '@/components/results/ResultsFooter';
 import insightSyntheses from '@/data/insights.json';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import PdfFooter from '@/components/results/PdfFooter';
 
 const Results = () => {
   const { answers, actions } = useQuestionnaireStore();
@@ -169,6 +170,7 @@ const Results = () => {
             onStartFutureQuestionnaire={handleSetFutureTargets}
           />
           <InsightSynthesis insights={insightSyntheses} />
+          <PdfFooter />
         </div>
         <div ref={page2Ref}>
           <FutureSelfArchitectSection
@@ -176,6 +178,7 @@ const Results = () => {
             onStart={handleStartArchitectQuestionnaire}
             isQuestionnaireComplete={isFutureQuestionnaireComplete}
           />
+          <PdfFooter />
         </div>
         <ResultsActions 
           isArchitectComplete={!!futureSelfArchitect}
