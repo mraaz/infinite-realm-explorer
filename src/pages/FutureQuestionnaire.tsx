@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -136,7 +135,7 @@ const FutureQuestionnaire = () => {
                             <li className="flex flex-col items-center text-center w-24">
                                 <div className={`h-8 w-8 rounded-full flex items-center justify-center ${step >= s.id ? 'bg-purple-600' : 'bg-gray-300'}`}>
                                     <span className="text-white font-bold">{step > s.id ? <CheckCircle size={20} /> : s.id}</span>
-                                </span>
+                                </div>
                                 <span className={`mt-2 block font-medium text-sm ${step >= s.id ? 'text-purple-700' : 'text-gray-500'}`}>{s.name}</span>
                             </li>
                             {stepIdx < STEPS.length - 1 && (
