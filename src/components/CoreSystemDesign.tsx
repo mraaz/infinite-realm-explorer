@@ -28,17 +28,6 @@ const CoreSystemDesign = ({ chosenIdentity, mainFocus, onComplete, value }: Core
       <p className="text-gray-600 mt-2 mb-6 text-center">
         For your chosen identity of '{chosenIdentity}'... This identity doesn't rely on willpower; it relies on systems. What is one weekly system you can put in place to guarantee {focusText} a priority?
       </p>
-      
-      <div className="space-y-2 mb-6">
-        <label htmlFor="system-description" className="font-semibold text-gray-700 mb-2 block">Your Weekly System:</label>
-        <Textarea 
-          id="system-description"
-          value={system}
-          onChange={(e) => setSystem(e.target.value)}
-          placeholder="e.g., 'Every Sunday evening, I will plan and schedule my three workouts for the upcoming week directly in my work calendar.'"
-          rows={4}
-        />
-      </div>
 
       <div className="mt-4 mb-6 p-3 bg-blue-50 border-l-4 border-blue-400 text-blue-800 rounded-r-md">
         <div className="flex items-start">
@@ -51,6 +40,17 @@ const CoreSystemDesign = ({ chosenIdentity, mainFocus, onComplete, value }: Core
             </p>
           </div>
         </div>
+      </div>
+      
+      <div className="space-y-2 mb-6">
+        <label htmlFor="system-description" className="font-semibold text-gray-700 mb-2 block">Your Weekly System:</label>
+        <Textarea 
+          id="system-description"
+          value={system}
+          onChange={(e) => setSystem(e.target.value)}
+          placeholder="e.g., 'Every Sunday evening, I will plan and schedule my three workouts for the upcoming week directly in my work calendar.'"
+          rows={4}
+        />
       </div>
 
       <div className="text-center">

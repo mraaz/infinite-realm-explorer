@@ -1,9 +1,18 @@
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Settings, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 interface FutureSelfArchitect {
   mainFocus: string;
@@ -20,6 +29,7 @@ interface FutureSelfArchitectSectionProps {
 
 const FutureSelfArchitectSection = ({ architect, onStart, isQuestionnaireComplete }: FutureSelfArchitectSectionProps) => {
   const { toast } = useToast();
+  const [currentPage, setCurrentPage] = useState(1);
 
   const handleStartClick = () => {
     if (isQuestionnaireComplete) {
@@ -30,6 +40,21 @@ const FutureSelfArchitectSection = ({ architect, onStart, isQuestionnaireComplet
         description: "Please complete the Future Self Questionnaire before you can proceed.",
       });
     }
+  };
+
+  const systems = architect?.system?.split('\n').filter(s => s.trim() !== '') || [];
+  const habitsPerPage = 2;
+  const totalPages = Math.ceil(systems.length / habitsPerPage);
+  const currentHabits = systems.slice((currentPage - 1) * habitsPerPage, currentPage * habitsPerPage);
+
+  const handlePrevious = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   };
 
   return (
@@ -55,10 +80,49 @@ const FutureSelfArchitectSection = ({ architect, onStart, isQuestionnaireComplet
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-700">Your Core System</h3>
-                <div className="mt-2 p-4 bg-gray-50/50 rounded-lg border border-gray-200">
-                  <p className="text-gray-700 italic">"{architect.system}"</p>
-                </div>
+                <h3 className="text-lg font-semibold text-gray-700">Your Core Systems</h3>
+                {systems.length > habitsPerPage ? (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                      {currentHabits.map((system, index) => (
+                        <div key={index} className="p-4 bg-gray-50/50 rounded-lg border border-gray-200 h-full flex items-center">
+                          <p className="text-gray-700 italic">"{system}"</p>
+                        </div>
+                      ))}
+                    </div>
+                    <Pagination className="mt-4">
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious href="#" onClick={handlePrevious} className={cn(currentPage === 1 && "pointer-events-none opacity-50")} />
+                        </PaginationItem>
+                        {Array.from({ length: totalPages }, (_, i) => (
+                          <PaginationItem key={i}>
+                            <PaginationLink href="#" onClick={(e) => { e.preventDefault(); setCurrentPage(i + 1); }} isActive={currentPage === i + 1}>
+                              {i + 1}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ))}
+                        <PaginationItem>
+                          <PaginationNext href="#" onClick={handleNext} className={cn(currentPage === totalPages && "pointer-events-none opacity-50")} />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </>
+                ) : (
+                  <div className="mt-2 space-y-2">
+                    {systems.length > 0 ? (
+                      systems.map((system, index) => (
+                        <div key={index} className="p-4 bg-gray-50/50 rounded-lg border border-gray-200">
+                          <p className="text-gray-700 italic">"{system}"</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="mt-2 p-4 bg-gray-50/50 rounded-lg border border-gray-200">
+                        <p className="text-gray-600">No core systems defined yet.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>
