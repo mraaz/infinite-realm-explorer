@@ -1,11 +1,12 @@
-import { useState } from 'react';
+
+import { useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import { PillarProgress } from '@/components/NewQuadrantChart';
-import PriorityRanking from '@/components/PriorityRanking';
 import { Button, buttonVariants } from '@/components/ui/button';
-import DeepDive, { DeepDiveAnswers } from '@/components/DeepDive';
-import MaintenanceBaseline, { MaintenanceAnswers } from '@/components/MaintenanceBaseline';
+import IdentityArchetypeSelection from '@/components/IdentityArchetypeSelection';
+import CoreSystemDesign from '@/components/CoreSystemDesign';
+import ProofOfIdentity from '@/components/ProofOfIdentity';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,54 +19,52 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-
-export type Priorities = {
-  mainFocus: string;
-  secondaryFocus: string;
-  maintenance: string[];
-};
-
 const FutureQuestionnaire = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { progress } = (location.state || { progress: null }) as { progress: PillarProgress | null };
     
-    const [phase, setPhase] = useState(1);
-    const [priorities, setPriorities] = useState<Priorities | null>(null);
-    const [deepDiveAnswers, setDeepDiveAnswers] = useState<DeepDiveAnswers | null>(null);
-    const [maintenanceAnswers, setMaintenanceAnswers] = useState<MaintenanceAnswers | null>(null);
+    const [step, setStep] = useState(1);
+    const [identity, setIdentity] = useState<string | null>(null);
+    const [system, setSystem] = useState<string | null>(null);
 
-    const handlePrioritiesComplete = (p: Priorities) => {
-        setPriorities(p);
-        setPhase(2);
+    const mainFocus = useMemo(() => {
+        if (!progress) return null;
+        const pillarScores = Object.entries(progress) as [string, number][];
+        if (pillarScores.length === 0) return null;
+        
+        // Find the pillar with the lowest score to be the main focus
+        pillarScores.sort((a, b) => a[1] - b[1]);
+        return pillarScores[0][0];
+    }, [progress]);
+
+    const handleIdentityComplete = (chosenIdentity: string) => {
+        setIdentity(chosenIdentity);
+        setStep(2);
     };
 
-    const handleDeepDiveComplete = (answers: DeepDiveAnswers) => {
-        setDeepDiveAnswers(answers);
-        setPhase(3);
+    const handleSystemComplete = (chosenSystem: string) => {
+        setSystem(chosenSystem);
+        setStep(3);
     };
 
-    const handleMaintenanceComplete = (answers: MaintenanceAnswers) => {
-        setMaintenanceAnswers(answers);
-        setPhase(4);
+    const handleProofComplete = (chosenProof: string) => {
+        const futureArchitectAnswers = {
+            mainFocus,
+            identity,
+            system,
+            proof: chosenProof,
+        };
+        console.log("Future Architect Answers:", futureArchitectAnswers);
+        // Pass the completed data back to the results page
+        navigate('/results', { state: { architect: futureArchitectAnswers, progress } });
     };
 
     const handleConfirmCancel = () => {
         navigate('/results');
     };
 
-    const handleGoToResults = () => {
-      const futureQuestionnaireAnswers = {
-          priorities,
-          deepDiveAnswers,
-          maintenanceAnswers,
-      };
-      // In a real application, this data would be saved and used on the results page.
-      console.log("Future Questionnaire Answers:", futureQuestionnaireAnswers);
-      navigate('/results');
-    }
-
-    if (!progress) {
+    if (!progress || !mainFocus) {
         return (
             <div className="min-h-screen flex flex-col bg-gray-50">
                 <Header />
@@ -78,13 +77,26 @@ const FutureQuestionnaire = () => {
         );
     }
 
+    const CurrentStepComponent = () => {
+        switch (step) {
+            case 1:
+                return <IdentityArchetypeSelection mainFocus={mainFocus} onComplete={handleIdentityComplete} />;
+            case 2:
+                return <CoreSystemDesign mainFocus={mainFocus} chosenIdentity={identity!} onComplete={handleSystemComplete} />;
+            case 3:
+                return <ProofOfIdentity chosenIdentity={identity!} onComplete={handleProofComplete} />;
+            default:
+                return null;
+        }
+    }
+
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
             <Header />
             <main className="flex-grow flex flex-col items-center px-4 py-8 md:py-12">
                 <div className="w-full max-w-4xl">
                     <div className="flex justify-end items-center mb-4 min-h-[40px]">
-                        {phase < 4 && (
+                        {step < 4 && (
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="ghost">Cancel and Return to Results</Button>
@@ -107,36 +119,15 @@ const FutureQuestionnaire = () => {
                     <div className="bg-white p-6 md:p-10 rounded-xl shadow-lg border border-gray-200/80">
                         <div className="text-center mb-8">
                             <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">
-                                Designing Your 5-Year Future
+                                Future Self Architect
                             </h1>
                             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                                Your baseline gives us a great snapshot of today. Now, let's design your future.
+                                Goals are fleeting, but your identity is who you are. Let's define your future self and build the systems to make success inevitable.
                             </p>
                         </div>
                         
-                        {phase === 1 && progress && (
-                            <PriorityRanking progress={progress} onComplete={handlePrioritiesComplete} />
-                        )}
-                        {phase === 2 && priorities && (
-                            <DeepDive 
-                                mainFocus={priorities.mainFocus}
-                                secondaryFocus={priorities.secondaryFocus}
-                                onComplete={handleDeepDiveComplete}
-                            />
-                        )}
-                        {phase === 3 && priorities && (
-                            <MaintenanceBaseline
-                                maintenancePillars={priorities.maintenance}
-                                onComplete={handleMaintenanceComplete}
-                            />
-                        )}
-                         {phase === 4 && (
-                            <div className="text-center">
-                                <h2 className="text-2xl font-bold text-gray-800">Ready to see your Future Self?</h2>
-                                <p className="text-gray-600 mt-2">Excellent. We've mapped out your priorities. Are you ready to see what your 5-year future could look like based on this new focus?</p>
-                                 <Button onClick={handleGoToResults} className="mt-6">Show Me My Future Self</Button>
-                            </div>
-                        )}
+                        <CurrentStepComponent />
+
                     </div>
                 </div>
             </main>
