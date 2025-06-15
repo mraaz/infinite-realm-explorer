@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import Header from '@/components/Header';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -19,7 +18,8 @@ const Results = () => {
   const { getProgress, startRetake } = actions;
   
   const [activePillar, setActivePillar] = useState<string | undefined>(undefined);
-  const printRef = useRef<HTMLDivElement>(null);
+  const page1Ref = useRef<HTMLDivElement>(null);
+  const page2Ref = useRef<HTMLDivElement>(null);
 
   // Mock data based on the image for placeholder content
   const mockProgress: PillarProgress = {
@@ -104,76 +104,82 @@ const Results = () => {
   };
 
   const handleDownloadReport = async () => {
-    const element = printRef.current;
-    if (!element) {
-        console.error("Element to print not found");
-        return;
-    }
-
-    const canvas = await html2canvas(element, {
-        scale: 2,
-        backgroundColor: '#ffffff', // Set a white background for consistency
-        onclone: (document) => {
-            document.querySelectorAll('.no-print').forEach(el => {
-                if (el instanceof HTMLElement) {
-                    el.style.display = 'none';
-                }
-            });
-        },
-    });
-
-    const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');
-    
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfPageHeight = pdf.internal.pageSize.getHeight();
-    
-    const imgWidth = canvas.width;
-    const imgHeight = canvas.height;
-    
-    const ratio = pdfWidth / imgWidth;
-    const pdfImgHeight = imgHeight * ratio;
-    
-    let position = 0;
-    
-    while (position < pdfImgHeight) {
-      if (position > 0) {
-        pdf.addPage();
-      }
-      
-      pdf.addImage(imgData, 'PNG', 0, -position, pdfWidth, pdfImgHeight);
-      position += pdfPageHeight;
+
+    const appendCanvasToPdf = async (element: HTMLElement) => {
+        const canvas = await html2canvas(element, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            useCORS: true,
+        });
+        const imgData = canvas.toDataURL('image/png');
+        const imgProps = pdf.getImageProperties(imgData);
+        const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+        heightLeft -= pdfPageHeight;
+        
+        while (heightLeft > 0) {
+            position -= pdfPageHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+            heightLeft -= pdfPageHeight;
+        }
+    };
+
+    const page1Element = page1Ref.current;
+    if(page1Element) {
+        await appendCanvasToPdf(page1Element);
+    }
+
+    if(futureSelfArchitect) {
+        const page2Element = page2Ref.current;
+        if(page2Element) {
+            pdf.addPage();
+            await appendCanvasToPdf(page2Element);
+        }
     }
     
     pdf.save('life-view-report.pdf');
   };
 
   return (
-    <div ref={printRef} className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <Header />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-        <ResultsHeader />
-        <ChartsSection
-          currentProgress={progress}
-          futureProgress={futureProgress}
-          answers={answers}
-          onPillarClick={handlePillarClick}
-          activePillar={activePillar}
-          onRetakeCurrent={handleRetakeCurrent}
-          onStartFutureQuestionnaire={handleSetFutureTargets}
-        />
-        <InsightSynthesis insights={insightSyntheses} />
-        <FutureSelfArchitectSection
-          architect={futureSelfArchitect}
-          onStart={handleStartArchitectQuestionnaire}
-          isQuestionnaireComplete={isFutureQuestionnaireComplete}
-        />
+        <div ref={page1Ref}>
+          <ResultsHeader />
+          <ChartsSection
+            currentProgress={progress}
+            futureProgress={futureProgress}
+            answers={answers}
+            onPillarClick={handlePillarClick}
+            activePillar={activePillar}
+            onRetakeCurrent={handleRetakeCurrent}
+            onStartFutureQuestionnaire={handleSetFutureTargets}
+          />
+          <InsightSynthesis insights={insightSyntheses} />
+        </div>
+        <div ref={page2Ref}>
+          <FutureSelfArchitectSection
+            architect={futureSelfArchitect}
+            onStart={handleStartArchitectQuestionnaire}
+            isQuestionnaireComplete={isFutureQuestionnaireComplete}
+          />
+        </div>
         <ResultsActions 
           isArchitectComplete={!!futureSelfArchitect}
           onDownload={handleDownloadReport}
         />
       </main>
-      <ResultsFooter />
+      <div className="no-print">
+        <ResultsFooter />
+      </div>
     </div>
   );
 };

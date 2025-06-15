@@ -10,7 +10,7 @@ import {
 
 const Header = () => {
   return (
-    <header className="py-4 px-6 md:px-10 flex justify-between items-center border-b border-gray-200">
+    <header className="py-4 px-6 md:px-10 flex justify-between items-center border-b border-gray-200 no-print">
       <Link to="/" className="flex items-center space-x-2">
         <Rocket className="h-7 w-7 text-purple-600" />
         <span className="text-xl font-semibold text-gray-800">Infinite Game</span>
