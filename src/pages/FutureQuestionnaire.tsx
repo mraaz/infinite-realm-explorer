@@ -1,12 +1,11 @@
-
 import { useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import { PillarProgress } from '@/components/NewQuadrantChart';
 import { Button, buttonVariants } from '@/components/ui/button';
-import IdentityArchetypeSelection from '@/components/IdentityArchetypeSelection';
-import CoreSystemDesign from '@/components/CoreSystemDesign';
-import ProofOfIdentity from '@/components/ProofOfIdentity';
+import { PriorityRanking } from '@/components/PriorityRanking';
+import { DeepDive } from '@/components/DeepDive';
+import { MaintenanceBaseline } from '@/components/MaintenanceBaseline';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +17,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { CheckCircle } from 'lucide-react';
+
+type Pillar = 'Career' | 'Financials' | 'Health' | 'Connections';
+type Priorities = { mainFocus: Pillar; secondaryFocus: Pillar; maintenance: Pillar[] };
+type Answers = Record<string, string>;
+
+const STEPS = [
+    { id: 1, name: 'Setting Priorities' },
+    { id: 2, name: 'Deep Dive' },
+    { id: 3, name: 'Maintenance' },
+    { id: 4, name: 'Confirmation' },
+];
 
 const FutureQuestionnaire = () => {
     const location = useLocation();
@@ -25,46 +36,39 @@ const FutureQuestionnaire = () => {
     const { progress } = (location.state || { progress: null }) as { progress: PillarProgress | null };
     
     const [step, setStep] = useState(1);
-    const [identity, setIdentity] = useState<string | null>(null);
-    const [system, setSystem] = useState<string | null>(null);
+    const [priorities, setPriorities] = useState<Priorities | null>(null);
+    const [answers, setAnswers] = useState<Answers>({});
 
-    const mainFocus = useMemo(() => {
-        if (!progress) return null;
-        const pillarScores = Object.entries(progress) as [string, number][];
-        if (pillarScores.length === 0) return null;
-        
-        // Find the pillar with the lowest score to be the main focus
-        pillarScores.sort((a, b) => a[1] - b[1]);
-        return pillarScores[0][0];
-    }, [progress]);
-
-    const handleIdentityComplete = (chosenIdentity: string) => {
-        setIdentity(chosenIdentity);
+    const handlePrioritiesComplete = (chosenPriorities: Priorities) => {
+        setPriorities(chosenPriorities);
         setStep(2);
     };
 
-    const handleSystemComplete = (chosenSystem: string) => {
-        setSystem(chosenSystem);
+    const handleDeepDiveComplete = (deepDiveAnswers: Answers) => {
+        setAnswers(prev => ({ ...prev, ...deepDiveAnswers }));
         setStep(3);
     };
 
-    const handleProofComplete = (chosenProof: string) => {
-        const futureArchitectAnswers = {
-            mainFocus,
-            identity,
-            system,
-            proof: chosenProof,
+    const handleMaintenanceComplete = (maintenanceAnswers: Answers) => {
+        setAnswers(prev => ({ ...prev, ...maintenanceAnswers }));
+        setStep(4);
+    };
+
+    const handleConfirm = () => {
+        const futureQuestionnaireAnswers = {
+            priorities,
+            answers,
         };
-        console.log("Future Architect Answers:", futureArchitectAnswers);
+        console.log("Future Questionnaire Answers:", futureQuestionnaireAnswers);
         // Pass the completed data back to the results page
-        navigate('/results', { state: { architect: futureArchitectAnswers, progress } });
+        navigate('/results', { state: { futureQuestionnaire: futureQuestionnaireAnswers, progress } });
     };
 
     const handleConfirmCancel = () => {
         navigate('/results');
     };
 
-    if (!progress || !mainFocus) {
+    if (!progress) {
         return (
             <div className="min-h-screen flex flex-col bg-gray-50">
                 <Header />
@@ -80,21 +84,50 @@ const FutureQuestionnaire = () => {
     const CurrentStepComponent = () => {
         switch (step) {
             case 1:
-                return <IdentityArchetypeSelection mainFocus={mainFocus} onComplete={handleIdentityComplete} />;
+                return <PriorityRanking progress={progress} onComplete={handlePrioritiesComplete} />;
             case 2:
-                return <CoreSystemDesign mainFocus={mainFocus} chosenIdentity={identity!} onComplete={handleSystemComplete} />;
+                return <DeepDive mainFocus={priorities!.mainFocus} secondaryFocus={priorities!.secondaryFocus} onComplete={handleDeepDiveComplete} />;
             case 3:
-                return <ProofOfIdentity chosenIdentity={identity!} onComplete={handleProofComplete} />;
+                return <MaintenanceBaseline maintenancePillars={priorities!.maintenance} onComplete={handleMaintenanceComplete} />;
+            case 4:
+                return (
+                    <div className="text-center py-12">
+                        <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                        <h2 className="text-2xl font-bold text-gray-800">Excellent. We've mapped out your priorities.</h2>
+                        <p className="text-gray-600 mt-2 mb-8">Are you ready to see what your 5-year future could look like based on this new focus?</p>
+                        <Button size="lg" onClick={handleConfirm}>Show Me My Future Self</Button>
+                    </div>
+                );
             default:
                 return null;
         }
     }
 
+    const Stepper = () => (
+        <nav aria-label="Progress" className="mb-12">
+            <ol role="list" className="flex items-center justify-center">
+                {STEPS.map((s, stepIdx) => (
+                    <li key={s.name} className="relative">
+                        <div className="flex items-center">
+                            <span className={`h-8 w-8 rounded-full flex items-center justify-center ${step >= s.id ? 'bg-purple-600' : 'bg-gray-300'}`}>
+                                <span className="text-white font-bold">{step > s.id ? <CheckCircle size={20} /> : s.id}</span>
+                            </span>
+                            <span className={`ml-3 hidden sm:block font-medium ${step >= s.id ? 'text-purple-700' : 'text-gray-500'}`}>{s.name}</span>
+                        </div>
+                        {stepIdx !== STEPS.length - 1 && (
+                            <div className="absolute top-4 left-8 -ml-px mt-0.5 h-0.5 w-12 sm:w-24 md:w-32 bg-gray-300" aria-hidden="true" />
+                        )}
+                    </li>
+                ))}
+            </ol>
+        </nav>
+    );
+
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
             <Header />
             <main className="flex-grow flex flex-col items-center px-4 py-8 md:py-12">
-                <div className="w-full max-w-4xl">
+                <div className="w-full max-w-5xl">
                     <div className="flex justify-end items-center mb-4 min-h-[40px]">
                         {step < 4 && (
                             <AlertDialog>
@@ -119,12 +152,14 @@ const FutureQuestionnaire = () => {
                     <div className="bg-white p-6 md:p-10 rounded-xl shadow-lg border border-gray-200/80">
                         <div className="text-center mb-8">
                             <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">
-                                Future Self Architect
+                                Future Self Questionnaire
                             </h1>
-                            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                                Goals are fleeting, but your identity is who you are. Let's define your future self and build the systems to make success inevitable.
+                            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+                                This questionnaire is designed to help you define your vision for the next five years.
                             </p>
                         </div>
+
+                        <Stepper />
                         
                         <CurrentStepComponent />
 
