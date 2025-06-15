@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import QuestionnaireHeader from "@/components/QuestionnaireHeader";
@@ -20,9 +21,10 @@ const Questionnaire = () => {
 
   useEffect(() => {
     if (questionFlow.length > 0 && currentQuestionIndex >= questionFlow.length) {
+      console.log("Submitting questionnaire answers to backend:", JSON.stringify(answers, null, 2));
       navigate('/results');
     }
-  }, [currentQuestionIndex, questionFlow.length, navigate]);
+  }, [currentQuestionIndex, questionFlow.length, navigate, answers]);
 
   if (!currentQuestion) {
     // Handle completion state

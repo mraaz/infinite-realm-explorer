@@ -11,6 +11,19 @@ interface ProofOfIdentityProps {
 const ProofOfIdentity = ({ chosenIdentity, onComplete }: ProofOfIdentityProps) => {
   const [proof, setProof] = useState('');
 
+  const handleComplete = () => {
+    if (proof) {
+      console.log(
+        "Simulating final step of Future Self Architect. Submitting proof:", 
+        JSON.stringify({ proof }, null, 2)
+      );
+      console.log(
+        "In a real implementation, a full object would be sent to the backend here including identity, system, and proof."
+      );
+      onComplete(proof);
+    }
+  };
+
   return (
     <div className="text-left max-w-2xl mx-auto">
       <h2 className="text-xl font-semibold text-gray-700 text-center">Step 3: Define Your "Proof of Identity"</h2>
@@ -30,7 +43,7 @@ const ProofOfIdentity = ({ chosenIdentity, onComplete }: ProofOfIdentityProps) =
       </div>
 
       <div className="text-center">
-        <Button onClick={() => proof && onComplete(proof)} disabled={!proof}>
+        <Button onClick={handleComplete} disabled={!proof}>
           Confirm Action
         </Button>
       </div>

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import Header from '@/components/Header';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -10,32 +9,15 @@ import InsightSynthesis from '@/components/results/InsightSynthesis';
 import FutureSelfArchitectSection from '@/components/results/FutureSelfArchitectSection';
 import ResultsActions from '@/components/results/ResultsActions';
 import ResultsFooter from '@/components/results/ResultsFooter';
+import insightSyntheses from '@/data/insights.json';
 
 const Results = () => {
   const { answers, actions } = useQuestionnaireStore();
   const { getProgress, startRetake } = actions;
-  // Mock data based on the image for placeholder content
-  const insightSyntheses = [
-    {
-      title: "The Burnout Risk",
-      description: "Your profile shows a pattern of high professional output (e.g., 55 hours/week) combined with low personal energy reserves. This is a classic indicator of potential burnout, where performance is sustained at the cost of personal wellbeing."
-    },
-    {
-      title: "The Anxious Saver",
-      description: "Your profile shows excellent saving habits, which is a ripper strength. However, this is paired with low confidence about your financial future. This suggests your financial stress may be linked to your mindset or overall plan, rather than your actions."
-    },
-    {
-      title: "Social Battery Drain",
-      description: "Your profile indicates you are spending a fair dinkum amount of time in social situations, but your sense of true belonging and connection remains low. This pattern can often lead to feeling drained rather than energised by your social life."
-    },
-    {
-      title: "Untapped Support System",
-      description: "Your strong sense of connection is a powerful asset. Your profile suggests you are facing significant stress in your career or finances, but you have a bonza support system you can lean on to navigate these challenges."
-    }
-  ];
-
+  
   const [activePillar, setActivePillar] = useState<string | undefined>(undefined);
 
+  // Mock data based on the image for placeholder content
   const mockProgress: PillarProgress = {
     basics: 75,
     career: 80,
