@@ -1,8 +1,10 @@
-import { useState, useMemo, DragEvent } from 'react';
+
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Briefcase, Landmark, Heart, Users, ArrowRight } from 'lucide-react';
 import { PillarProgress } from '@/components/NewQuadrantChart';
+import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
 
 type Pillar = 'Career' | 'Financials' | 'Health' | 'Connections';
 type PillarInfo = {
@@ -25,6 +27,53 @@ const pillarDetails: Record<Pillar, { icon: JSX.Element }> = {
   Connections: { icon: <Users className="h-6 w-6 text-orange-600" /> },
 };
 
+const PillarCard = ({ pillar, recommendedPillars }: { pillar: PillarInfo, recommendedPillars: Pillar[] }) => (
+    <div className="flex items-center gap-4 p-4 rounded-lg bg-white border cursor-grab transition-all shadow-sm">
+      {pillar.icon}
+      <div className="flex-grow">
+        <h4 className="font-semibold">{pillar.name}</h4>
+        <p className="text-sm text-gray-500">Current score: {pillar.score}</p>
+      </div>
+      {recommendedPillars.includes(pillar.id) && <Badge variant="secondary">Recommended</Badge>}
+    </div>
+);
+
+const DropZone = ({ title, droppableId, pillars, recommendedPillars }: { title: string, droppableId: string, pillars: PillarInfo[], recommendedPillars: Pillar[] }) => (
+    <div>
+      <h3 className="font-semibold text-gray-700">{title}</h3>
+      <Droppable droppableId={droppableId}>
+        {(provided, snapshot) => (
+          <div
+            {...provided.droppableProps}
+            ref={provided.innerRef}
+            className={`p-4 w-full min-h-[110px] bg-gray-50/50 border-2 border-dashed rounded-lg flex flex-col justify-center items-center gap-2 transition-colors ${snapshot.isDraggingOver ? 'border-purple-400 bg-purple-50' : 'border-gray-300'}`}
+          >
+            {pillars.length === 0 ? (
+              <p className="text-gray-400">Drag pillar here</p>
+            ) : (
+              pillars.map((pillar, index) => (
+                <Draggable key={pillar.id} draggableId={pillar.id} index={index}>
+                  {(provided) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      className="w-full"
+                    >
+                      <PillarCard pillar={pillar} recommendedPillars={recommendedPillars} />
+                    </div>
+                  )}
+                </Draggable>
+              ))
+            )}
+            {provided.placeholder}
+          </div>
+        )}
+      </Droppable>
+    </div>
+);
+
+
 export const PriorityRanking = ({ progress, onComplete, value }: PriorityRankingProps) => {
   const initialPillars = useMemo(() => {
     return (['Career', 'Financials', 'Health', 'Connections'] as Pillar[]).map(p => ({
@@ -34,131 +83,152 @@ export const PriorityRanking = ({ progress, onComplete, value }: PriorityRanking
       icon: pillarDetails[p].icon,
     }));
   }, [progress]);
-  
-  const [pillars, setPillars] = useState<PillarInfo[]>(() => {
-    if (!value) return initialPillars;
-    const assignedIds = [value.mainFocus, value.secondaryFocus, ...value.maintenance];
-    return initialPillars.filter(p => !assignedIds.includes(p.id));
-  });
-  const [mainFocus, setMainFocus] = useState<PillarInfo | null>(() => value ? initialPillars.find(p => p.id === value.mainFocus) ?? null : null);
-  const [secondaryFocus, setSecondaryFocus] = useState<PillarInfo | null>(() => value ? initialPillars.find(p => p.id === value.secondaryFocus) ?? null : null);
-  const [maintenance, setMaintenance] = useState<PillarInfo[]>(() => 
-    value 
-    ? value.maintenance.map(id => initialPillars.find(p => p.id === id)).filter((p): p is PillarInfo => !!p)
-    : []
-  );
+
+  const [unassigned, setUnassigned] = useState<PillarInfo[]>(initialPillars);
+  const [mainFocus, setMainFocus] = useState<PillarInfo[]>([]);
+  const [secondaryFocus, setSecondaryFocus] = useState<PillarInfo[]>([]);
+  const [maintenance, setMaintenance] = useState<PillarInfo[]>([]);
+
+  useEffect(() => {
+    if (value) {
+      const main = initialPillars.find(p => p.id === value.mainFocus);
+      const secondary = initialPillars.find(p => p.id === value.secondaryFocus);
+      const maint = value.maintenance.map(id => initialPillars.find(p => p.id === id)).filter(Boolean) as PillarInfo[];
+      
+      setMainFocus(main ? [main] : []);
+      setSecondaryFocus(secondary ? [secondary] : []);
+      setMaintenance(maint);
+
+      const assignedIds = new Set([
+        value.mainFocus, 
+        value.secondaryFocus, 
+        ...value.maintenance
+      ]);
+      setUnassigned(initialPillars.filter(p => !assignedIds.has(p.id)));
+    } else {
+        setUnassigned(initialPillars);
+        setMainFocus([]);
+        setSecondaryFocus([]);
+        setMaintenance([]);
+    }
+  }, [initialPillars, value]);
 
   const recommendedPillars = useMemo(() => {
     const sorted = [...initialPillars].sort((a, b) => a.score - b.score);
     return sorted.slice(0, 2).map(p => p.id);
   }, [initialPillars]);
 
-  const handleDragStart = (e: DragEvent<HTMLDivElement>, pillar: PillarInfo) => {
-    e.dataTransfer.setData('pillarId', pillar.id);
-  };
+  const onDragEnd: OnDragEndResponder = (result) => {
+    const { source, destination } = result;
+    if (!destination) return;
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>, zone: 'main' | 'secondary' | 'maintenance') => {
-    e.preventDefault();
-    const pillarId = e.dataTransfer.getData('pillarId') as Pillar;
-    if (!pillarId) return;
+    const sourceId = source.droppableId;
+    const destId = destination.droppableId;
 
-    let pillar = pillars.find(p => p.id === pillarId) || mainFocus || secondaryFocus || maintenance.find(p => p.id === pillarId);
-    if (!pillar) return;
+    if (sourceId === destId) return; // No change
 
-    // Remove from all zones before adding to the new one
-    setPillars(prev => prev.filter(p => p.id !== pillarId));
-    if (mainFocus?.id === pillarId) setMainFocus(null);
-    if (secondaryFocus?.id === pillarId) setSecondaryFocus(null);
-    setMaintenance(prev => prev.filter(p => p.id !== pillarId));
+    const listMap: { [key: string]: PillarInfo[] } = {
+      unassigned,
+      main: mainFocus,
+      secondary: secondaryFocus,
+      maintenance,
+    };
+    
+    const setterMap: { [key: string]: React.Dispatch<React.SetStateAction<PillarInfo[]>> } = {
+        unassigned: setUnassigned,
+        main: setMainFocus,
+        secondary: setSecondaryFocus,
+        maintenance: setMaintenance,
+    };
 
-    // Add to the new zone
-    switch(zone) {
-      case 'main':
-        if (mainFocus) setPillars(prev => [...prev, mainFocus]);
-        setMainFocus(pillar);
-        break;
-      case 'secondary':
-        if (secondaryFocus) setPillars(prev => [...prev, secondaryFocus]);
-        setSecondaryFocus(pillar);
-        break;
-      case 'maintenance':
-        if (maintenance.length < 2) {
-          setMaintenance(prev => [...prev, pillar!]);
-        } else {
-          // Zone is full, return dragged pillar to source list
-          setPillars(prev => [...prev, pillar!]);
-        }
-        break;
+    const sourceList = Array.from(listMap[sourceId]);
+    const destList = Array.from(listMap[destId]);
+    const [removed] = sourceList.splice(source.index, 1);
+
+    // Enforce constraints on destination lists
+    if (destId === 'main' && destList.length >= 1) {
+        const [evicted] = destList.splice(0,1);
+        sourceList.push(evicted);
+    }
+    if (destId === 'secondary' && destList.length >= 1) {
+        const [evicted] = destList.splice(0,1);
+        sourceList.push(evicted);
+    }
+    if (destId === 'maintenance' && destList.length >= 2) {
+        return; // Abort drop, destination is full
+    }
+    
+    destList.splice(destination.index, 0, removed);
+
+    // Update all lists that might have changed
+    setterMap[sourceId](sourceList);
+    setterMap[destId](destList);
+
+    // If an item was evicted, it goes to the source list, but if the source list was not unassigned,
+    // the evicted item should go to unassigned list
+    if ( (destId === 'main' || destId === 'secondary') && listMap[destId].length > 0 && sourceId !== 'unassigned') {
+        const evicted = listMap[destId][0]; // The item that was there before drop
+        const newUnassigned = [...unassigned, evicted];
+        setUnassigned(newUnassigned);
+        
+        const newSourceList = listMap[sourceId].filter(p => p.id !== evicted.id);
+        setterMap[sourceId](newSourceList);
     }
   };
-
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-  };
   
-  const isComplete = mainFocus && secondaryFocus && maintenance.length === 2;
-
-  const PillarCard = ({ pillar, isDraggable }: { pillar: PillarInfo; isDraggable: boolean }) => (
-    <div
-      draggable={isDraggable}
-      onDragStart={e => isDraggable && handleDragStart(e, pillar)}
-      className={`flex items-center gap-4 p-4 rounded-lg bg-white border cursor-${isDraggable ? 'grab' : 'default'} transition-all`}
-    >
-      {pillar.icon}
-      <div className="flex-grow">
-        <h4 className="font-semibold">{pillar.name}</h4>
-        <p className="text-sm text-gray-500">Current score: {pillar.score}</p>
-      </div>
-      {recommendedPillars.includes(pillar.id) && <Badge variant="secondary">Recommended</Badge>}
-    </div>
-  );
-
-  const DropZone = ({ title, pillars, onDrop, onDragOver, id }: { title: string; pillars: PillarInfo | PillarInfo[] | null; onDrop: any; onDragOver: any; id: string }) => (
-    <div className="flex flex-col gap-2">
-      <h3 className="font-semibold text-gray-700">{title}</h3>
-      <div
-        id={id}
-        onDrop={onDrop}
-        onDragOver={onDragOver}
-        className="p-4 w-full h-full min-h-[100px] bg-gray-50/50 border-2 border-dashed border-gray-300 rounded-lg flex flex-col justify-center items-center gap-2"
-      >
-        {!pillars || (Array.isArray(pillars) && pillars.length === 0) ? (
-          <p className="text-gray-400">Drag pillar here</p>
-        ) : (
-          (Array.isArray(pillars) ? pillars : [pillars]).map(p => <PillarCard key={p.id} pillar={p} isDraggable={true} />)
-        )}
-      </div>
-    </div>
-  );
+  const isComplete = mainFocus.length === 1 && secondaryFocus.length === 1 && maintenance.length === 2;
 
   return (
-    <div className="w-full">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-gray-800">Setting Your Priorities</h2>
-        <p className="text-gray-600 mt-2">To build your ideal 5-year future, where do you want to focus your energy? Drag the four pillars to set your priorities.</p>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-        <div>
-          <h3 className="font-semibold text-gray-700 mb-2">Your Life Pillars</h3>
-          <div className="space-y-3">
-            {pillars.map(p => <PillarCard key={p.id} pillar={p} isDraggable={true} />)}
-          </div>
+    <DragDropContext onDragEnd={onDragEnd}>
+        <div className="w-full">
+            <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-gray-800">Setting Your Priorities</h2>
+                <p className="text-gray-600 mt-2">To build your ideal 5-year future, where do you want to focus your energy? Drag the four pillars to set your priorities.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+                <div>
+                    <h3 className="font-semibold text-gray-700 mb-2">Your Life Pillars</h3>
+                    <Droppable droppableId="unassigned">
+                        {(provided, snapshot) => (
+                        <div
+                            {...provided.droppableProps}
+                            ref={provided.innerRef}
+                            className={`space-y-3 p-2 rounded-lg transition-colors min-h-[100px] ${snapshot.isDraggingOver ? 'bg-blue-50' : 'bg-gray-50/50'}`}
+                        >
+                            {unassigned.map((pillar, index) => (
+                            <Draggable key={pillar.id} draggableId={pillar.id} index={index}>
+                                {(provided) => (
+                                <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                >
+                                    <PillarCard pillar={pillar} recommendedPillars={recommendedPillars} />
+                                </div>
+                                )}
+                            </Draggable>
+                            ))}
+                            {provided.placeholder}
+                        </div>
+                        )}
+                    </Droppable>
+                </div>
+                <div className="space-y-4">
+                    <DropZone title="Main Focus (1 pillar)" droppableId="main" pillars={mainFocus} recommendedPillars={recommendedPillars}/>
+                    <DropZone title="Secondary Focus (1 pillar)" droppableId="secondary" pillars={secondaryFocus} recommendedPillars={recommendedPillars}/>
+                    <DropZone title="Maintenance Mode (2 pillars)" droppableId="maintenance" pillars={maintenance} recommendedPillars={recommendedPillars}/>
+                </div>
+            </div>
+            <div className="mt-12 flex justify-end">
+                <Button 
+                size="lg" 
+                disabled={!isComplete} 
+                onClick={() => onComplete({ mainFocus: mainFocus[0]!.id, secondaryFocus: secondaryFocus[0]!.id, maintenance: maintenance.map(p => p.id) })}
+                >
+                Next <ArrowRight className="ml-2" />
+                </Button>
+            </div>
         </div>
-        <div className="space-y-4">
-            <DropZone title="Main Focus (1 pillar)" pillars={mainFocus} id="main" onDrop={(e: DragEvent<HTMLDivElement>) => handleDrop(e, 'main')} onDragOver={handleDragOver} />
-            <DropZone title="Secondary Focus (1 pillar)" pillars={secondaryFocus} id="secondary" onDrop={(e: DragEvent<HTMLDivElement>) => handleDrop(e, 'secondary')} onDragOver={handleDragOver} />
-            <DropZone title="Maintenance Mode (2 pillars)" pillars={maintenance} id="maintenance" onDrop={(e: DragEvent<HTMLDivElement>) => handleDrop(e, 'maintenance')} onDragOver={handleDragOver} />
-        </div>
-      </div>
-      <div className="mt-12 flex justify-end">
-        <Button 
-          size="lg" 
-          disabled={!isComplete} 
-          onClick={() => onComplete({ mainFocus: mainFocus!.id, secondaryFocus: secondaryFocus!.id, maintenance: maintenance.map(p => p.id) })}
-        >
-          Next <ArrowRight className="ml-2" />
-        </Button>
-      </div>
-    </div>
+    </DragDropContext>
   );
 };
