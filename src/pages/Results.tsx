@@ -56,7 +56,13 @@ const Results = () => {
   
   const isFutureQuestionnaireComplete = !!futureQuestionnaire;
 
-  const futureProgress = locationFutureProgress || defaultFutureProgress;
+  const futureProgress = locationFutureProgress || {
+    basics: 0,
+    career: 0,
+    financials: 0,
+    health: 0,
+    connections: 0,
+  };
 
   let futureSelfArchitect: { mainFocus: string; identity: string; system: string; proof: string; } | undefined = initialArchitect;
 
