@@ -34,7 +34,7 @@ const ChartCard = ({
           onClick={onRetake}
           variant="secondary"
           size="sm"
-          className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity z-10 no-print"
         >
           <RefreshCw className="mr-2 h-4 w-4" />
           {retakeLabel}
@@ -50,7 +50,7 @@ const ChartCard = ({
           activePillar={activePillar}
         />
         {isFuture && !hasData && (
-          <Button onClick={onRetake} size="lg" className="mt-8">
+          <Button onClick={onRetake} size="lg" className="mt-8 no-print">
             <Play className="mr-2 h-4 w-4" />
             Start your future self journey
           </Button>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Header from '@/components/Header';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuestionnaireStore } from '@/store/questionnaireStore';
@@ -10,12 +10,15 @@ import FutureSelfArchitectSection from '@/components/results/FutureSelfArchitect
 import ResultsActions from '@/components/results/ResultsActions';
 import ResultsFooter from '@/components/results/ResultsFooter';
 import insightSyntheses from '@/data/insights.json';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const Results = () => {
   const { answers, actions } = useQuestionnaireStore();
   const { getProgress, startRetake } = actions;
   
   const [activePillar, setActivePillar] = useState<string | undefined>(undefined);
+  const printRef = useRef<HTMLDivElement>(null);
 
   // Mock data based on the image for placeholder content
   const mockProgress: PillarProgress = {
@@ -99,8 +102,36 @@ const Results = () => {
     navigate('/future-questionnaire', { state: { ...location.state, progress, isArchitect: true } });
   };
 
+  const handleDownloadReport = async () => {
+    const element = printRef.current;
+    if (!element) {
+        console.error("Element to print not found");
+        return;
+    }
+
+    const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: null,
+        onclone: (document) => {
+            document.body.style.background = 'none';
+            document.querySelectorAll('.no-print').forEach(el => {
+                if (el instanceof HTMLElement) {
+                    el.style.display = 'none';
+                }
+            });
+        },
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save('life-view-report.pdf');
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+    <div ref={printRef} className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <Header />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <ResultsHeader />
@@ -119,7 +150,10 @@ const Results = () => {
           onStart={handleStartArchitectQuestionnaire}
           isQuestionnaireComplete={isFutureQuestionnaireComplete}
         />
-        <ResultsActions />
+        <ResultsActions 
+          isArchitectComplete={!!futureSelfArchitect}
+          onDownload={handleDownloadReport}
+        />
       </main>
       <ResultsFooter />
     </div>
