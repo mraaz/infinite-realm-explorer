@@ -12,11 +12,12 @@ type Answers = Record<string, string>;
 interface MaintenanceBaselineProps {
   maintenancePillars: Pillar[];
   onComplete: (answers: Answers) => void;
+  value?: Answers;
 }
 
-export const MaintenanceBaseline = ({ maintenancePillars, onComplete }: MaintenanceBaselineProps) => {
+export const MaintenanceBaseline = ({ maintenancePillars, onComplete, value }: MaintenanceBaselineProps) => {
   const questions = futureQuestions.filter(q => q.type === 'maintenance' && maintenancePillars.includes(q.pillar));
-  const [answers, setAnswers] = useState<Answers>({});
+  const [answers, setAnswers] = useState<Answers>(value || {});
 
   const handleAnswerChange = (questionId: string, value: string) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));

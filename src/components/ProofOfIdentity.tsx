@@ -6,10 +6,11 @@ import { Textarea } from '@/components/ui/textarea';
 interface ProofOfIdentityProps {
   chosenIdentity: string;
   onComplete: (proof: string) => void;
+  value?: string;
 }
 
-const ProofOfIdentity = ({ chosenIdentity, onComplete }: ProofOfIdentityProps) => {
-  const [proof, setProof] = useState('');
+const ProofOfIdentity = ({ chosenIdentity, onComplete, value }: ProofOfIdentityProps) => {
+  const [proof, setProof] = useState(value || '');
 
   const handleComplete = () => {
     if (proof) {

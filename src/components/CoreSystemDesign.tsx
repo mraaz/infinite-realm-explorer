@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -7,6 +6,7 @@ interface CoreSystemDesignProps {
   chosenIdentity: string;
   mainFocus: string;
   onComplete: (system: string) => void;
+  value?: string;
 }
 
 const promptFocusMapping: Record<string, string> = {
@@ -16,8 +16,8 @@ const promptFocusMapping: Record<string, string> = {
   connections: 'your relationships become',
 };
 
-const CoreSystemDesign = ({ chosenIdentity, mainFocus, onComplete }: CoreSystemDesignProps) => {
-  const [system, setSystem] = useState('');
+const CoreSystemDesign = ({ chosenIdentity, mainFocus, onComplete, value }: CoreSystemDesignProps) => {
+  const [system, setSystem] = useState(value || '');
   const focusText = promptFocusMapping[mainFocus.toLowerCase()] || 'this becomes';
 
   return (

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import archetypesData from '@/data/archetypes.json';
@@ -10,10 +11,11 @@ interface Archetype {
 interface IdentityArchetypeSelectionProps {
   mainFocus: string;
   onComplete: (identity: string) => void;
+  value?: string | null;
 }
 
-const IdentityArchetypeSelection = ({ mainFocus, onComplete }: IdentityArchetypeSelectionProps) => {
-  const [selected, setSelected] = useState<string | null>(null);
+const IdentityArchetypeSelection = ({ mainFocus, onComplete, value }: IdentityArchetypeSelectionProps) => {
+  const [selected, setSelected] = useState<string | null>(value || null);
 
   const typedArchetypesData = archetypesData as Record<string, { prompt: string; archetypes: { title: string; description: string }[] }>;
   const { prompt, archetypes } = typedArchetypesData[mainFocus] || { prompt: 'Choose your identity', archetypes: []};

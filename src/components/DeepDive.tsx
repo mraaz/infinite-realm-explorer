@@ -13,11 +13,12 @@ interface DeepDiveProps {
   mainFocus: Pillar;
   secondaryFocus: Pillar;
   onComplete: (answers: Answers) => void;
+  value?: Answers;
 }
 
-export const DeepDive = ({ mainFocus, secondaryFocus, onComplete }: DeepDiveProps) => {
+export const DeepDive = ({ mainFocus, secondaryFocus, onComplete, value }: DeepDiveProps) => {
   const questions = futureQuestions.filter(q => q.type === 'deep_dive' && (q.pillar === mainFocus || q.pillar === secondaryFocus));
-  const [answers, setAnswers] = useState<Answers>({});
+  const [answers, setAnswers] = useState<Answers>(value || {});
 
   const handleAnswerChange = (questionId: string, value: string) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));

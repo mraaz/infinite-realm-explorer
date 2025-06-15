@@ -1,4 +1,3 @@
-
 import { useState, useMemo, DragEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +15,7 @@ type PillarInfo = {
 interface PriorityRankingProps {
   progress: PillarProgress;
   onComplete: (priorities: { mainFocus: Pillar; secondaryFocus: Pillar; maintenance: Pillar[] }) => void;
+  value?: { mainFocus: Pillar; secondaryFocus: Pillar; maintenance: Pillar[] } | null;
 }
 
 const pillarDetails: Record<Pillar, { icon: JSX.Element }> = {
@@ -25,7 +25,7 @@ const pillarDetails: Record<Pillar, { icon: JSX.Element }> = {
   Connections: { icon: <Users className="h-6 w-6 text-orange-600" /> },
 };
 
-export const PriorityRanking = ({ progress, onComplete }: PriorityRankingProps) => {
+export const PriorityRanking = ({ progress, onComplete, value }: PriorityRankingProps) => {
   const initialPillars = useMemo(() => {
     return (['Career', 'Financials', 'Health', 'Connections'] as Pillar[]).map(p => ({
       id: p,
@@ -35,10 +35,18 @@ export const PriorityRanking = ({ progress, onComplete }: PriorityRankingProps) 
     }));
   }, [progress]);
   
-  const [pillars, setPillars] = useState<PillarInfo[]>(initialPillars);
-  const [mainFocus, setMainFocus] = useState<PillarInfo | null>(null);
-  const [secondaryFocus, setSecondaryFocus] = useState<PillarInfo | null>(null);
-  const [maintenance, setMaintenance] = useState<PillarInfo[]>([]);
+  const [pillars, setPillars] = useState<PillarInfo[]>(() => {
+    if (!value) return initialPillars;
+    const assignedIds = [value.mainFocus, value.secondaryFocus, ...value.maintenance];
+    return initialPillars.filter(p => !assignedIds.includes(p.id));
+  });
+  const [mainFocus, setMainFocus] = useState<PillarInfo | null>(() => value ? initialPillars.find(p => p.id === value.mainFocus) ?? null : null);
+  const [secondaryFocus, setSecondaryFocus] = useState<PillarInfo | null>(() => value ? initialPillars.find(p => p.id === value.secondaryFocus) ?? null : null);
+  const [maintenance, setMaintenance] = useState<PillarInfo[]>(() => 
+    value 
+    ? value.maintenance.map(id => initialPillars.find(p => p.id === id)).filter((p): p is PillarInfo => !!p)
+    : []
+  );
 
   const recommendedPillars = useMemo(() => {
     const sorted = [...initialPillars].sort((a, b) => a.score - b.score);
