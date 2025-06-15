@@ -58,23 +58,35 @@ const Results = () => {
 
   let futureSelfArchitect: { mainFocus: string; identity: string; system: string; proof: string; } | undefined = initialArchitect;
 
-  if (futureQuestionnaire && futureQuestionnaire.priorities && futureQuestionnaire.answers) {
-      const { priorities, answers: futureAnswers } = futureQuestionnaire;
+  if (futureQuestionnaire && futureQuestionnaire.priorities) {
+      const { priorities, answers: futureAnswers, architect: architectAnswers } = futureQuestionnaire;
       const mainFocus = priorities.mainFocus;
-      if (mainFocus) {
-          const mainFocusLower = mainFocus.toLowerCase();
-          
-          const identityAnswerId = `${mainFocusLower}_deep_1`;
-          const systemAnswerId = `${mainFocusLower}_deep_2`;
-          const proofAnswerId = `${mainFocusLower}_deep_3`;
 
-          if (futureAnswers[identityAnswerId] && futureAnswers[systemAnswerId] && futureAnswers[proofAnswerId]) {
-              futureSelfArchitect = {
-                  mainFocus: mainFocus,
-                  identity: futureAnswers[identityAnswerId],
-                  system: futureAnswers[systemAnswerId],
-                  proof: futureAnswers[proofAnswerId],
-              };
+      if (architectAnswers && architectAnswers.identity && mainFocus) {
+          // New architect flow data
+          futureSelfArchitect = {
+              mainFocus: mainFocus,
+              identity: architectAnswers.identity,
+              system: architectAnswers.system,
+              proof: architectAnswers.proof,
+          };
+      } else if (futureAnswers) {
+          // Old flow data (for non-architect questionnaire)
+          if (mainFocus) {
+              const mainFocusLower = mainFocus.toLowerCase();
+              
+              const identityAnswerId = `${mainFocusLower}_deep_1`;
+              const systemAnswerId = `${mainFocusLower}_deep_2`;
+              const proofAnswerId = `${mainFocusLower}_deep_3`;
+    
+              if (futureAnswers[identityAnswerId] && futureAnswers[systemAnswerId] && futureAnswers[proofAnswerId]) {
+                  futureSelfArchitect = {
+                      mainFocus: mainFocus,
+                      identity: futureAnswers[identityAnswerId],
+                      system: futureAnswers[systemAnswerId],
+                      proof: futureAnswers[proofAnswerId],
+                  };
+              }
           }
       }
   }
