@@ -1,17 +1,19 @@
-
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import QuestionnaireHeader from "@/components/QuestionnaireHeader";
 import PillarStatus from "@/components/PillarStatus";
 import QuestionBox from "@/components/QuestionBox";
 import OverallProgressBar from "@/components/OverallProgressBar";
 import Header from "@/components/Header";
 import { useQuestionnaireStore } from "@/store/questionnaireStore";
+import { Button } from '@/components/ui/button';
 
 const Questionnaire = () => {
   const { actions, answers, currentQuestionIndex, questionFlow } = useQuestionnaireStore();
   const { getCurrentQuestion, getProgress } = actions;
   const navigate = useNavigate();
+  const location = useLocation();
+  const isRetake = location.state?.retake === true;
   
   const currentQuestion = getCurrentQuestion();
   const { overallPercentage, pillarPercentages } = getProgress();
@@ -44,8 +46,13 @@ const Questionnaire = () => {
       <Header />
       <main className="flex-grow flex flex-col items-center px-4 py-8 md:py-12">
         <div className="w-full max-w-5xl">
-          <QuestionnaireHeader currentQuestion={currentQuestionIndex + 1} totalQuestions={questionFlow.length} />
-          <h1 className="text-3xl font-bold text-gray-800 my-8 text-center">
+          <div className="flex justify-between items-center mb-8">
+            <QuestionnaireHeader currentQuestion={currentQuestionIndex + 1} totalQuestions={questionFlow.length} />
+            {isRetake && (
+              <Button variant="ghost" onClick={() => navigate('/results')}>Cancel</Button>
+            )}
+          </div>
+          <h1 className="text-3xl font-bold text-gray-800 text-center">
             Building Your 5-Year Snapshot
           </h1>
           <PillarStatus pillarPercentages={pillarPercentages} />

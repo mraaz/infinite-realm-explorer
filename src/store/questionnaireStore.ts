@@ -9,6 +9,7 @@ type QuestionnaireState = {
   currentQuestionIndex: number;
   answers: Answers;
   actions: {
+    startRetake: () => void;
     answerQuestion: (questionId: string, answer: any) => void;
     nextQuestion: () => void;
     previousQuestion: () => void;
@@ -24,6 +25,9 @@ export const useQuestionnaireStore = create<QuestionnaireState>((set, get) => ({
   currentQuestionIndex: 0,
   answers: {},
   actions: {
+    startRetake: () => {
+      set({ currentQuestionIndex: 0 });
+    },
     answerQuestion: (questionId, answer) => {
       set(produce((state: QuestionnaireState) => {
         state.answers[questionId] = answer;

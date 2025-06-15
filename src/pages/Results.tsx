@@ -1,12 +1,14 @@
-
 import { useState } from 'react';
 import Header from '@/components/Header';
 import { Share2, Download, RefreshCw } from 'lucide-react';
 import { NewQuadrantChart, PillarProgress } from '@/components/NewQuadrantChart';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useQuestionnaireStore } from '@/store/questionnaireStore';
 
 const Results = () => {
+  const { answers, actions } = useQuestionnaireStore();
+  const { getProgress, startRetake } = actions;
   // Mock data based on the image for placeholder content
   const insightSyntheses = [
     {
@@ -29,13 +31,28 @@ const Results = () => {
 
   const [activePillar, setActivePillar] = useState<string | undefined>(undefined);
 
-  const progress: PillarProgress = {
+  const mockProgress: PillarProgress = {
     basics: 75,
     career: 80,
     financials: 60,
     health: 90,
     connections: 70,
   };
+
+  const progress: PillarProgress = (() => {
+    const answeredQuestionsCount = Object.keys(answers).length;
+    if (answeredQuestionsCount === 0) {
+      return mockProgress;
+    }
+    const { pillarPercentages } = getProgress();
+    return {
+      basics: 75, // Placeholder for basics as its scoring is not defined in getProgress
+      career: pillarPercentages.Career ?? 0,
+      financials: pillarPercentages.Finances ?? 0,
+      health: pillarPercentages.Health ?? 0,
+      connections: pillarPercentages.Connections ?? 0,
+    };
+  })();
 
   // Test data for the future self chart as requested.
   const futureProgress: PillarProgress = {
@@ -57,7 +74,8 @@ const Results = () => {
   const answers = {};
 
   const handleRetakeCurrent = () => {
-    navigate('/questionnaire');
+    startRetake();
+    navigate('/questionnaire', { state: { retake: true } });
   };
 
   const handleStartFutureQuestionnaire = () => {
