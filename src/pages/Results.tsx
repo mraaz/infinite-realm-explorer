@@ -1,3 +1,4 @@
+
 import { useState, useRef } from 'react';
 import Header from '@/components/Header';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -17,7 +18,7 @@ import { useFireworks } from '@/hooks/useFireworks';
 import { MarkAsDoneData } from '@/components/results/MarkAsDoneDialog';
 
 const Results = () => {
-  const { answers, actions } = useQuestionnaireStore();
+  const { answers, actions, setFutureQuestionnaire } = useQuestionnaireStore();
   const { getProgress, startRetake } = actions;
   
   const [activePillar, setActivePillar] = useState<string | undefined>(undefined);
@@ -140,7 +141,7 @@ const Results = () => {
       architect: updatedArchitect,
     };
 
-    actions.setFutureQuestionnaire(updatedFq);
+    setFutureQuestionnaire(updatedFq);
 
     navigate('/results', {
       state: { ...location.state, futureQuestionnaire: updatedFq },

@@ -1,5 +1,5 @@
 
-import confetti from 'canvas-confetti';
+import * as confetti from 'canvas-confetti';
 
 export const useFireworks = () => {
   const fire = () => {
