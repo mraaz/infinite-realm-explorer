@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
+
+import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import { PillarProgress } from '@/components/NewQuadrantChart';
@@ -129,19 +130,19 @@ const FutureQuestionnaire = () => {
         if (isArchitect) return null; // Hide stepper for architect flow for simplicity
         return (
             <nav aria-label="Progress" className="mb-12">
-                <ol role="list" className="flex items-center justify-center">
+                <ol role="list" className="flex items-center justify-between">
                     {STEPS.map((s, stepIdx) => (
-                        <li key={s.name} className="relative">
-                            <div className="flex items-center">
-                                <span className={`h-8 w-8 rounded-full flex items-center justify-center ${step >= s.id ? 'bg-purple-600' : 'bg-gray-300'}`}>
+                        <React.Fragment key={s.id}>
+                            <li className="flex flex-col items-center text-center w-24">
+                                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${step >= s.id ? 'bg-purple-600' : 'bg-gray-300'}`}>
                                     <span className="text-white font-bold">{step > s.id ? <CheckCircle size={20} /> : s.id}</span>
                                 </span>
-                                <span className={`ml-3 hidden sm:block font-medium ${step >= s.id ? 'text-purple-700' : 'text-gray-500'}`}>{s.name}</span>
-                            </div>
-                            {stepIdx !== STEPS.length - 1 && (
-                                <div className="absolute top-4 left-8 -ml-px mt-0.5 h-0.5 w-12 sm:w-24 md:w-32 bg-gray-300" aria-hidden="true" />
+                                <span className={`mt-2 block font-medium text-sm ${step >= s.id ? 'text-purple-700' : 'text-gray-500'}`}>{s.name}</span>
+                            </li>
+                            {stepIdx < STEPS.length - 1 && (
+                                <div className={`flex-auto border-t-2 ${step > s.id ? 'border-purple-600' : 'border-gray-300'}`} />
                             )}
-                        </li>
+                        </React.Fragment>
                     ))}
                 </ol>
             </nav>
