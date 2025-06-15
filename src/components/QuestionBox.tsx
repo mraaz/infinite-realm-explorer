@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -129,7 +128,7 @@ const QuestionBox = ({ question, value }: { question: Question, value: any }) =>
   const isAnswered = internalValue !== undefined && internalValue !== null && internalValue !== '';
 
   return (
-    <div className="bg-white p-6 sm:p-8 rounded-lg shadow-lg border border-gray-200 w-full max-w-2xl mx-auto">
+    <div className="bg-white/60 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-lg border border-gray-200/80 w-full max-w-2xl mx-auto">
       <div className="flex items-center gap-2 mb-4">
         {pillarInfo && PillarIcon && (
           <Badge variant="outline" className={`border-${pillarInfo.color}-200 bg-${pillarInfo.color}-50 text-${pillarInfo.color}-700 font-medium`}>
@@ -154,7 +153,7 @@ const QuestionBox = ({ question, value }: { question: Question, value: any }) =>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Previous
         </Button>
-        <Button className="bg-gray-800 hover:bg-gray-900 text-white" onClick={handleNext} disabled={!isAnswered}>
+        <Button onClick={handleNext} disabled={!isAnswered}>
           Next
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>

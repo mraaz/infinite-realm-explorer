@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -117,7 +116,7 @@ const FutureQuestionnaire = () => {
 
     if (!progress) {
         return (
-            <div className="min-h-screen flex flex-col bg-gray-50">
+            <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
                 <Header />
                 <main className="flex-grow flex flex-col items-center justify-center px-4 text-center">
                     <h1 className="text-2xl font-bold text-gray-800">Error</h1>
@@ -202,7 +201,7 @@ const FutureQuestionnaire = () => {
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-gray-50">
+        <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
             <Header />
             <main className="flex-grow flex flex-col items-center px-4 py-8 md:py-12">
                 <div className="w-full max-w-5xl">
@@ -227,7 +226,7 @@ const FutureQuestionnaire = () => {
                             </AlertDialog>
                         )}
                     </div>
-                    <div className="bg-white p-6 md:p-10 rounded-xl shadow-lg border border-gray-200/80">
+                    <div className="bg-white/60 backdrop-blur-sm p-6 md:p-10 rounded-2xl shadow-lg border border-gray-200/80">
                         <div className="text-center mb-8">
                             <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">
                                 {isArchitect ? 'Future Self Architect' : 'Future Self Questionnaire'}

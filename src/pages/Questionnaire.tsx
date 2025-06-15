@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import QuestionnaireHeader from "@/components/QuestionnaireHeader";
@@ -44,7 +43,7 @@ const Questionnaire = () => {
   if (!currentQuestion) {
     // Handle completion state
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
         <Header />
         <main className="flex-grow flex flex-col items-center justify-center px-4 py-8 md:py-12">
           <div className="w-full max-w-5xl text-center">
@@ -59,7 +58,7 @@ const Questionnaire = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <Header />
       <main className="flex-grow flex flex-col items-center px-4 py-8 md:py-12">
         <div className="w-full max-w-5xl">
