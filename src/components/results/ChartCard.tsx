@@ -28,7 +28,7 @@ const ChartCard = ({
   const hasData = Object.values(progress).some(value => value > 0);
 
   return (
-    <div className="relative group bg-white/60 backdrop-blur-sm p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200/80">
+    <div className="relative group bg-white/60 p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200/80">
       {(hasData || !isFuture) && (
         <Button
           onClick={onRetake}
@@ -41,7 +41,7 @@ const ChartCard = ({
         </Button>
       )}
       <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">{title}</h2>
-      <div className={cn("h-96 flex items-center justify-center rounded-lg", isFuture && "flex-col")}>
+      <div className={cn("flex items-center justify-center rounded-lg", isFuture && "flex-col")}>
         <NewQuadrantChart 
           progress={progress}
           answers={answers}
