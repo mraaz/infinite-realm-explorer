@@ -17,8 +17,10 @@ import { usePdfReport } from '@/hooks/usePdfReport';
 
 const Results = () => {
   const [activePillar, setActivePillar] = useState<string | undefined>(undefined);
-  const page1Ref = useRef<HTMLDivElement>(null);
-  const page2Ref = useRef<HTMLDivElement>(null);
+  const chartsRef = useRef<HTMLDivElement>(null);
+  const insightsRef = useRef<HTMLDivElement>(null);
+  const architectRef = useRef<HTMLDivElement>(null);
+  const timelineRef = useRef<HTMLDivElement>(null);
 
   const {
     answers,
@@ -36,7 +38,13 @@ const Results = () => {
     handleMarkHabitAsDone,
   } = useResultsActions(futureQuestionnaire, progress);
 
-  const { handleDownloadReport } = usePdfReport(page1Ref, page2Ref, futureSelfArchitect);
+  const { handleDownloadReport } = usePdfReport(
+    chartsRef,
+    insightsRef,
+    architectRef,
+    timelineRef,
+    futureSelfArchitect
+  );
 
   const handlePillarClick = (pillar: string) => {
     setActivePillar(current => (current === pillar ? undefined : pillar));
@@ -48,8 +56,9 @@ const Results = () => {
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <Header />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-        <div ref={page1Ref}>
-          <ResultsHeader />
+        <ResultsHeader />
+        
+        <div ref={chartsRef} className="pdf-page">
           <ChartsSection
             currentProgress={progress}
             futureProgress={futureProgress}
@@ -59,18 +68,29 @@ const Results = () => {
             onRetakeCurrent={handleRetakeCurrent}
             onStartFutureQuestionnaire={handleSetFutureTargets}
           />
-          <InsightSynthesis insights={insightSyntheses as Insight[]} />
+          <PdfFooter />
         </div>
-        <div ref={page2Ref}>
+
+        <div ref={insightsRef} className="pdf-page">
+          <InsightSynthesis insights={insightSyntheses as Insight[]} />
+          <PdfFooter />
+        </div>
+
+        <div ref={architectRef} className="pdf-page">
           <FutureSelfArchitectSection
             architect={futureSelfArchitect}
             onStart={handleStartArchitectQuestionnaire}
             isQuestionnaireComplete={isFutureQuestionnaireComplete}
             onMarkAsDone={handleMarkHabitAsDone}
           />
-          <HabitsTimeline habits={completedHabits} />
           <PdfFooter />
         </div>
+
+        <div ref={timelineRef} className="pdf-page">
+          <HabitsTimeline habits={completedHabits} forPdf={true} />
+          <PdfFooter />
+        </div>
+
         <ResultsActions 
           isArchitectComplete={!!futureSelfArchitect && futureSelfArchitect.length > 0}
           onDownload={handleDownloadReport}

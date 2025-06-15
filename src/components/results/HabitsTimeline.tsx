@@ -8,9 +8,10 @@ import { FutureSelfArchitect } from '@/types/results';
 
 interface HabitsTimelineProps {
   habits: FutureSelfArchitect[];
+  forPdf?: boolean;
 }
 
-const HabitsTimeline = ({ habits }: HabitsTimelineProps) => {
+const HabitsTimeline = ({ habits, forPdf = false }: HabitsTimelineProps) => {
   const [visibleCount, setVisibleCount] = useState(2);
 
   if (habits.length === 0) {
@@ -21,8 +22,9 @@ const HabitsTimeline = ({ habits }: HabitsTimelineProps) => {
     setVisibleCount(prev => Math.min(prev + 2, habits.length));
   };
 
-  const visibleHabits = habits.slice(0, visibleCount);
-  const hasMore = visibleCount < habits.length;
+  // For PDF, show all habits, otherwise use pagination
+  const visibleHabits = forPdf ? habits : habits.slice(0, visibleCount);
+  const hasMore = !forPdf && visibleCount < habits.length;
 
   return (
     <section className="mb-16 flex justify-center">

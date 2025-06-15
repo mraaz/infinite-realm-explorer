@@ -5,8 +5,10 @@ import html2canvas from 'html2canvas';
 import { FutureSelfArchitect } from '@/types/results';
 
 export const usePdfReport = (
-  page1Ref: RefObject<HTMLDivElement>,
-  page2Ref: RefObject<HTMLDivElement>,
+  chartsRef: RefObject<HTMLDivElement>,
+  insightsRef: RefObject<HTMLDivElement>,
+  architectRef: RefObject<HTMLDivElement>,
+  timelineRef: RefObject<HTMLDivElement>,
   futureSelfArchitect?: FutureSelfArchitect[]
 ) => {
   const handleDownloadReport = async () => {
@@ -17,7 +19,7 @@ export const usePdfReport = (
     const contentWidth = pdfWidth - (margin * 2);
     const pageContentHeight = pdfPageHeight - (margin * 2);
 
-    const appendContentAsImage = async (element: HTMLElement) => {
+    const appendContentAsImage = async (element: HTMLElement, isFirstPage = false) => {
       const canvas = await html2canvas(element, {
         scale: 2,
         backgroundColor: '#ffffff',
@@ -30,6 +32,10 @@ export const usePdfReport = (
       let heightLeft = imgHeight;
       let position = 0;
 
+      if (!isFirstPage) {
+        pdf.addPage();
+      }
+
       pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, imgHeight);
       heightLeft -= pageContentHeight;
 
@@ -41,16 +47,32 @@ export const usePdfReport = (
       }
     };
     
-    const page1Element = page1Ref.current;
-    if (page1Element) {
-      await appendContentAsImage(page1Element);
+    // Page 1: Charts
+    const chartsElement = chartsRef.current;
+    if (chartsElement) {
+      await appendContentAsImage(chartsElement, true);
     }
 
+    // Page 2: Insights
+    const insightsElement = insightsRef.current;
+    if (insightsElement) {
+      await appendContentAsImage(insightsElement);
+    }
+
+    // Page 3: Future Self Architect (if data exists)
     if (futureSelfArchitect && futureSelfArchitect.length > 0) {
-      const page2Element = page2Ref.current;
-      if (page2Element) {
-        pdf.addPage();
-        await appendContentAsImage(page2Element);
+      const architectElement = architectRef.current;
+      if (architectElement) {
+        await appendContentAsImage(architectElement);
+      }
+    }
+
+    // Page 4: Habits Timeline (if completed habits exist)
+    const completedHabits = futureSelfArchitect?.filter(h => h.isCompleted) || [];
+    if (completedHabits.length > 0) {
+      const timelineElement = timelineRef.current;
+      if (timelineElement) {
+        await appendContentAsImage(timelineElement);
       }
     }
     
