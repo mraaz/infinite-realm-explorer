@@ -124,7 +124,8 @@ const FutureQuestionnaire = () => {
     };
 
     const handleConfirm = () => {
-        const existingArchitectData = location.state?.futureQuestionnaire?.architect;
+        const existingFq = location.state?.futureQuestionnaire;
+        const existingArchitectData = existingFq?.architect;
         let allHabits = existingArchitectData ? (Array.isArray(existingArchitectData) ? [...existingArchitectData] : [existingArchitectData]) : [];
         
         if (typeof editHabitIndex === 'number' && editHabitIndex < allHabits.length) {
@@ -133,11 +134,19 @@ const FutureQuestionnaire = () => {
             allHabits.push(architectAnswers);
         }
 
-        const futureQuestionnaireAnswers = {
-            priorities,
-            answers: isArchitect ? {} : answers,
-            architect: isArchitect ? allHabits.filter(h => h.identity || h.system || h.proof) : undefined,
-        };
+        const futureQuestionnaireAnswers = isArchitect
+            ? {
+                ...(existingFq || {}),
+                priorities: priorities,
+                architect: allHabits.filter(h => h.identity || h.system || h.proof),
+              }
+            : {
+                ...(existingFq || {}),
+                priorities: priorities,
+                answers: answers,
+                architect: undefined,
+              };
+
         console.log("Future Questionnaire Answers:", futureQuestionnaireAnswers);
         // Pass the completed data back to the results page, preserving existing state
         navigate('/results', { state: { ...location.state, futureQuestionnaire: futureQuestionnaireAnswers } });

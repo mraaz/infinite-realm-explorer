@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuestionnaireStore } from '@/store/questionnaireStore';
@@ -11,13 +10,13 @@ export const useResultsData = () => {
   const location = useLocation();
   const { futureQuestionnaire: locationFutureQuestionnaire, futureProgress: locationFutureProgress } = location.state || {};
   
-  const futureQuestionnaire: FutureQuestionnaire | undefined = storeFutureQuestionnaire || locationFutureQuestionnaire;
+  const futureQuestionnaire: FutureQuestionnaire | undefined = locationFutureQuestionnaire || storeFutureQuestionnaire;
 
   useEffect(() => {
-    if (locationFutureQuestionnaire && !storeFutureQuestionnaire) {
+    if (locationFutureQuestionnaire) {
       actions.setFutureQuestionnaire(locationFutureQuestionnaire);
     }
-  }, [locationFutureQuestionnaire, storeFutureQuestionnaire, actions]);
+  }, [locationFutureQuestionnaire, actions]);
 
   const mockProgress: PillarProgress = {
     basics: 75,
