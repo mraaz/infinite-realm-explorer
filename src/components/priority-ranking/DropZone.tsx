@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Droppable, Draggable } from '@hello-pangea/dnd';
+import { Droppable, Draggable } from 'react-beautiful-dnd';
 import { PillarInfo, Pillar } from './types';
 import PillarCard from './PillarCard';
 

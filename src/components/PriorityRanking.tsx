@@ -1,7 +1,8 @@
+
 import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Briefcase, Landmark, Heart, Users, ArrowRight } from 'lucide-react';
-import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
+import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from 'react-beautiful-dnd';
 import { Pillar, PillarInfo, PriorityRankingProps } from './priority-ranking/types';
 import PillarCard from './priority-ranking/PillarCard';
 import DropZone from './priority-ranking/DropZone';
