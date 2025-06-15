@@ -99,6 +99,10 @@ const FutureQuestionnaire = () => {
         setStep(4);
     };
 
+    const handleRetake = () => {
+        setStep(1);
+    };
+
     const handleConfirm = () => {
         const futureQuestionnaireAnswers = {
             priorities,
@@ -134,18 +138,42 @@ const FutureQuestionnaire = () => {
             }
             switch (step) {
                 case 1:
-                    return <IdentityArchetypeSelection mainFocus={priorities.mainFocus.toLowerCase()} onComplete={handleIdentityComplete} />;
+                    return <IdentityArchetypeSelection mainFocus={priorities.mainFocus.toLowerCase()} onComplete={handleIdentityComplete} value={architectAnswers.identity} />;
                 case 2:
-                    return <CoreSystemDesign mainFocus={priorities.mainFocus.toLowerCase()} chosenIdentity={architectAnswers.identity} onComplete={handleSystemComplete} />;
+                    return <CoreSystemDesign mainFocus={priorities.mainFocus.toLowerCase()} chosenIdentity={architectAnswers.identity} onComplete={handleSystemComplete} value={architectAnswers.system} />;
                 case 3:
-                    return <ProofOfIdentity chosenIdentity={architectAnswers.identity} onComplete={handleProofComplete} />;
+                    return <ProofOfIdentity chosenIdentity={architectAnswers.identity} onComplete={handleProofComplete} value={architectAnswers.proof} />;
                 case 4:
                     return (
-                        <div className="text-center py-12">
-                            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                            <h2 className="text-2xl font-bold text-gray-800">Excellent. We've mapped out your plan.</h2>
-                            <p className="text-gray-600 mt-2 mb-8">Are you ready to see what your 5-year future could look like with this new identity?</p>
-                            <Button size="lg" onClick={handleConfirm}>Show Me My Future Self</Button>
+                        <div>
+                            <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Confirm Your Future Identity</h2>
+                            
+                            <div className="bg-white/80 p-6 rounded-xl shadow-md border border-gray-200/80 mb-6 space-y-4 text-left">
+                                <div>
+                                    <p className="font-semibold text-lg text-gray-700">Your Main Focus</p>
+                                    <p className="text-gray-600 pl-2 text-lg">{priorities?.mainFocus}</p>
+                                </div>
+                                <hr />
+                                <div>
+                                    <p className="font-semibold text-lg text-gray-700">Your Chosen Identity</p>
+                                    <p className="text-gray-600 pl-2 text-lg">{architectAnswers.identity || 'Not set'}</p>
+                                </div>
+                                <hr />
+                                 <div>
+                                    <p className="font-semibold text-lg text-gray-700">Your Core System</p>
+                                    <p className="text-gray-600 pl-2 text-lg">{architectAnswers.system || 'Not set'}</p>
+                                </div>
+                                <hr />
+                                 <div>
+                                    <p className="font-semibold text-lg text-gray-700">Your Proof of Identity</p>
+                                    <p className="text-gray-600 pl-2 text-lg">{architectAnswers.proof || 'Not set'}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
+                                <Button variant="outline" size="lg" onClick={handleRetake}>Retake Questionnaire</Button>
+                                <Button size="lg" onClick={handleConfirm}>Show Me My Future Self, mate</Button>
+                            </div>
                         </div>
                     );
                 default:
@@ -156,20 +184,43 @@ const FutureQuestionnaire = () => {
         // Non-architect flow
         switch (step) {
             case 1:
-                return <PriorityRanking progress={progress} onComplete={handlePrioritiesComplete} />;
+                return <PriorityRanking progress={progress} onComplete={handlePrioritiesComplete} value={priorities} />;
             case 2:
                 if (!priorities) return null;
-                return <DeepDive mainFocus={priorities.mainFocus} secondaryFocus={priorities.secondaryFocus} onComplete={handleDeepDiveComplete} />;
+                return <DeepDive mainFocus={priorities.mainFocus} secondaryFocus={priorities.secondaryFocus} onComplete={handleDeepDiveComplete} value={answers} />;
             case 3:
                 if (!priorities) return null;
-                return <MaintenanceBaseline maintenancePillars={priorities.maintenance} onComplete={handleMaintenanceComplete} />;
+                return <MaintenanceBaseline maintenancePillars={priorities.maintenance} onComplete={handleMaintenanceComplete} value={answers} />;
             case 4:
                 return (
-                    <div className="text-center py-12">
-                        <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                        <h2 className="text-2xl font-bold text-gray-800">Excellent. We've mapped out your priorities.</h2>
-                        <p className="text-gray-600 mt-2 mb-8">Are you ready to see what your 5-year future could look like based on this new focus?</p>
-                        <Button size="lg" onClick={handleConfirm}>Show Me My Future Self</Button>
+                     <div>
+                        <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Confirm Your Future Self</h2>
+                        
+                        {priorities && (
+                            <div className="bg-white/80 p-6 rounded-xl shadow-md border border-gray-200/80 mb-6 text-left">
+                                <h3 className="text-xl font-semibold text-gray-700 mb-4">Your Priorities</h3>
+                                <p className="mb-2"><strong>Main Focus:</strong> {priorities.mainFocus}</p>
+                                <p className="mb-2"><strong>Secondary Focus:</strong> {priorities.secondaryFocus}</p>
+                                <p><strong>Maintenance Pillars:</strong> {priorities.maintenance.join(', ')}</p>
+                            </div>
+                        )}
+
+                        {Object.keys(answers).length > 0 && (
+                            <div className="bg-white/80 p-6 rounded-xl shadow-md border border-gray-200/80 mb-6 text-left">
+                                <h3 className="text-xl font-semibold text-gray-700 mb-4">Your Plan</h3>
+                                {Object.entries(answers).map(([key, value]) => (
+                                <div key={key} className="mb-3">
+                                    <p className="font-semibold capitalize text-gray-700">{key.replace(/_/g, ' ')}</p>
+                                    <p className="text-gray-600 pl-2">{value}</p>
+                                </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
+                            <Button variant="outline" size="lg" onClick={handleRetake}>Retake Questionnaire</Button>
+                            <Button size="lg" onClick={handleConfirm}>Show Me My Future Self, mate</Button>
+                        </div>
                     </div>
                 );
             default:
