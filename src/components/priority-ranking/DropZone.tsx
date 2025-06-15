@@ -20,14 +20,14 @@ const DropZone = ({ title, droppableId, pillars, recommendedPillars }: { title: 
             pillars.map((pillar, index) => (
               <Draggable key={pillar.id} draggableId={pillar.id} index={index}>
                 {(providedDraggable) => (
-                  <div
+                  <PillarCard
                     ref={providedDraggable.innerRef}
                     {...providedDraggable.draggableProps}
                     {...providedDraggable.dragHandleProps}
+                    pillar={pillar}
+                    recommendedPillars={recommendedPillars}
                     className="w-full"
-                  >
-                    <PillarCard pillar={pillar} recommendedPillars={recommendedPillars} />
-                  </div>
+                  />
                 )}
               </Draggable>
             ))

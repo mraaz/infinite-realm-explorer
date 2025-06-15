@@ -138,13 +138,13 @@ export const PriorityRanking = ({ progress, onComplete, value }: PriorityRanking
                             {unassigned.map((pillar, index) => (
                             <Draggable key={pillar.id} draggableId={pillar.id} index={index}>
                                 {(providedDraggable) => (
-                                <div
+                                <PillarCard
                                     ref={providedDraggable.innerRef}
                                     {...providedDraggable.draggableProps}
                                     {...providedDraggable.dragHandleProps}
-                                >
-                                    <PillarCard pillar={pillar} recommendedPillars={recommendedPillars} />
-                                </div>
+                                    pillar={pillar}
+                                    recommendedPillars={recommendedPillars}
+                                />
                                 )}
                             </Draggable>
                             ))}
