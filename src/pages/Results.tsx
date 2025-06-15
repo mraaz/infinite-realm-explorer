@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import Header from '@/components/Header';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -56,13 +57,13 @@ const Results = () => {
   
   const isFutureQuestionnaireComplete = !!futureQuestionnaire;
 
-  const futureProgress = locationFutureProgress || {
+  const futureProgress = locationFutureProgress || (isFutureQuestionnaireComplete ? defaultFutureProgress : {
     basics: 0,
     career: 0,
     financials: 0,
     health: 0,
     connections: 0,
-  };
+  });
 
   let futureSelfArchitect: { mainFocus: string; identity: string; system: string; proof: string; } | undefined = initialArchitect;
 
