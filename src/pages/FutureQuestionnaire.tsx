@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import { PillarProgress } from '@/components/NewQuadrantChart';
@@ -33,11 +33,29 @@ const STEPS = [
 const FutureQuestionnaire = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { progress } = (location.state || { progress: null }) as { progress: PillarProgress | null };
+    const { progress, isArchitect } = (location.state || { progress: null, isArchitect: false }) as { progress: PillarProgress | null, isArchitect: boolean };
     
     const [step, setStep] = useState(1);
     const [priorities, setPriorities] = useState<Priorities | null>(null);
     const [answers, setAnswers] = useState<Answers>({});
+
+    useEffect(() => {
+        if (isArchitect && progress) {
+            // Automatically determine priorities for Architect flow
+            const pillarScores = (Object.keys(progress) as (keyof PillarProgress)[])
+                .filter(p => p !== 'basics')
+                .map(pillar => ({ name: pillar.charAt(0).toUpperCase() + pillar.slice(1) as Pillar, score: progress[pillar] }))
+                .sort((a, b) => a.score - b.score);
+
+            const chosenPriorities: Priorities = {
+                mainFocus: pillarScores[0].name,
+                secondaryFocus: pillarScores[1].name,
+                maintenance: [pillarScores[2].name, pillarScores[3].name],
+            };
+            setPriorities(chosenPriorities);
+            setStep(2); // Skip priority ranking step
+        }
+    }, [isArchitect, progress]);
 
     const handlePrioritiesComplete = (chosenPriorities: Priorities) => {
         setPriorities(chosenPriorities);
@@ -82,6 +100,10 @@ const FutureQuestionnaire = () => {
     }
 
     const CurrentStepComponent = () => {
+        if (isArchitect && step === 1) {
+            // Show a loading/redirecting state for architect flow while priorities are set
+            return <div className="text-center py-12">Calculating focus areas...</div>;
+        }
         switch (step) {
             case 1:
                 return <PriorityRanking progress={progress} onComplete={handlePrioritiesComplete} />;
@@ -103,25 +125,28 @@ const FutureQuestionnaire = () => {
         }
     }
 
-    const Stepper = () => (
-        <nav aria-label="Progress" className="mb-12">
-            <ol role="list" className="flex items-center justify-center">
-                {STEPS.map((s, stepIdx) => (
-                    <li key={s.name} className="relative">
-                        <div className="flex items-center">
-                            <span className={`h-8 w-8 rounded-full flex items-center justify-center ${step >= s.id ? 'bg-purple-600' : 'bg-gray-300'}`}>
-                                <span className="text-white font-bold">{step > s.id ? <CheckCircle size={20} /> : s.id}</span>
-                            </span>
-                            <span className={`ml-3 hidden sm:block font-medium ${step >= s.id ? 'text-purple-700' : 'text-gray-500'}`}>{s.name}</span>
-                        </div>
-                        {stepIdx !== STEPS.length - 1 && (
-                            <div className="absolute top-4 left-8 -ml-px mt-0.5 h-0.5 w-12 sm:w-24 md:w-32 bg-gray-300" aria-hidden="true" />
-                        )}
-                    </li>
-                ))}
-            </ol>
-        </nav>
-    );
+    const Stepper = () => {
+        if (isArchitect) return null; // Hide stepper for architect flow for simplicity
+        return (
+            <nav aria-label="Progress" className="mb-12">
+                <ol role="list" className="flex items-center justify-center">
+                    {STEPS.map((s, stepIdx) => (
+                        <li key={s.name} className="relative">
+                            <div className="flex items-center">
+                                <span className={`h-8 w-8 rounded-full flex items-center justify-center ${step >= s.id ? 'bg-purple-600' : 'bg-gray-300'}`}>
+                                    <span className="text-white font-bold">{step > s.id ? <CheckCircle size={20} /> : s.id}</span>
+                                </span>
+                                <span className={`ml-3 hidden sm:block font-medium ${step >= s.id ? 'text-purple-700' : 'text-gray-500'}`}>{s.name}</span>
+                            </div>
+                            {stepIdx !== STEPS.length - 1 && (
+                                <div className="absolute top-4 left-8 -ml-px mt-0.5 h-0.5 w-12 sm:w-24 md:w-32 bg-gray-300" aria-hidden="true" />
+                            )}
+                        </li>
+                    ))}
+                </ol>
+            </nav>
+        )
+    };
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
@@ -152,10 +177,12 @@ const FutureQuestionnaire = () => {
                     <div className="bg-white p-6 md:p-10 rounded-xl shadow-lg border border-gray-200/80">
                         <div className="text-center mb-8">
                             <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">
-                                Future Self Questionnaire
+                                {isArchitect ? 'Future Self Architect' : 'Future Self Questionnaire'}
                             </h1>
                             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                                This questionnaire is designed to help you define your vision for the next five years.
+                                {isArchitect
+                                    ? "Let's design the identity, systems, and proof for your future self."
+                                    : 'This questionnaire is designed to help you define your vision for the next five years.'}
                             </p>
                         </div>
 

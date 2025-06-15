@@ -90,11 +90,11 @@ const Results = () => {
   };
 
   const handleSetFutureTargets = () => {
-    navigate('/future-targets', { state: { ...location.state, currentProgress: progress } });
+    navigate('/future-questionnaire', { state: { ...location.state, progress, isArchitect: false } });
   };
 
   const handleStartArchitectQuestionnaire = () => {
-    navigate('/future-questionnaire', { state: { ...location.state, progress } });
+    navigate('/future-questionnaire', { state: { ...location.state, progress, isArchitect: true } });
   };
 
   return (
