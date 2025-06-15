@@ -1,8 +1,9 @@
+
 import { useState } from 'react';
 import Header from '@/components/Header';
 import { Share2, Download, RefreshCw } from 'lucide-react';
 import { NewQuadrantChart, PillarProgress } from '@/components/NewQuadrantChart';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
 const Results = () => {
@@ -46,6 +47,8 @@ const Results = () => {
   };
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const futureSelfArchitect = location.state?.futureSelfArchitect;
 
   const handlePillarClick = (pillar: string) => {
     setActivePillar(current => (current === pillar ? undefined : pillar));
@@ -57,7 +60,7 @@ const Results = () => {
     navigate('/questionnaire');
   };
 
-  const handleRetakeFuture = () => {
+  const handleStartFutureQuestionnaire = () => {
     navigate('/future-questionnaire', { state: { progress } });
   };
 
@@ -98,7 +101,7 @@ const Results = () => {
 
           <div className="relative group bg-white/60 backdrop-blur-sm p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200/80">
             <Button
-              onClick={handleRetakeFuture}
+              onClick={handleStartFutureQuestionnaire}
               variant="secondary"
               size="sm"
               className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
@@ -135,14 +138,35 @@ const Results = () => {
         <section className="bg-white/60 backdrop-blur-sm p-8 rounded-2xl shadow-lg border border-gray-200/80 mb-16">
             <h2 className="text-2xl font-bold text-gray-800 mb-2">Future Self Architect</h2>
             <p className="text-gray-600 mb-4">Goals are fleeting, but your identity is who you are. Instead of setting a target, let's define the identity of your future self and build the systems that make success inevitable.</p>
-            <div className="bg-gray-100/50 p-4 rounded-lg">
-                <p className="font-semibold text-gray-700">Ready to design your future identity?</p>
-                <p className="text-gray-600 text-sm mb-4">Create a personalised identity system based on your main focus area that will help you achieve your goals through consistent habits and mindset shifts.</p>
-                <button className="bg-gray-200 text-gray-800 w-full text-left p-3 rounded-lg hover:bg-gray-300 transition font-semibold flex justify-between items-center">
-                    <span>Design Your Future Self</span>
-                    <span>&rarr;</span>
-                </button>
-            </div>
+            
+            {futureSelfArchitect ? (
+              <div className="bg-gray-100/50 p-6 rounded-lg space-y-4">
+                  <div>
+                      <h3 className="font-semibold text-gray-700 capitalize">Your Future Identity for {futureSelfArchitect.mainFocus}:</h3>
+                      <p className="font-bold text-purple-600 text-xl">"{futureSelfArchitect.identity}"</p>
+                  </div>
+                  <div>
+                      <h3 className="font-semibold text-gray-700">Your Core System:</h3>
+                      <p className="text-gray-600 italic">"{futureSelfArchitect.system}"</p>
+                  </div>
+                  <div>
+                      <h3 className="font-semibold text-gray-700">Your First Proof of Identity:</h3>
+                      <p className="text-gray-600 italic">"{futureSelfArchitect.proof}"</p>
+                  </div>
+                  <Button onClick={handleStartFutureQuestionnaire} variant="outline" className="w-full mt-4 !text-gray-800">
+                      Redesign Your Future Self
+                  </Button>
+              </div>
+            ) : (
+              <div className="bg-gray-100/50 p-4 rounded-lg">
+                  <p className="font-semibold text-gray-700">Ready to design your future identity?</p>
+                  <p className="text-gray-600 text-sm mb-4">Create a personalised identity system based on your main focus area that will help you achieve your goals through consistent habits and mindset shifts.</p>
+                  <Button onClick={handleStartFutureQuestionnaire} className="w-full justify-between">
+                      <span>Design Your Future Self</span>
+                      <span>&rarr;</span>
+                  </Button>
+              </div>
+            )}
         </section>
         
         <section className="flex flex-col sm:flex-row justify-center items-center gap-4">

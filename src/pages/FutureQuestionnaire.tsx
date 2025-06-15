@@ -5,6 +5,10 @@ import Header from '@/components/Header';
 import { PillarProgress } from '@/components/NewQuadrantChart';
 import PriorityRanking from '@/components/PriorityRanking';
 import { Button } from '@/components/ui/button';
+import IdentityArchetypeSelection from '@/components/IdentityArchetypeSelection';
+import CoreSystemDesign from '@/components/CoreSystemDesign';
+import ProofOfIdentity from '@/components/ProofOfIdentity';
+
 
 export type Priorities = {
   mainFocus: string;
@@ -19,11 +23,39 @@ const FutureQuestionnaire = () => {
     
     const [phase, setPhase] = useState(1);
     const [priorities, setPriorities] = useState<Priorities | null>(null);
+    const [chosenIdentity, setChosenIdentity] = useState<string | null>(null);
+    const [coreSystem, setCoreSystem] = useState<string | null>(null);
+    const [proofOfIdentity, setProofOfIdentity] = useState<string | null>(null);
 
     const handlePrioritiesComplete = (p: Priorities) => {
         setPriorities(p);
         setPhase(2);
     };
+
+    const handleIdentityComplete = (identity: string) => {
+        setChosenIdentity(identity);
+        setPhase(3);
+    };
+
+    const handleSystemComplete = (system: string) => {
+        setCoreSystem(system);
+        setPhase(4);
+    };
+
+    const handleProofComplete = (proof: string) => {
+        setProofOfIdentity(proof);
+        setPhase(5);
+    };
+
+    const handleGoToResults = () => {
+      const futureSelfArchitect = {
+          identity: chosenIdentity,
+          system: coreSystem,
+          proof: proofOfIdentity,
+          mainFocus: priorities?.mainFocus,
+      };
+      navigate('/results', { state: { futureSelfArchitect }});
+    }
 
     if (!progress) {
         return (
@@ -55,25 +87,20 @@ const FutureQuestionnaire = () => {
                     {phase === 1 && progress && (
                         <PriorityRanking progress={progress} onComplete={handlePrioritiesComplete} />
                     )}
-                    {phase === 2 && (
-                        <div className="text-center">
-                            <h2 className="text-2xl font-bold text-gray-800">Phase 2: Deep Dive</h2>
-                            <p className="text-gray-600 mt-2">Next, we'll ask some questions about your main and secondary focus areas.</p>
-                             <Button onClick={() => setPhase(3)} className="mt-6">Continue</Button>
-                        </div>
+                    {phase === 2 && priorities?.mainFocus && (
+                        <IdentityArchetypeSelection mainFocus={priorities.mainFocus} onComplete={handleIdentityComplete} />
                     )}
-                     {phase === 3 && (
-                        <div className="text-center">
-                            <h2 className="text-2xl font-bold text-gray-800">Phase 3: Maintenance Baseline</h2>
-                            <p className="text-gray-600 mt-2">Now, let's define what "good enough" looks like for your other pillars.</p>
-                             <Button onClick={() => setPhase(4)} className="mt-6">Continue</Button>
-                        </div>
+                    {phase === 3 && chosenIdentity && (
+                        <CoreSystemDesign chosenIdentity={chosenIdentity} onComplete={handleSystemComplete} />
                     )}
-                     {phase === 4 && (
+                    {phase === 4 && chosenIdentity && (
+                        <ProofOfIdentity chosenIdentity={chosenIdentity} onComplete={handleProofComplete} />
+                    )}
+                     {phase === 5 && (
                         <div className="text-center">
                             <h2 className="text-2xl font-bold text-gray-800">Ready to see your Future Self?</h2>
-                            <p className="text-gray-600 mt-2">We've mapped out your priorities. You can now see what your 5-year future could look like.</p>
-                             <Button onClick={() => navigate('/results')} className="mt-6">Show Me My Future Self</Button>
+                            <p className="text-gray-600 mt-2">We've mapped out your priorities and designed your identity. You can now see what your 5-year future could look like.</p>
+                             <Button onClick={handleGoToResults} className="mt-6">Show Me My Future Self</Button>
                         </div>
                     )}
                 </div>
