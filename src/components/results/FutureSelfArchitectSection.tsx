@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Settings, ArrowRight } from 'lucide-react';
@@ -46,7 +47,7 @@ const FutureSelfArchitectSection = ({ architect, onStart, isQuestionnaireComplet
               <div>
                 <h3 className="text-lg font-semibold text-gray-700">Your Future Identity</h3>
                 <p className="text-gray-600 mt-1">
-                  You've defined your vision of success for <span className="font-semibold">{architect.mainFocus}</span> as:
+                  You've chosen to become:
                 </p>
                 <div className="mt-2 p-4 bg-blue-50/50 rounded-lg border border-blue-200">
                   <p className="text-lg font-semibold text-blue-800 italic">"{architect.identity}"</p>
