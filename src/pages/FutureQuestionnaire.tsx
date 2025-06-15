@@ -308,7 +308,7 @@ const FutureQuestionnaire = () => {
                             </AlertDialog>
                         )}
                     </div>
-                    <div className="bg-white/60 backdrop-blur-sm p-6 md:p-10 rounded-2xl shadow-lg border border-gray-200/80">
+                    <div className="bg-white/60 p-6 md:p-10 rounded-2xl shadow-lg border border-gray-200/80">
                         <div className="text-center mb-8">
                             <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">
                                 {isArchitect ? 'Future Self Architect' : 'Future Self Questionnaire'}
