@@ -1,3 +1,4 @@
+
 import { useState, useRef } from 'react';
 import Header from '@/components/Header';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -107,42 +108,46 @@ const Results = () => {
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfPageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 15; // 15mm margin
+    const contentWidth = pdfWidth - (margin * 2);
+    const pageContentHeight = pdfPageHeight - (margin * 2);
 
-    const appendCanvasToPdf = async (element: HTMLElement) => {
-        const canvas = await html2canvas(element, {
-            scale: 2,
-            backgroundColor: '#ffffff',
-            useCORS: true,
-        });
-        const imgData = canvas.toDataURL('image/png');
-        const imgProps = pdf.getImageProperties(imgData);
-        const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        
-        let heightLeft = imgHeight;
-        let position = 0;
-        
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
-        heightLeft -= pdfPageHeight;
-        
-        while (heightLeft > 0) {
-            position -= pdfPageHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-            heightLeft -= pdfPageHeight;
-        }
+    const appendContentAsImage = async (element: HTMLElement) => {
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgHeight = (imgProps.height * contentWidth) / imgProps.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // Add first page/slice of the content
+      pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, imgHeight);
+      heightLeft -= pageContentHeight;
+
+      while (heightLeft > 0) {
+        position -= pageContentHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', margin, position + margin, contentWidth, imgHeight);
+        heightLeft -= pageContentHeight;
+      }
     };
-
+    
     const page1Element = page1Ref.current;
-    if(page1Element) {
-        await appendCanvasToPdf(page1Element);
+    if (page1Element) {
+      await appendContentAsImage(page1Element);
     }
 
-    if(futureSelfArchitect) {
-        const page2Element = page2Ref.current;
-        if(page2Element) {
-            pdf.addPage();
-            await appendCanvasToPdf(page2Element);
-        }
+    if (futureSelfArchitect) {
+      const page2Element = page2Ref.current;
+      if (page2Element) {
+        pdf.addPage();
+        await appendContentAsImage(page2Element);
+      }
     }
     
     pdf.save('life-view-report.pdf');
