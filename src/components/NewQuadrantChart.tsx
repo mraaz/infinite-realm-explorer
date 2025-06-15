@@ -114,7 +114,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
 
   // Define quadrants with all necessary data
   const getQuadrants = (): QuadrantData[] => {
-    const scores = isFuture ? progress : animatedProgress
+    const scores = animatedProgress // Use animated progress for both charts for smooth transitions
 
     return [
       {
@@ -210,7 +210,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
   const handleKeyDown = (e: React.KeyboardEvent, quadrant: QuadrantData) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault()
-      !isFuture && onPillarClick?.(quadrant.key)
+      onPillarClick?.(quadrant.key)
     }
   }
 
@@ -222,7 +222,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
           width={size}
           height={size}
           viewBox={`0 0 ${size} ${size}`}
-          className={cn("drop-shadow-lg transition-opacity duration-300", isFuture ? "opacity-50" : "")}
+          className={cn("drop-shadow-lg transition-opacity duration-300")}
           aria-hidden="true"
         >
           {quadrants.map((quadrant) => (
@@ -273,7 +273,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
                   "cursor-pointer transition-all duration-300",
                   activePillar === quadrant.key ? "opacity-100 filter drop-shadow-lg" : "opacity-90 hover:opacity-100",
                 )}
-                onClick={() => !isFuture && onPillarClick?.(quadrant.key)}
+                onClick={() => onPillarClick?.(quadrant.key)}
                 onMouseEnter={() => setHoveredPillar(quadrant.key)}
                 onMouseLeave={() => setHoveredPillar(null)}
               />
@@ -295,7 +295,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
                 y={quadrant.textPosition.y + 25}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                className={`text-sm font-medium ${isFuture ? "fill-gray-400" : "fill-gray-700"}`}
+                className={`text-sm font-medium fill-gray-700`}
               >
                 {quadrant.name}
               </text>
@@ -319,16 +319,16 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
             y={center - 10}
             textAnchor="middle"
             dominantBaseline="middle"
-            className={`text-4xl font-bold ${isFuture ? "fill-gray-400" : "fill-gray-900"}`}
+            className={`text-4xl font-bold fill-gray-900`}
           >
-            {isFuture ? Math.round(overallScore) : Math.round(animatedOverallScore)}
+            {Math.round(animatedOverallScore)}
           </text>
           <text
             x={center}
             y={center + 15}
             textAnchor="middle"
             dominantBaseline="middle"
-            className={`text-sm font-medium ${isFuture ? "fill-gray-400" : "fill-gray-600"}`}
+            className={`text-sm font-medium fill-gray-600`}
           >
             Overall Score
           </text>
@@ -340,27 +340,25 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
             key={quadrant.key}
             className={cn(
               "absolute w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all duration-300",
-              isFuture ? "opacity-50" : "",
               (hoveredPillar === quadrant.key || activePillar === quadrant.key) && "scale-125 shadow-lg",
             )}
             style={{
               left: quadrant.iconPosition.x - 15,
               top: quadrant.iconPosition.y - 15,
             }}
-            onClick={() => !isFuture && onPillarClick?.(quadrant.key)}
+            onClick={() => onPillarClick?.(quadrant.key)}
             onMouseEnter={() => setHoveredPillar(quadrant.key)}
             onMouseLeave={() => setHoveredPillar(null)}
             role="button"
-            tabIndex={isFuture ? -1 : 0}
+            tabIndex={0}
             aria-label={`${quadrant.name}: ${quadrant.score}%. ${quadrant.description}`}
             aria-pressed={activePillar === quadrant.key}
             onKeyDown={(e) => handleKeyDown(e, quadrant)}
           >
             <div
               style={{
-                color: isFuture
-                  ? "#9ca3af"
-                  : hoveredPillar === quadrant.key || activePillar === quadrant.key
+                color:
+                  hoveredPillar === quadrant.key || activePillar === quadrant.key
                     ? quadrant.hoverColor
                     : quadrant.color,
               }}
