@@ -1,5 +1,7 @@
 
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Settings } from 'lucide-react';
 
 interface FutureSelfArchitect {
   mainFocus: string;
@@ -15,38 +17,60 @@ interface FutureSelfArchitectSectionProps {
 
 const FutureSelfArchitectSection = ({ architect, onStart }: FutureSelfArchitectSectionProps) => {
   return (
-    <section className="bg-white/60 backdrop-blur-sm p-8 rounded-2xl shadow-lg border border-gray-200/80 mb-16">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Future Self Architect</h2>
-        <p className="text-gray-600 mb-4">Goals are fleeting, but your identity is who you are. Instead of setting a target, let's define the identity of your future self and build the systems that make success inevitable.</p>
-        
-        {architect ? (
-          <div className="bg-gray-100/50 p-6 rounded-lg space-y-4">
-              <div>
-                  <h3 className="font-semibold text-gray-700 capitalize">Your Future Identity for {architect.mainFocus}:</h3>
-                  <p className="font-bold text-purple-600 text-xl">"{architect.identity}"</p>
-              </div>
-              <div>
-                  <h3 className="font-semibold text-gray-700">Your Core System:</h3>
-                  <p className="text-gray-600 italic">"{architect.system}"</p>
-              </div>
-              <div>
-                  <h3 className="font-semibold text-gray-700">Your First Proof of Identity:</h3>
-                  <p className="text-gray-600 italic">"{architect.proof}"</p>
-              </div>
-              <Button onClick={onStart} variant="outline" className="w-full mt-4 !text-gray-800">
-                  Redesign Your Future Self
-              </Button>
+    <section className="mb-16 flex justify-center">
+      <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/80 w-full max-w-3xl">
+        <CardContent className="p-6 md:p-8">
+          <div className="flex items-center gap-3 text-2xl font-bold text-gray-800 mb-6">
+            <div className="bg-blue-100 p-2 rounded-lg">
+              <Settings className="h-6 w-6 text-blue-600" />
+            </div>
+            <h2>Future Self Architect</h2>
           </div>
-        ) : (
-          <div className="bg-gray-100/50 p-4 rounded-lg">
-              <p className="font-semibold text-gray-700">Ready to design your future identity?</p>
-              <p className="text-gray-600 text-sm mb-4">Create a personalised identity system based on your main focus area that will help you achieve your goals through consistent habits and mindset shifts.</p>
-              <Button onClick={onStart} className="w-full justify-between">
-                  <span>Design Your Future Self</span>
-                  <span>&rarr;</span>
+          {architect ? (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-700">Your Future Identity</h3>
+                <p className="text-gray-600 mt-1">
+                  You've defined your vision of success for <span className="font-semibold">{architect.mainFocus}</span> as:
+                </p>
+                <div className="mt-2 p-4 bg-blue-50/50 rounded-lg border border-blue-200">
+                  <p className="text-lg font-semibold text-blue-800 italic">"{architect.identity}"</p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-700">Your Core System</h3>
+                <div className="mt-2 p-4 bg-gray-50/50 rounded-lg border border-gray-200">
+                  <p className="text-gray-700 italic">"{architect.system}"</p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-700">Your Proof of Identity</h3>
+                <div className="mt-2 p-4 bg-green-50/50 rounded-lg border border-green-200">
+                  <p className="text-gray-700 italic">"{architect.proof}"</p>
+                </div>
+              </div>
+
+              <Button onClick={onStart} variant="outline" className="w-full !mt-8">
+                Edit Your Identity System
               </Button>
-          </div>
-        )}
+            </div>
+          ) : (
+            <div>
+              <p className="text-gray-600 mb-4">Goals are fleeting, but your identity is who you are. Instead of setting a target, let's define the identity of your future self and build the systems that make success inevitable.</p>
+              <div className="bg-gray-100/50 p-4 rounded-lg">
+                  <p className="font-semibold text-gray-700">Ready to design your future identity?</p>
+                  <p className="text-gray-600 text-sm mb-4">Create a personalised identity system based on your main focus area that will help you achieve your goals through consistent habits and mindset shifts.</p>
+                  <Button onClick={onStart} className="w-full justify-between">
+                      <span>Design Your Future Self</span>
+                      <span>&rarr;</span>
+                  </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </section>
   );
 };

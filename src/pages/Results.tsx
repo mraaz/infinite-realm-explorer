@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import Header from '@/components/Header';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -52,7 +53,31 @@ const Results = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const futureSelfArchitect = location.state?.futureSelfArchitect;
+  const { futureQuestionnaire, futureSelfArchitect: initialArchitect } = location.state || {};
+
+  let futureSelfArchitect: { mainFocus: string; identity: string; system: string; proof: string; } | undefined = initialArchitect;
+
+  if (futureQuestionnaire && futureQuestionnaire.priorities && futureQuestionnaire.answers) {
+      const { priorities, answers: futureAnswers } = futureQuestionnaire;
+      const mainFocus = priorities.mainFocus;
+      if (mainFocus) {
+          const mainFocusLower = mainFocus.toLowerCase();
+          
+          const identityAnswerId = `${mainFocusLower}_deep_1`;
+          const systemAnswerId = `${mainFocusLower}_deep_2`;
+          const proofAnswerId = `${mainFocusLower}_deep_3`;
+
+          if (futureAnswers[identityAnswerId] && futureAnswers[systemAnswerId] && futureAnswers[proofAnswerId]) {
+              futureSelfArchitect = {
+                  mainFocus: mainFocus,
+                  identity: futureAnswers[identityAnswerId],
+                  system: futureAnswers[systemAnswerId],
+                  proof: futureAnswers[proofAnswerId],
+              };
+          }
+      }
+  }
+
 
   const handlePillarClick = (pillar: string) => {
     setActivePillar(current => (current === pillar ? undefined : pillar));
