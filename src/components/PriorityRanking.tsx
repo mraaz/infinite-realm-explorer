@@ -9,19 +9,22 @@ import { PillarProgress } from './NewQuadrantChart';
 
 const pillarDetails: Record<Pillar, { icon: JSX.Element }> = {
   Career: { icon: <Target className="h-6 w-6 text-purple-600" /> },
-  Finances: { icon: <PiggyBank className="h-6 w-6 text-blue-600" /> },
+  Financials: { icon: <PiggyBank className="h-6 w-6 text-blue-600" /> },
   Health: { icon: <Heart className="h-6 w-6 text-green-600" /> },
   Connections: { icon: <Users className="h-6 w-6 text-orange-600" /> },
 };
 
 export const PriorityRanking = ({ progress, onComplete, value }: PriorityRankingProps) => {
   const initialPillars = useMemo(() => {
-    return (['Career', 'Finances', 'Health', 'Connections'] as Pillar[]).map(p => ({
-      id: p,
-      name: p,
-      score: progress[p.toLowerCase() as keyof PillarProgress] ?? 0,
-      icon: pillarDetails[p].icon,
-    }));
+    return (['Career', 'Financials', 'Health', 'Connections'] as Pillar[]).map(p => {
+      const progressKey = (p === 'Financials' ? 'finances' : p.toLowerCase()) as keyof PillarProgress;
+      return {
+        id: p,
+        name: p,
+        score: progress[progressKey] ?? 0,
+        icon: pillarDetails[p].icon,
+      }
+    });
   }, [progress]);
 
   const [unassigned, setUnassigned] = useState<PillarInfo[]>(initialPillars);

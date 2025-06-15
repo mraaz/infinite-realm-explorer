@@ -32,21 +32,21 @@ export const futureQuestions: FutureQuestion[] = [
   },
   {
     id: 'finances_deep_1',
-    pillar: 'Finances',
+    pillar: 'Financials',
     type: 'deep_dive',
     question: 'What financial milestone in 5 years would make you feel truly secure?',
     placeholder: "e.g., 'Having $50k in savings,' 'Being completely debt-free,' 'Buying my first property.'",
   },
   {
     id: 'finances_deep_2',
-    pillar: 'Finances',
+    pillar: 'Financials',
     type: 'deep_dive',
     question: "To achieve this, what's the biggest change you're willing to make to your spending or earning habits?",
     placeholder: "e.g., 'Automating 20% of my income into savings.'",
   },
   {
     id: 'finances_deep_3',
-    pillar: 'Finances',
+    pillar: 'Financials',
     type: 'deep_dive',
     question: "Beyond security, what's one big-ticket item or experience you'd love to be able to afford, guilt-free?",
     placeholder: "e.g., 'A trip to Japan,' 'A down payment for a house.'",
@@ -103,7 +103,7 @@ export const futureQuestions: FutureQuestion[] = [
   },
   {
     id: 'finances_maintenance_1',
-    pillar: 'Finances',
+    pillar: 'Financials',
     type: 'maintenance',
     question: "What does 'not having to worry about money' mean to you on a practical level? What is the minimum financial baseline you need to feel secure enough to pursue your main goals?",
     placeholder: "e.g., 'Having a 3-month emergency fund.'",

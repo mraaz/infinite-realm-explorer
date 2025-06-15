@@ -60,7 +60,13 @@ const FutureQuestionnaire = () => {
             // Automatically determine priorities for Architect flow
             const pillarScores = (Object.keys(progress) as (keyof PillarProgress)[])
                 .filter(p => p !== 'basics')
-                .map(pillar => ({ name: pillar.charAt(0).toUpperCase() + pillar.slice(1) as Pillar, score: progress[pillar] }))
+                .map(pillar => {
+                    let name = pillar.charAt(0).toUpperCase() + pillar.slice(1);
+                    if (pillar === 'finances') {
+                        name = 'Financials';
+                    }
+                    return ({ name: name as Pillar, score: progress[pillar] });
+                })
                 .sort((a, b) => a.score - b.score);
 
             const chosenPriorities: Priorities = {

@@ -15,7 +15,7 @@
         { "title": "The Connected Networker", "description": "Implying relationship-building, communication" }
     ]
   },
-  "finances": {
+  "financials": {
     "prompt": "Which financial identity will bring you peace of mind?",
     "archetypes": [
         { "title": "The Confident Investor", "description": "Implying growth, calculated risks, long-term vision" },
