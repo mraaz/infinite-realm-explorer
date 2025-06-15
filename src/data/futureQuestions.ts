@@ -1,7 +1,7 @@
 
 export interface FutureQuestion {
   id: string;
-  pillar: 'Career' | 'Financials' | 'Health' | 'Connections';
+  pillar: 'Career' | 'Finances' | 'Health' | 'Connections';
   type: 'deep_dive' | 'maintenance';
   question: string;
   placeholder?: string;
@@ -31,22 +31,22 @@ export const futureQuestions: FutureQuestion[] = [
     placeholder: "e.g., 'Working 4 days a week, with Fridays for creative projects.'",
   },
   {
-    id: 'financials_deep_1',
-    pillar: 'Financials',
+    id: 'finances_deep_1',
+    pillar: 'Finances',
     type: 'deep_dive',
     question: 'What financial milestone in 5 years would make you feel truly secure?',
     placeholder: "e.g., 'Having $50k in savings,' 'Being completely debt-free,' 'Buying my first property.'",
   },
   {
-    id: 'financials_deep_2',
-    pillar: 'Financials',
+    id: 'finances_deep_2',
+    pillar: 'Finances',
     type: 'deep_dive',
     question: "To achieve this, what's the biggest change you're willing to make to your spending or earning habits?",
     placeholder: "e.g., 'Automating 20% of my income into savings.'",
   },
   {
-    id: 'financials_deep_3',
-    pillar: 'Financials',
+    id: 'finances_deep_3',
+    pillar: 'Finances',
     type: 'deep_dive',
     question: "Beyond security, what's one big-ticket item or experience you'd love to be able to afford, guilt-free?",
     placeholder: "e.g., 'A trip to Japan,' 'A down payment for a house.'",
@@ -102,8 +102,8 @@ export const futureQuestions: FutureQuestion[] = [
     placeholder: "e.g., 'A stable income,' 'Low stress,' 'Flexible hours.'",
   },
   {
-    id: 'financials_maintenance_1',
-    pillar: 'Financials',
+    id: 'finances_maintenance_1',
+    pillar: 'Finances',
     type: 'maintenance',
     question: "What does 'not having to worry about money' mean to you on a practical level? What is the minimum financial baseline you need to feel secure enough to pursue your main goals?",
     placeholder: "e.g., 'Having a 3-month emergency fund.'",
@@ -123,4 +123,3 @@ export const futureQuestions: FutureQuestion[] = [
     placeholder: "e.g., 'A weekly call with family,' 'A monthly dinner with friends.'",
   },
 ];
-
