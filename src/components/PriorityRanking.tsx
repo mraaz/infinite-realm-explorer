@@ -3,6 +3,7 @@ import { useState, useMemo, DragEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Briefcase, Landmark, Heart, Users, ArrowRight } from 'lucide-react';
+import { PillarProgress } from '@/components/NewQuadrantChart';
 
 type Pillar = 'Career' | 'Financials' | 'Health' | 'Connections';
 type PillarInfo = {
@@ -13,7 +14,7 @@ type PillarInfo = {
 };
 
 interface PriorityRankingProps {
-  progress: { [key: string]: number };
+  progress: PillarProgress;
   onComplete: (priorities: { mainFocus: Pillar; secondaryFocus: Pillar; maintenance: Pillar[] }) => void;
 }
 
@@ -29,7 +30,7 @@ export const PriorityRanking = ({ progress, onComplete }: PriorityRankingProps) 
     return (['Career', 'Financials', 'Health', 'Connections'] as Pillar[]).map(p => ({
       id: p,
       name: p,
-      score: progress[p.toLowerCase()] ?? 0,
+      score: progress[p.toLowerCase() as keyof PillarProgress] ?? 0,
       icon: pillarDetails[p].icon,
     }));
   }, [progress]);
