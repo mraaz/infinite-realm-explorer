@@ -5,17 +5,26 @@ import { Textarea } from '@/components/ui/textarea';
 
 interface CoreSystemDesignProps {
   chosenIdentity: string;
+  mainFocus: string;
   onComplete: (system: string) => void;
 }
 
-const CoreSystemDesign = ({ chosenIdentity, onComplete }: CoreSystemDesignProps) => {
+const promptFocusMapping: Record<string, string> = {
+  health: 'your energy levels become',
+  career: 'your professional growth becomes',
+  financials: 'your financial well-being becomes',
+  connections: 'your relationships become',
+};
+
+const CoreSystemDesign = ({ chosenIdentity, mainFocus, onComplete }: CoreSystemDesignProps) => {
   const [system, setSystem] = useState('');
+  const focusText = promptFocusMapping[mainFocus.toLowerCase()] || 'this becomes';
 
   return (
     <div className="text-left max-w-2xl mx-auto">
       <h2 className="text-xl font-semibold text-gray-700 text-center">Step 2: Design Your Core System</h2>
       <p className="text-gray-600 mt-2 mb-6 text-center">
-        For your chosen identity of '{chosenIdentity}'... This identity doesn't rely on willpower; it relies on systems. What is one weekly system you can put in place to guarantee this becomes a priority?
+        For your chosen identity of '{chosenIdentity}'... This identity doesn't rely on willpower; it relies on systems. What is one weekly system you can put in place to guarantee {focusText} a priority?
       </p>
       
       <div className="space-y-2 mb-6">

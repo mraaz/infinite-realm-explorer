@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -127,8 +126,12 @@ const FutureQuestionnaire = () => {
                         {phase === 2 && priorities?.mainFocus && (
                             <IdentityArchetypeSelection mainFocus={priorities.mainFocus} onComplete={handleIdentityComplete} />
                         )}
-                        {phase === 3 && chosenIdentity && (
-                            <CoreSystemDesign chosenIdentity={chosenIdentity} onComplete={handleSystemComplete} />
+                        {phase === 3 && chosenIdentity && priorities?.mainFocus && (
+                            <CoreSystemDesign 
+                                chosenIdentity={chosenIdentity} 
+                                mainFocus={priorities.mainFocus} 
+                                onComplete={handleSystemComplete} 
+                            />
                         )}
                         {phase === 4 && chosenIdentity && (
                             <ProofOfIdentity chosenIdentity={chosenIdentity} onComplete={handleProofComplete} />
