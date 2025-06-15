@@ -53,6 +53,8 @@ const Results = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { futureQuestionnaire, futureSelfArchitect: initialArchitect, futureProgress: locationFutureProgress } = location.state || {};
+  
+  const isFutureQuestionnaireComplete = !!futureQuestionnaire;
 
   const futureProgress = locationFutureProgress || defaultFutureProgress;
 
@@ -127,6 +129,7 @@ const Results = () => {
         <FutureSelfArchitectSection
           architect={futureSelfArchitect}
           onStart={handleStartArchitectQuestionnaire}
+          isQuestionnaireComplete={isFutureQuestionnaireComplete}
         />
         <ResultsActions />
       </main>

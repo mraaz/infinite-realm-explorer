@@ -2,6 +2,8 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Settings } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface FutureSelfArchitect {
   mainFocus: string;
@@ -13,9 +15,23 @@ interface FutureSelfArchitect {
 interface FutureSelfArchitectSectionProps {
   architect?: FutureSelfArchitect;
   onStart: () => void;
+  isQuestionnaireComplete: boolean;
 }
 
-const FutureSelfArchitectSection = ({ architect, onStart }: FutureSelfArchitectSectionProps) => {
+const FutureSelfArchitectSection = ({ architect, onStart, isQuestionnaireComplete }: FutureSelfArchitectSectionProps) => {
+  const { toast } = useToast();
+
+  const handleStartClick = () => {
+    if (isQuestionnaireComplete) {
+      onStart();
+    } else {
+      toast({
+        title: "Action Required",
+        description: "Please complete the Future Self Questionnaire before you can proceed.",
+      });
+    }
+  };
+
   return (
     <section className="mb-16 flex justify-center">
       <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/80 w-full max-w-3xl">
@@ -62,7 +78,13 @@ const FutureSelfArchitectSection = ({ architect, onStart }: FutureSelfArchitectS
               <div className="bg-gray-100/50 p-4 rounded-lg">
                   <p className="font-semibold text-gray-700">Ready to design your future identity?</p>
                   <p className="text-gray-600 text-sm mb-4">Create a personalised identity system based on your main focus area that will help you achieve your goals through consistent habits and mindset shifts.</p>
-                  <Button onClick={onStart} className="w-full justify-between">
+                  <Button
+                    onClick={handleStartClick}
+                    className={cn(
+                      "w-full justify-between",
+                      !isQuestionnaireComplete && "opacity-50 cursor-not-allowed"
+                    )}
+                  >
                       <span>Design Your Future Self</span>
                       <span>&rarr;</span>
                   </Button>
