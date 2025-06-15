@@ -60,7 +60,6 @@ const Results = () => {
             onStartFutureQuestionnaire={handleSetFutureTargets}
           />
           <InsightSynthesis insights={insightSyntheses as Insight[]} />
-          <PdfFooter />
         </div>
         <div ref={page2Ref}>
           <FutureSelfArchitectSection
