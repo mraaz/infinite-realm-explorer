@@ -114,7 +114,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
 
   // Define quadrants with all necessary data
   const getQuadrants = (): QuadrantData[] => {
-    const scores = isFuture ? { career: 0, financials: 0, health: 0, connections: 0 } : animatedProgress
+    const scores = isFuture ? progress : animatedProgress
 
     return [
       {
@@ -321,7 +321,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
             dominantBaseline="middle"
             className={`text-4xl font-bold ${isFuture ? "fill-gray-400" : "fill-gray-900"}`}
           >
-            {isFuture ? "?" : Math.round(animatedOverallScore)}
+            {isFuture ? Math.round(overallScore) : Math.round(animatedOverallScore)}
           </text>
           <text
             x={center}

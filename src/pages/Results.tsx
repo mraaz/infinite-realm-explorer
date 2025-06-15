@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import Header from '@/components/Header';
 import { Share2, Download } from 'lucide-react';
@@ -33,6 +34,15 @@ const Results = () => {
     financials: 60,
     health: 90,
     connections: 70,
+  };
+
+  // Test data for the future self chart as requested.
+  const futureProgress: PillarProgress = {
+    basics: 80,
+    career: 95,
+    financials: 85,
+    health: 90,
+    connections: 80,
   };
 
   const handlePillarClick = (pillar: string) => {
@@ -71,7 +81,7 @@ const Results = () => {
             <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Your Future Self</h2>
             <div className="h-96 flex flex-col items-center justify-center rounded-lg">
                 <NewQuadrantChart 
-                  progress={progress}
+                  progress={futureProgress}
                   answers={answers}
                   isFuture={true}
                 />
