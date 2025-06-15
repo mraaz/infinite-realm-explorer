@@ -112,9 +112,8 @@ const Results = () => {
 
     const canvas = await html2canvas(element, {
         scale: 2,
-        backgroundColor: null,
+        backgroundColor: '#ffffff', // Set a white background for consistency
         onclone: (document) => {
-            document.body.style.background = 'none';
             document.querySelectorAll('.no-print').forEach(el => {
                 if (el instanceof HTMLElement) {
                     el.style.display = 'none';
@@ -125,9 +124,27 @@ const Results = () => {
 
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');
+    
     const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    const pdfPageHeight = pdf.internal.pageSize.getHeight();
+    
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
+    
+    const ratio = pdfWidth / imgWidth;
+    const pdfImgHeight = imgHeight * ratio;
+    
+    let position = 0;
+    
+    while (position < pdfImgHeight) {
+      if (position > 0) {
+        pdf.addPage();
+      }
+      
+      pdf.addImage(imgData, 'PNG', 0, -position, pdfWidth, pdfImgHeight);
+      position += pdfPageHeight;
+    }
+    
     pdf.save('life-view-report.pdf');
   };
 
