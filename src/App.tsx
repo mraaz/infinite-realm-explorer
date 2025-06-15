@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,7 +8,6 @@ import Index from "./pages/Index";
 import Questionnaire from "./pages/Questionnaire";
 import Results from "./pages/Results";
 import FutureQuestionnaire from "./pages/FutureQuestionnaire";
-import FutureSelfTarget from "./pages/FutureSelfTarget";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
