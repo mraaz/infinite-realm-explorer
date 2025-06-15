@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+
+import { useState, useRef, useEffect } from 'react';
 import Header from '@/components/Header';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuestionnaireStore } from '@/store/questionnaireStore';
@@ -17,7 +18,7 @@ import { useFireworks } from '@/hooks/useFireworks';
 import { MarkAsDoneData } from '@/components/results/MarkAsDoneDialog';
 
 const Results = () => {
-  const { answers, actions } = useQuestionnaireStore();
+  const { answers, actions, futureQuestionnaire: storeFutureQuestionnaire } = useQuestionnaireStore();
   const { getProgress, startRetake } = actions;
   
   const [activePillar, setActivePillar] = useState<string | undefined>(undefined);
@@ -60,7 +61,15 @@ const Results = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { fire } = useFireworks();
-  const { futureQuestionnaire, futureSelfArchitect: initialArchitect, futureProgress: locationFutureProgress } = location.state || {};
+  const { futureQuestionnaire: locationFutureQuestionnaire, futureSelfArchitect: initialArchitect, futureProgress: locationFutureProgress } = location.state || {};
+
+  const futureQuestionnaire = storeFutureQuestionnaire || locationFutureQuestionnaire;
+
+  useEffect(() => {
+    if (locationFutureQuestionnaire && !storeFutureQuestionnaire) {
+      actions.setFutureQuestionnaire(locationFutureQuestionnaire);
+    }
+  }, [locationFutureQuestionnaire, storeFutureQuestionnaire, actions]);
   
   const isFutureQuestionnaireComplete = !!futureQuestionnaire;
 
@@ -124,7 +133,7 @@ const Results = () => {
   const handleMarkHabitAsDone = (habitIndex: number, data: MarkAsDoneData) => {
     fire();
 
-    const currentFq = location.state?.futureQuestionnaire;
+    const currentFq = futureQuestionnaire;
     if (!currentFq || !currentFq.architect) return;
 
     const updatedArchitect = [...currentFq.architect];

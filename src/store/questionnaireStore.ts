@@ -8,6 +8,7 @@ type QuestionnaireState = {
   questionFlow: Question[];
   currentQuestionIndex: number;
   answers: Answers;
+  futureQuestionnaire?: any;
   actions: {
     startRetake: () => void;
     answerQuestion: (questionId: string, answer: any) => void;
@@ -15,6 +16,7 @@ type QuestionnaireState = {
     previousQuestion: () => void;
     getCurrentQuestion: () => Question | undefined;
     getProgress: () => { total: number, answered: number, overallPercentage: number, pillarPercentages: Record<Pillar, number> };
+    setFutureQuestionnaire: (data: any) => void;
   }
 };
 
@@ -24,6 +26,7 @@ export const useQuestionnaireStore = create<QuestionnaireState>((set, get) => ({
   questionFlow: [...initialQuestions],
   currentQuestionIndex: 0,
   answers: {},
+  futureQuestionnaire: undefined,
   actions: {
     startRetake: () => {
       set({ currentQuestionIndex: 0 });
@@ -103,6 +106,9 @@ export const useQuestionnaireStore = create<QuestionnaireState>((set, get) => ({
         overallPercentage: questionFlow.length > 0 ? (answeredCount / questionFlow.length) * 100 : 0,
         pillarPercentages
       };
-    }
+    },
+    setFutureQuestionnaire: (data: any) => {
+      set({ futureQuestionnaire: data });
+    },
   }
 }));
