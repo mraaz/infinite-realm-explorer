@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -23,8 +24,8 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle } from 'lucide-react';
 import { futureQuestions } from '@/data/futureQuestions';
+import { Pillar } from '@/components/priority-ranking/types';
 
-type Pillar = 'Career' | 'Financials' | 'Health' | 'Connections';
 type Priorities = { mainFocus: Pillar; secondaryFocus: Pillar; maintenance: Pillar[] };
 type Answers = Record<string, string>;
 type ArchitectAnswers = { identity: string; system: string; proof: string; };
