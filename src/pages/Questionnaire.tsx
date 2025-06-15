@@ -7,7 +7,18 @@ import QuestionBox from "@/components/QuestionBox";
 import OverallProgressBar from "@/components/OverallProgressBar";
 import Header from "@/components/Header";
 import { useQuestionnaireStore } from "@/store/questionnaireStore";
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const Questionnaire = () => {
   const { actions, answers, currentQuestionIndex, questionFlow } = useQuestionnaireStore();
@@ -25,6 +36,10 @@ const Questionnaire = () => {
       navigate('/results');
     }
   }, [currentQuestionIndex, questionFlow.length, navigate, answers]);
+
+  const handleConfirmCancel = () => {
+    navigate('/results');
+  };
 
   if (!currentQuestion) {
     // Handle completion state
@@ -51,7 +66,23 @@ const Questionnaire = () => {
           <div className="flex justify-between items-center mb-8">
             <QuestionnaireHeader currentQuestion={currentQuestionIndex + 1} totalQuestions={questionFlow.length} />
             {isRetake && (
-              <Button variant="ghost" onClick={() => navigate('/results')}>Cancel</Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost">Cancel and Return to Results</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure you want to cancel?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Your progress on this retake will be lost. You can always start again from the results page.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Continue Retake</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleConfirmCancel} className={buttonVariants({ variant: "destructive" })}>Yes, Cancel</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
           <h1 className="text-3xl font-bold text-gray-800 text-center">
