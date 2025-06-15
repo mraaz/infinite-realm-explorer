@@ -5,8 +5,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { futureQuestions } from '@/data/futureQuestions';
 import { ArrowRight } from 'lucide-react';
+import { Pillar } from '@/components/priority-ranking/types';
 
-type Pillar = 'Career' | 'Financials' | 'Health' | 'Connections';
 type Answers = Record<string, string>;
 
 interface MaintenanceBaselineProps {
@@ -16,7 +16,9 @@ interface MaintenanceBaselineProps {
 }
 
 export const MaintenanceBaseline = ({ maintenancePillars, onComplete, value }: MaintenanceBaselineProps) => {
-  const questions = futureQuestions.filter(q => q.type === 'maintenance' && maintenancePillars.includes(q.pillar));
+  const questions = futureQuestions.filter(
+    q => q.type === 'maintenance' && maintenancePillars.includes(q.pillar as Pillar)
+  );
   const [answers, setAnswers] = useState<Answers>(value || {});
 
   const handleAnswerChange = (questionId: string, value: string) => {
