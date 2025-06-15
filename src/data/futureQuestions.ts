@@ -1,7 +1,6 @@
-
 export interface FutureQuestion {
   id: string;
-  pillar: 'Career' | 'Finances' | 'Health' | 'Connections';
+  pillar: 'Career' | 'Financials' | 'Health' | 'Connections';
   type: 'deep_dive' | 'maintenance';
   question: string;
   placeholder?: string;
