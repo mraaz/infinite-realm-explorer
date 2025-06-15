@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -21,6 +22,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { CheckCircle } from 'lucide-react';
+import { futureQuestions } from '@/data/futureQuestions';
 
 type Pillar = 'Career' | 'Financials' | 'Health' | 'Connections';
 type Priorities = { mainFocus: Pillar; secondaryFocus: Pillar; maintenance: Pillar[] };
@@ -29,9 +31,10 @@ type ArchitectAnswers = { identity: string; system: string; proof: string; };
 
 const STEPS = [
     { id: 1, name: 'Setting Priorities' },
-    { id: 2, name: 'Deep Dive' },
-    { id: 3, name: 'Maintenance' },
-    { id: 4, name: 'Confirmation' },
+    { id: 2, name: 'Main Focus' },
+    { id: 3, name: 'Secondary Focus' },
+    { id: 4, name: 'Maintenance' },
+    { id: 5, name: 'Confirmation' },
 ];
 
 const ARCHITECT_STEPS = [
@@ -74,13 +77,13 @@ const FutureQuestionnaire = () => {
     };
 
     const handleDeepDiveComplete = (deepDiveAnswers: Answers) => {
-        setAnswers(prev => ({ ...prev, ...deepDiveAnswers }));
-        setStep(3);
+        setAnswers(deepDiveAnswers);
+        setStep(prev => prev + 1);
     };
 
     const handleMaintenanceComplete = (maintenanceAnswers: Answers) => {
-        setAnswers(prev => ({ ...prev, ...maintenanceAnswers }));
-        setStep(4);
+        setAnswers(maintenanceAnswers);
+        setStep(5);
     };
 
     // Architect flow handlers
@@ -187,11 +190,14 @@ const FutureQuestionnaire = () => {
                 return <PriorityRanking progress={progress} onComplete={handlePrioritiesComplete} value={priorities} />;
             case 2:
                 if (!priorities) return null;
-                return <DeepDive mainFocus={priorities.mainFocus} secondaryFocus={priorities.secondaryFocus} onComplete={handleDeepDiveComplete} value={answers} />;
+                return <DeepDive pillar={priorities.mainFocus} onComplete={handleDeepDiveComplete} value={answers} />;
             case 3:
                 if (!priorities) return null;
-                return <MaintenanceBaseline maintenancePillars={priorities.maintenance} onComplete={handleMaintenanceComplete} value={answers} />;
+                return <DeepDive pillar={priorities.secondaryFocus} onComplete={handleDeepDiveComplete} value={answers} />;
             case 4:
+                if (!priorities) return null;
+                return <MaintenanceBaseline maintenancePillars={priorities.maintenance} onComplete={handleMaintenanceComplete} value={answers} />;
+            case 5:
                 return (
                      <div>
                         <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Confirm Your Future Self</h2>
@@ -208,12 +214,18 @@ const FutureQuestionnaire = () => {
                         {Object.keys(answers).length > 0 && (
                             <div className="bg-white/80 p-6 rounded-xl shadow-md border border-gray-200/80 mb-6 text-left">
                                 <h3 className="text-xl font-semibold text-gray-700 mb-4">Your Plan</h3>
-                                {Object.entries(answers).map(([key, value]) => (
-                                <div key={key} className="mb-3">
-                                    <p className="font-semibold capitalize text-gray-700">{key.replace(/_/g, ' ')}</p>
-                                    <p className="text-gray-600 pl-2">{value}</p>
-                                </div>
-                                ))}
+                                {Object.entries(answers)
+                                .sort(([keyA], [keyB]) => futureQuestions.findIndex(q => q.id === keyA) - futureQuestions.findIndex(q => q.id === keyB))
+                                .map(([key, value]) => {
+                                  const question = futureQuestions.find(q => q.id === key);
+                                  if (!question) return null;
+                                  return (
+                                    <div key={key} className="mb-4 border-b border-gray-200 pb-4 last:border-b-0 last:pb-0">
+                                        <p className="font-semibold text-gray-700">{question.question}</p>
+                                        <p className="text-gray-600 pl-4 mt-1">{value}</p>
+                                    </div>
+                                  );
+                                })}
                             </div>
                         )}
 
@@ -257,7 +269,7 @@ const FutureQuestionnaire = () => {
             <main className="flex-grow flex flex-col items-center px-4 py-8 md:py-12">
                 <div className="w-full max-w-5xl">
                     <div className="flex justify-end items-center mb-4 min-h-[40px]">
-                        {step < 4 && (
+                        {step < 5 && (
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="ghost">Cancel and Return to Results</Button>
