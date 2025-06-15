@@ -1,24 +1,12 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Briefcase, Landmark, Heart, Users, ArrowRight } from 'lucide-react';
-import { PillarProgress } from '@/components/NewQuadrantChart';
 import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
-
-type Pillar = 'Career' | 'Financials' | 'Health' | 'Connections';
-type PillarInfo = {
-  id: Pillar;
-  name: Pillar;
-  score: number;
-  icon: JSX.Element;
-};
-
-interface PriorityRankingProps {
-  progress: PillarProgress;
-  onComplete: (priorities: { mainFocus: Pillar; secondaryFocus: Pillar; maintenance: Pillar[] }) => void;
-  value?: { mainFocus: Pillar; secondaryFocus: Pillar; maintenance: Pillar[] } | null;
-}
+import { Pillar, PillarInfo, PriorityRankingProps } from './priority-ranking/types';
+import PillarCard from './priority-ranking/PillarCard';
+import DropZone from './priority-ranking/DropZone';
+import { PillarProgress } from './NewQuadrantChart';
 
 const pillarDetails: Record<Pillar, { icon: JSX.Element }> = {
   Career: { icon: <Briefcase className="h-6 w-6 text-purple-600" /> },
@@ -26,54 +14,6 @@ const pillarDetails: Record<Pillar, { icon: JSX.Element }> = {
   Health: { icon: <Heart className="h-6 w-6 text-green-600" /> },
   Connections: { icon: <Users className="h-6 w-6 text-orange-600" /> },
 };
-
-const PillarCard = ({ pillar, recommendedPillars }: { pillar: PillarInfo, recommendedPillars: Pillar[] }) => (
-    <div className="flex items-center gap-4 p-4 rounded-lg bg-white border cursor-grab shadow-sm">
-      {pillar.icon}
-      <div className="flex-grow">
-        <h4 className="font-semibold">{pillar.name}</h4>
-        <p className="text-sm text-gray-500">Current score: {pillar.score}</p>
-      </div>
-      {recommendedPillars.includes(pillar.id) && <Badge variant="secondary">Recommended</Badge>}
-    </div>
-);
-
-const DropZone = ({ title, droppableId, pillars, recommendedPillars }: { title: string, droppableId: string, pillars: PillarInfo[], recommendedPillars: Pillar[] }) => (
-    <div>
-      <h3 className="font-semibold text-gray-700">{title}</h3>
-      <Droppable droppableId={droppableId}>
-        {(provided, snapshot) => (
-          <div
-            {...provided.droppableProps}
-            ref={provided.innerRef}
-            className={`p-4 w-full min-h-[110px] bg-gray-50/50 border-2 border-dashed rounded-lg flex flex-col justify-center items-center ${snapshot.isDraggingOver ? 'border-purple-400 bg-purple-50' : 'border-gray-300'}`}
-          >
-            {pillars.length === 0 ? (
-              <p className="text-gray-400">Drag pillar here</p>
-            ) : (
-              pillars.map((pillar, index) => (
-                <Draggable key={pillar.id} draggableId={pillar.id} index={index}>
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                    >
-                      <div className="w-full mb-2">
-                        <PillarCard pillar={pillar} recommendedPillars={recommendedPillars} />
-                      </div>
-                    </div>
-                  )}
-                </Draggable>
-              ))
-            )}
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
-    </div>
-);
-
 
 export const PriorityRanking = ({ progress, onComplete, value }: PriorityRankingProps) => {
   const initialPillars = useMemo(() => {
@@ -198,11 +138,11 @@ export const PriorityRanking = ({ progress, onComplete, value }: PriorityRanking
                         >
                             {unassigned.map((pillar, index) => (
                             <Draggable key={pillar.id} draggableId={pillar.id} index={index}>
-                                {(provided) => (
+                                {(providedDraggable) => (
                                 <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    {...provided.dragHandleProps}
+                                    ref={providedDraggable.innerRef}
+                                    {...providedDraggable.draggableProps}
+                                    {...providedDraggable.dragHandleProps}
                                 >
                                     <div className="mb-3">
                                         <PillarCard pillar={pillar} recommendedPillars={recommendedPillars} />
