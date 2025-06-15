@@ -71,8 +71,6 @@ const Results = () => {
     setActivePillar(current => (current === pillar ? undefined : pillar));
   };
   
-  const answers = {};
-
   const handleRetakeCurrent = () => {
     startRetake();
     navigate('/questionnaire', { state: { retake: true } });
