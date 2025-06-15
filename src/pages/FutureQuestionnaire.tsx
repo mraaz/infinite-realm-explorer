@@ -4,10 +4,21 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import { PillarProgress } from '@/components/NewQuadrantChart';
 import PriorityRanking from '@/components/PriorityRanking';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import IdentityArchetypeSelection from '@/components/IdentityArchetypeSelection';
 import CoreSystemDesign from '@/components/CoreSystemDesign';
 import ProofOfIdentity from '@/components/ProofOfIdentity';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 
 export type Priorities = {
@@ -45,6 +56,10 @@ const FutureQuestionnaire = () => {
     const handleProofComplete = (proof: string) => {
         setProofOfIdentity(proof);
         setPhase(5);
+    };
+
+    const handleConfirmCancel = () => {
+        navigate('/results');
     };
 
     const handleGoToResults = () => {
@@ -104,6 +119,28 @@ const FutureQuestionnaire = () => {
                         </div>
                     )}
                 </div>
+
+                {phase < 5 && (
+                    <div className="mt-8 text-center">
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost">Cancel and Return to Results</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure you want to cancel?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Your progress for the Future Self Architect will be lost. You can always start again from the results page.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Continue Designing</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleConfirmCancel} className={buttonVariants({ variant: "destructive" })}>Yes, Cancel</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                )}
             </main>
         </div>
     );
