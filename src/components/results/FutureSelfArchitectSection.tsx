@@ -40,7 +40,7 @@ const FutureSelfArchitectSection = ({ architect, onStart, isQuestionnaireComplet
   const handleAddClick = () => {
     if (isQuestionnaireComplete) {
       if (canAddHabit) {
-        onStart(); // No index means add new
+        onStart();
       } else {
         toast({
           title: "Habit Limit Reached",
