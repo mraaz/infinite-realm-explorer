@@ -13,6 +13,8 @@ import insightSyntheses from '@/data/insights.json';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import PdfFooter from '@/components/results/PdfFooter';
+import { useFireworks } from '@/hooks/useFireworks';
+import { MarkAsDoneData } from '@/components/results/MarkAsDoneDialog';
 
 const Results = () => {
   const { answers, actions } = useQuestionnaireStore();
@@ -57,6 +59,7 @@ const Results = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const { fire } = useFireworks();
   const { futureQuestionnaire, futureSelfArchitect: initialArchitect, futureProgress: locationFutureProgress } = location.state || {};
   
   const isFutureQuestionnaireComplete = !!futureQuestionnaire;
@@ -69,7 +72,15 @@ const Results = () => {
     connections: 0,
   });
 
-  let futureSelfArchitect: { mainFocus: string; identity: string; system: string; proof: string; }[] | undefined;
+  let futureSelfArchitect: { 
+    mainFocus: string; 
+    identity: string; 
+    system: string; 
+    proof: string; 
+    isCompleted?: boolean;
+    completionDate?: string | Date;
+    completionNotes?: string;
+  }[] | undefined;
 
   if (futureQuestionnaire && futureQuestionnaire.priorities && futureQuestionnaire.architect) {
       const { priorities, architect: architectAnswers } = futureQuestionnaire;
@@ -84,6 +95,9 @@ const Results = () => {
                 identity: arch.identity,
                 system: arch.system,
                 proof: arch.proof,
+                isCompleted: arch.isCompleted,
+                completionDate: arch.completionDate,
+                completionNotes: arch.completionNotes,
             }))
             .filter(a => a.identity && a.system && a.proof);
       }
@@ -105,6 +119,33 @@ const Results = () => {
 
   const handleStartArchitectQuestionnaire = (index?: number) => {
     navigate('/future-questionnaire', { state: { ...location.state, progress, isArchitect: true, editHabitIndex: index } });
+  };
+
+  const handleMarkHabitAsDone = (habitIndex: number, data: MarkAsDoneData) => {
+    fire();
+
+    const currentFq = location.state?.futureQuestionnaire;
+    if (!currentFq || !currentFq.architect) return;
+
+    const updatedArchitect = [...currentFq.architect];
+    updatedArchitect[habitIndex] = {
+      ...updatedArchitect[habitIndex],
+      isCompleted: true,
+      completionDate: data.completionDate.toISOString(),
+      completionNotes: data.completionNotes,
+    };
+
+    const updatedFq = {
+      ...currentFq,
+      architect: updatedArchitect,
+    };
+
+    useQuestionnaireStore.getState().setFutureQuestionnaire(updatedFq);
+
+    navigate('/results', {
+      state: { ...location.state, futureQuestionnaire: updatedFq },
+      replace: true,
+    });
   };
 
   const handleDownloadReport = async () => {
@@ -179,6 +220,7 @@ const Results = () => {
             architect={futureSelfArchitect}
             onStart={handleStartArchitectQuestionnaire}
             isQuestionnaireComplete={isFutureQuestionnaireComplete}
+            onMarkAsDone={handleMarkHabitAsDone}
           />
           <PdfFooter />
         </div>
