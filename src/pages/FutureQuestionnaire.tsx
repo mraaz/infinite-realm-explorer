@@ -210,13 +210,13 @@ const FutureQuestionnaire = () => {
                 return <PriorityRanking progress={progress} onComplete={handlePrioritiesComplete} value={priorities} />;
             case 2:
                 if (!priorities) return null;
-                return <DeepDive pillar={priorities.mainFocus} onComplete={handleDeepDiveComplete} value={answers} />;
+                return <DeepDive pillar={priorities.mainFocus as any} onComplete={handleDeepDiveComplete} value={answers} />;
             case 3:
                 if (!priorities) return null;
-                return <DeepDive pillar={priorities.secondaryFocus} onComplete={handleDeepDiveComplete} value={answers} />;
+                return <DeepDive pillar={priorities.secondaryFocus as any} onComplete={handleDeepDiveComplete} value={answers} />;
             case 4:
                 if (!priorities) return null;
-                return <MaintenanceBaseline maintenancePillars={priorities.maintenance} onComplete={handleMaintenanceComplete} value={answers} />;
+                return <MaintenanceBaseline maintenancePillars={priorities.maintenance as any} onComplete={handleMaintenanceComplete} value={answers} />;
             case 5:
                 return (
                      <div>
