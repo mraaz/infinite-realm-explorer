@@ -1,4 +1,3 @@
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Settings, ArrowRight } from 'lucide-react';
@@ -34,8 +33,8 @@ const FutureSelfArchitectSection = ({ architect, onStart, isQuestionnaireComplet
 
   return (
     <section className="mb-16 flex justify-center">
-      <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-gray-200/80 w-full max-w-3xl flex flex-col">
-        <CardContent className="p-6 md:p-8">
+      <Card className="bg-white/80 shadow-lg border border-gray-200/80 w-full max-w-3xl flex flex-col">
+        <CardContent>
           <div className="flex items-center gap-3 text-2xl font-bold text-gray-800 mb-6">
             <div className="bg-blue-100 p-2 rounded-lg">
               <Settings className="h-6 w-6 text-blue-600" />
