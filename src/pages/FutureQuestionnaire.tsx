@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -159,15 +158,6 @@ const FutureQuestionnaire = () => {
                             <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Confirm Your Future Identity</h2>
                             
                             <div className="space-y-6">
-                                <Card className="bg-white/80 border-gray-200/80">
-                                    <CardHeader>
-                                        <CardTitle className="text-lg text-gray-700">Your Main Focus</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="text-2xl font-bold text-purple-700">{priorities?.mainFocus}</p>
-                                    </CardContent>
-                                </Card>
-
                                 <Card className="bg-white/80 border-gray-200/80">
                                     <CardHeader>
                                         <CardTitle className="text-lg text-gray-700">Your Chosen Identity</CardTitle>
