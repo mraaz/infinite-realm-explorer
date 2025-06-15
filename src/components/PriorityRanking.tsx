@@ -58,9 +58,10 @@ const DropZone = ({ title, droppableId, pillars, recommendedPillars }: { title: 
                       ref={provided.innerRef}
                       {...provided.draggableProps}
                       {...provided.dragHandleProps}
-                      className="w-full mb-2"
                     >
-                      <PillarCard pillar={pillar} recommendedPillars={recommendedPillars} />
+                      <div className="w-full mb-2">
+                        <PillarCard pillar={pillar} recommendedPillars={recommendedPillars} />
+                      </div>
                     </div>
                   )}
                 </Draggable>
@@ -202,9 +203,10 @@ export const PriorityRanking = ({ progress, onComplete, value }: PriorityRanking
                                     ref={provided.innerRef}
                                     {...provided.draggableProps}
                                     {...provided.dragHandleProps}
-                                    className="mb-3"
                                 >
-                                    <PillarCard pillar={pillar} recommendedPillars={recommendedPillars} />
+                                    <div className="mb-3">
+                                        <PillarCard pillar={pillar} recommendedPillars={recommendedPillars} />
+                                    </div>
                                 </div>
                                 )}
                             </Draggable>
