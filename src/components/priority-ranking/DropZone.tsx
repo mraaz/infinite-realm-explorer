@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Droppable, Draggable } from '@hello-pangea/dnd';
-import { PillarInfo } from './types';
+import { PillarInfo, Pillar } from './types';
 import PillarCard from './PillarCard';
 
 const DropZone = ({ title, droppableId, pillars, recommendedPillars }: { title: string; droppableId: string; pillars: PillarInfo[]; recommendedPillars: Pillar[] }) => (
