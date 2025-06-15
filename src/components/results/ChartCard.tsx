@@ -49,7 +49,7 @@ const ChartCard = ({
           activePillar={activePillar}
         />
         {isFuture && !hasData && (
-          <Button onClick={onRetake} size="lg" className="mt-8 no-print h-11">
+          <Button onClick={onRetake} size="lg" className="mt-8 no-print">
             <Play className="mr-2 h-4 w-4" />
             Start your future self journey
           </Button>
