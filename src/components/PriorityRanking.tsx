@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from 'react';
 import { PillarProgress } from '@/components/NewQuadrantChart';
 import { Button } from '@/components/ui/button';
@@ -64,7 +63,7 @@ const PriorityRanking = ({ progress, onComplete }: PriorityRankingProps) => {
     return (
         <div className="text-center">
             <h2 className="text-xl font-semibold text-gray-700">Phase 1: Set Your Priorities</h2>
-            <p className="text-gray-600 mt-2 mb-6">To build your ideal 5-year future, where do you want to focus your energy? Select one Main Focus, and one Secondary Focus.</p>
+            <p className="text-gray-600 mt-2 mb-6">You're in the driver's seat. To build your ideal 5-year future, where do you want to focus your energy? Select one Main Focus and one Secondary Focus below.</p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 {availablePillars.map(pillar => (

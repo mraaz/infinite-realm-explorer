@@ -4,9 +4,8 @@ import Header from '@/components/Header';
 import { PillarProgress } from '@/components/NewQuadrantChart';
 import PriorityRanking from '@/components/PriorityRanking';
 import { Button, buttonVariants } from '@/components/ui/button';
-import IdentityArchetypeSelection from '@/components/IdentityArchetypeSelection';
-import CoreSystemDesign from '@/components/CoreSystemDesign';
-import ProofOfIdentity from '@/components/ProofOfIdentity';
+import DeepDive, { DeepDiveAnswers } from '@/components/DeepDive';
+import MaintenanceBaseline, { MaintenanceAnswers } from '@/components/MaintenanceBaseline';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,28 +32,22 @@ const FutureQuestionnaire = () => {
     
     const [phase, setPhase] = useState(1);
     const [priorities, setPriorities] = useState<Priorities | null>(null);
-    const [chosenIdentity, setChosenIdentity] = useState<string | null>(null);
-    const [coreSystem, setCoreSystem] = useState<string | null>(null);
-    const [proofOfIdentity, setProofOfIdentity] = useState<string | null>(null);
+    const [deepDiveAnswers, setDeepDiveAnswers] = useState<DeepDiveAnswers | null>(null);
+    const [maintenanceAnswers, setMaintenanceAnswers] = useState<MaintenanceAnswers | null>(null);
 
     const handlePrioritiesComplete = (p: Priorities) => {
         setPriorities(p);
         setPhase(2);
     };
 
-    const handleIdentityComplete = (identity: string) => {
-        setChosenIdentity(identity);
+    const handleDeepDiveComplete = (answers: DeepDiveAnswers) => {
+        setDeepDiveAnswers(answers);
         setPhase(3);
     };
 
-    const handleSystemComplete = (system: string) => {
-        setCoreSystem(system);
+    const handleMaintenanceComplete = (answers: MaintenanceAnswers) => {
+        setMaintenanceAnswers(answers);
         setPhase(4);
-    };
-
-    const handleProofComplete = (proof: string) => {
-        setProofOfIdentity(proof);
-        setPhase(5);
     };
 
     const handleConfirmCancel = () => {
@@ -62,13 +55,14 @@ const FutureQuestionnaire = () => {
     };
 
     const handleGoToResults = () => {
-      const futureSelfArchitect = {
-          identity: chosenIdentity,
-          system: coreSystem,
-          proof: proofOfIdentity,
-          mainFocus: priorities?.mainFocus,
+      const futureQuestionnaireAnswers = {
+          priorities,
+          deepDiveAnswers,
+          maintenanceAnswers,
       };
-      navigate('/results', { state: { futureSelfArchitect }});
+      // In a real application, this data would be saved and used on the results page.
+      console.log("Future Questionnaire Answers:", futureQuestionnaireAnswers);
+      navigate('/results');
     }
 
     if (!progress) {
@@ -90,7 +84,7 @@ const FutureQuestionnaire = () => {
             <main className="flex-grow flex flex-col items-center px-4 py-8 md:py-12">
                 <div className="w-full max-w-4xl">
                     <div className="flex justify-end items-center mb-4 min-h-[40px]">
-                        {phase < 5 && (
+                        {phase < 4 && (
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="ghost">Cancel and Return to Results</Button>
@@ -123,23 +117,23 @@ const FutureQuestionnaire = () => {
                         {phase === 1 && progress && (
                             <PriorityRanking progress={progress} onComplete={handlePrioritiesComplete} />
                         )}
-                        {phase === 2 && priorities?.mainFocus && (
-                            <IdentityArchetypeSelection mainFocus={priorities.mainFocus} onComplete={handleIdentityComplete} />
-                        )}
-                        {phase === 3 && chosenIdentity && priorities?.mainFocus && (
-                            <CoreSystemDesign 
-                                chosenIdentity={chosenIdentity} 
-                                mainFocus={priorities.mainFocus} 
-                                onComplete={handleSystemComplete} 
+                        {phase === 2 && priorities && (
+                            <DeepDive 
+                                mainFocus={priorities.mainFocus}
+                                secondaryFocus={priorities.secondaryFocus}
+                                onComplete={handleDeepDiveComplete}
                             />
                         )}
-                        {phase === 4 && chosenIdentity && (
-                            <ProofOfIdentity chosenIdentity={chosenIdentity} onComplete={handleProofComplete} />
+                        {phase === 3 && priorities && (
+                            <MaintenanceBaseline
+                                maintenancePillars={priorities.maintenance}
+                                onComplete={handleMaintenanceComplete}
+                            />
                         )}
-                         {phase === 5 && (
+                         {phase === 4 && (
                             <div className="text-center">
                                 <h2 className="text-2xl font-bold text-gray-800">Ready to see your Future Self?</h2>
-                                <p className="text-gray-600 mt-2">We've mapped out your priorities and designed your identity. You can now see what your 5-year future could look like.</p>
+                                <p className="text-gray-600 mt-2">Excellent. We've mapped out your priorities. Are you ready to see what your 5-year future could look like based on this new focus?</p>
                                  <Button onClick={handleGoToResults} className="mt-6">Show Me My Future Self</Button>
                             </div>
                         )}
