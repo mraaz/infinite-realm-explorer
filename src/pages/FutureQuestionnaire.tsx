@@ -55,6 +55,13 @@ const FutureQuestionnaire = () => {
     const [architectAnswers, setArchitectAnswers] = useState<ArchitectAnswers>({ identity: '', system: '', proof: '' });
 
     useEffect(() => {
+        // Pre-fill architect answers when editing
+        if (isArchitect && location.state?.futureQuestionnaire?.architect) {
+            setArchitectAnswers(location.state.futureQuestionnaire.architect);
+        }
+    }, [isArchitect, location.state]);
+
+    useEffect(() => {
         if (isArchitect && progress && !priorities) {
             // Automatically determine priorities for Architect flow
             const pillarScores = (Object.keys(progress) as (keyof PillarProgress)[])
