@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { AlertTriangle, Bulb, SquareCode, Users } from 'lucide-react';
+import { AlertTriangle, Lightbulb, SquareCode, Users } from 'lucide-react';
 
-interface Insight {
+export interface Insight {
   title: string;
   description: string;
   icon: keyof typeof iconComponents;
@@ -15,7 +15,7 @@ interface InsightSynthesisProps {
 
 const iconComponents = {
   AlertTriangle,
-  Bulb,
+  Lightbulb,
   SquareCode,
   Users,
 };

@@ -6,7 +6,7 @@ import { useQuestionnaireStore } from '@/store/questionnaireStore';
 import { PillarProgress } from '@/components/NewQuadrantChart';
 import ResultsHeader from '@/components/results/ResultsHeader';
 import ChartsSection from '@/components/results/ChartsSection';
-import InsightSynthesis from '@/components/results/InsightSynthesis';
+import InsightSynthesis, { Insight } from '@/components/results/InsightSynthesis';
 import FutureSelfArchitectSection from '@/components/results/FutureSelfArchitectSection';
 import ResultsActions from '@/components/results/ResultsActions';
 import ResultsFooter from '@/components/results/ResultsFooter';
@@ -221,7 +221,7 @@ const Results = () => {
             onRetakeCurrent={handleRetakeCurrent}
             onStartFutureQuestionnaire={handleSetFutureTargets}
           />
-          <InsightSynthesis insights={insightSyntheses} />
+          <InsightSynthesis insights={insightSyntheses as Insight[]} />
           <PdfFooter />
         </div>
         <div ref={page2Ref}>
