@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Settings } from 'lucide-react';
@@ -74,20 +75,20 @@ const FutureSelfArchitectSection = ({ architect, onStart, isQuestionnaireComplet
           ) : (
             <div>
               <p className="text-gray-600 mb-4">Goals are fleeting, but your identity is who you are. Instead of setting a target, let's define the identity of your future self and build the systems that make success inevitable.</p>
-              <div className="bg-gray-100/50 p-4 rounded-lg">
+              <div className="bg-gray-100/50 p-4 rounded-lg mb-4">
                   <p className="font-semibold text-gray-700">Ready to design your future identity?</p>
-                  <p className="text-gray-600 text-sm mb-4">Create a personalised identity system based on your main focus area that will help you achieve your goals through consistent habits and mindset shifts.</p>
-                  <Button
-                    onClick={handleStartClick}
-                    className={cn(
-                      "w-full justify-between no-print",
-                      !isQuestionnaireComplete && "opacity-50 cursor-not-allowed"
-                    )}
-                  >
-                      <span>Design Your Future Self</span>
-                      <span>&rarr;</span>
-                  </Button>
+                  <p className="text-gray-600 text-sm">Create a personalised identity system based on your main focus area that will help you achieve your goals through consistent habits and mindset shifts.</p>
               </div>
+              <Button
+                onClick={handleStartClick}
+                className={cn(
+                  "w-full justify-between no-print",
+                  !isQuestionnaireComplete && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                  <span>Design Your Future Self</span>
+                  <span>&rarr;</span>
+              </Button>
             </div>
           )}
         </CardContent>
