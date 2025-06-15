@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Droppable, Draggable } from '@hello-pangea/dnd';
 import { PillarInfo, Pillar } from './types';
@@ -26,7 +25,6 @@ const DropZone = ({ title, droppableId, pillars, recommendedPillars }: { title: 
                     {...providedDraggable.dragHandleProps}
                     pillar={pillar}
                     recommendedPillars={recommendedPillars}
-                    className="w-full"
                   />
                 )}
               </Draggable>

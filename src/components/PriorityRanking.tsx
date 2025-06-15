@@ -133,7 +133,7 @@ export const PriorityRanking = ({ progress, onComplete, value }: PriorityRanking
                         <div
                             {...provided.droppableProps}
                             ref={provided.innerRef}
-                            className={`p-2 rounded-lg min-h-[100px] flex flex-col gap-3 ${snapshot.isDraggingOver ? 'bg-blue-50' : 'bg-gray-50/50'}`}
+                            className={`p-2 rounded-lg min-h-[100px] flex flex-col items-center gap-3 ${snapshot.isDraggingOver ? 'bg-blue-50' : 'bg-gray-50/50'}`}
                         >
                             {unassigned.map((pillar, index) => (
                             <Draggable key={pillar.id} draggableId={pillar.id} index={index}>

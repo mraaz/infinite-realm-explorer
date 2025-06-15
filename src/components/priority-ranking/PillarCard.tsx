@@ -9,7 +9,7 @@ const PillarCard = React.forwardRef<HTMLDivElement, { pillar: PillarInfo; recomm
     <div
       ref={ref}
       {...props}
-      className={cn("flex items-center gap-4 p-4 rounded-lg bg-white border cursor-grab shadow-sm", className)}
+      className={cn("flex items-center gap-4 p-4 rounded-lg bg-white border cursor-grab shadow-sm w-80", className)}
     >
       {pillar.icon}
       <div className="flex-grow">
