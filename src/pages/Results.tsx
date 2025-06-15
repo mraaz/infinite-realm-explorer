@@ -1,211 +1,46 @@
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import Header from '@/components/Header';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useQuestionnaireStore } from '@/store/questionnaireStore';
-import { PillarProgress } from '@/components/NewQuadrantChart';
+import { Insight } from '@/components/results/InsightSynthesis';
 import ResultsHeader from '@/components/results/ResultsHeader';
 import ChartsSection from '@/components/results/ChartsSection';
-import InsightSynthesis, { Insight } from '@/components/results/InsightSynthesis';
+import InsightSynthesis from '@/components/results/InsightSynthesis';
 import FutureSelfArchitectSection from '@/components/results/FutureSelfArchitectSection';
 import ResultsActions from '@/components/results/ResultsActions';
 import ResultsFooter from '@/components/results/ResultsFooter';
 import insightSyntheses from '@/data/insights.json';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import PdfFooter from '@/components/results/PdfFooter';
-import { useFireworks } from '@/hooks/useFireworks';
-import { MarkAsDoneData } from '@/components/results/MarkAsDoneDialog';
+import { useResultsData } from '@/hooks/useResultsData';
+import { useResultsActions } from '@/hooks/useResultsActions';
+import { usePdfReport } from '@/hooks/usePdfReport';
 
 const Results = () => {
-  const { answers, actions, futureQuestionnaire: storeFutureQuestionnaire } = useQuestionnaireStore();
-  const { getProgress, startRetake } = actions;
-  
   const [activePillar, setActivePillar] = useState<string | undefined>(undefined);
   const page1Ref = useRef<HTMLDivElement>(null);
   const page2Ref = useRef<HTMLDivElement>(null);
 
-  // Mock data based on the image for placeholder content
-  const mockProgress: PillarProgress = {
-    basics: 75,
-    career: 80,
-    finances: 60,
-    health: 90,
-    connections: 70,
-  };
+  const {
+    answers,
+    progress,
+    futureProgress,
+    futureQuestionnaire,
+    isFutureQuestionnaireComplete,
+    futureSelfArchitect,
+  } = useResultsData();
 
-  const progress: PillarProgress = (() => {
-    const answeredQuestionsCount = Object.keys(answers).length;
-    if (answeredQuestionsCount === 0) {
-      return mockProgress;
-    }
-    const { pillarPercentages } = getProgress();
-    return {
-      basics: 75, // Placeholder for basics as its scoring is not defined in getProgress
-      career: pillarPercentages.Career ?? 0,
-      finances: pillarPercentages.Finances ?? 0,
-      health: pillarPercentages.Health ?? 0,
-      connections: pillarPercentages.Connections ?? 0,
-    };
-  })();
+  const {
+    handleRetakeCurrent,
+    handleSetFutureTargets,
+    handleStartArchitectQuestionnaire,
+    handleMarkHabitAsDone,
+  } = useResultsActions(futureQuestionnaire, progress);
 
-  // Default data for the future self chart.
-  const defaultFutureProgress: PillarProgress = {
-    basics: 80,
-    career: 95,
-    finances: 85,
-    health: 90,
-    connections: 80,
-  };
-
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { fire } = useFireworks();
-  const { futureQuestionnaire: locationFutureQuestionnaire, futureSelfArchitect: initialArchitect, futureProgress: locationFutureProgress } = location.state || {};
-
-  const futureQuestionnaire = storeFutureQuestionnaire || locationFutureQuestionnaire;
-
-  useEffect(() => {
-    if (locationFutureQuestionnaire && !storeFutureQuestionnaire) {
-      actions.setFutureQuestionnaire(locationFutureQuestionnaire);
-    }
-  }, [locationFutureQuestionnaire, storeFutureQuestionnaire, actions]);
-  
-  const isFutureQuestionnaireComplete = !!futureQuestionnaire;
-
-  const futureProgress = locationFutureProgress || (isFutureQuestionnaireComplete ? defaultFutureProgress : {
-    basics: 0,
-    career: 0,
-    finances: 0,
-    health: 0,
-    connections: 0,
-  });
-
-  let futureSelfArchitect: { 
-    mainFocus: string; 
-    identity: string; 
-    system: string; 
-    proof: string; 
-    isCompleted?: boolean;
-    completionDate?: string | Date;
-    completionNotes?: string;
-  }[] | undefined;
-
-  if (futureQuestionnaire && futureQuestionnaire.priorities && futureQuestionnaire.architect) {
-      const { priorities, architect: architectAnswers } = futureQuestionnaire;
-      const mainFocus = priorities.mainFocus;
-
-      const architects = Array.isArray(architectAnswers) ? architectAnswers : [architectAnswers];
-
-      if (mainFocus) {
-          futureSelfArchitect = architects
-            .map(arch => ({
-                mainFocus: mainFocus,
-                identity: arch.identity,
-                system: arch.system,
-                proof: arch.proof,
-                isCompleted: arch.isCompleted,
-                completionDate: arch.completionDate,
-                completionNotes: arch.completionNotes,
-            }))
-            .filter(a => a.identity && a.system && a.proof);
-      }
-  }
-
+  const { handleDownloadReport } = usePdfReport(page1Ref, page2Ref, futureSelfArchitect);
 
   const handlePillarClick = (pillar: string) => {
     setActivePillar(current => (current === pillar ? undefined : pillar));
   };
   
-  const handleRetakeCurrent = () => {
-    startRetake();
-    navigate('/questionnaire', { state: { retake: true } });
-  };
-
-  const handleSetFutureTargets = () => {
-    navigate('/future-questionnaire', { state: { ...location.state, progress, isArchitect: false } });
-  };
-
-  const handleStartArchitectQuestionnaire = (index?: number) => {
-    navigate('/future-questionnaire', { state: { ...location.state, progress, isArchitect: true, editHabitIndex: index } });
-  };
-
-  const handleMarkHabitAsDone = (habitIndex: number, data: MarkAsDoneData) => {
-    fire();
-
-    const currentFq = futureQuestionnaire;
-    if (!currentFq || !currentFq.architect) return;
-
-    const updatedArchitect = [...currentFq.architect];
-    updatedArchitect[habitIndex] = {
-      ...updatedArchitect[habitIndex],
-      isCompleted: true,
-      completionDate: data.completionDate.toISOString(),
-      completionNotes: data.completionNotes,
-    };
-
-    const updatedFq = {
-      ...currentFq,
-      architect: updatedArchitect,
-    };
-
-    actions.setFutureQuestionnaire(updatedFq);
-
-    navigate('/results', {
-      state: { ...location.state, futureQuestionnaire: updatedFq },
-      replace: true,
-    });
-  };
-
-  const handleDownloadReport = async () => {
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfPageHeight = pdf.internal.pageSize.getHeight();
-    const margin = 15; // 15mm margin
-    const contentWidth = pdfWidth - (margin * 2);
-    const pageContentHeight = pdfPageHeight - (margin * 2);
-
-    const appendContentAsImage = async (element: HTMLElement) => {
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        useCORS: true,
-      });
-      const imgData = canvas.toDataURL('image/png');
-      const imgProps = pdf.getImageProperties(imgData);
-      const imgHeight = (imgProps.height * contentWidth) / imgProps.width;
-
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      // Add first page/slice of the content
-      pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, imgHeight);
-      heightLeft -= pageContentHeight;
-
-      while (heightLeft > 0) {
-        position -= pageContentHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', margin, position + margin, contentWidth, imgHeight);
-        heightLeft -= pageContentHeight;
-      }
-    };
-    
-    const page1Element = page1Ref.current;
-    if (page1Element) {
-      await appendContentAsImage(page1Element);
-    }
-
-    if (futureSelfArchitect) {
-      const page2Element = page2Ref.current;
-      if (page2Element) {
-        pdf.addPage();
-        await appendContentAsImage(page2Element);
-      }
-    }
-    
-    pdf.save('life-view-report.pdf');
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <Header />
