@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -21,6 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle } from 'lucide-react';
 import { futureQuestions } from '@/data/futureQuestions';
 
@@ -151,26 +151,45 @@ const FutureQuestionnaire = () => {
                         <div>
                             <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Confirm Your Future Identity</h2>
                             
-                            <div className="bg-white/80 p-6 rounded-xl shadow-md border border-gray-200/80 mb-6 space-y-4 text-left">
-                                <div>
-                                    <p className="font-semibold text-lg text-gray-700">Your Main Focus</p>
-                                    <p className="text-gray-600 pl-2 text-lg">{priorities?.mainFocus}</p>
-                                </div>
-                                <hr />
-                                <div>
-                                    <p className="font-semibold text-lg text-gray-700">Your Chosen Identity</p>
-                                    <p className="text-gray-600 pl-2 text-lg">{architectAnswers.identity || 'Not set'}</p>
-                                </div>
-                                <hr />
-                                 <div>
-                                    <p className="font-semibold text-lg text-gray-700">Your Core System</p>
-                                    <p className="text-gray-600 pl-2 text-lg">{architectAnswers.system || 'Not set'}</p>
-                                </div>
-                                <hr />
-                                 <div>
-                                    <p className="font-semibold text-lg text-gray-700">Your Proof of Identity</p>
-                                    <p className="text-gray-600 pl-2 text-lg">{architectAnswers.proof || 'Not set'}</p>
-                                </div>
+                            <div className="space-y-6">
+                                <Card className="bg-white/80 border-gray-200/80">
+                                    <CardHeader>
+                                        <CardTitle className="text-lg text-gray-700">Your Main Focus</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-2xl font-bold text-purple-700">{priorities?.mainFocus}</p>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="bg-white/80 border-gray-200/80">
+                                    <CardHeader>
+                                        <CardTitle className="text-lg text-gray-700">Your Chosen Identity</CardTitle>
+                                        <CardDescription>Step 1: The person you will become.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-gray-700 italic">"{architectAnswers.identity || 'Not set'}"</p>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="bg-white/80 border-gray-200/80">
+                                    <CardHeader>
+                                        <CardTitle className="text-lg text-gray-700">Your Core System</CardTitle>
+                                        <CardDescription>Step 2: The habits that will forge your identity.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-gray-700 italic">"{architectAnswers.system || 'Not set'}"</p>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="bg-white/80 border-gray-200/80">
+                                    <CardHeader>
+                                        <CardTitle className="text-lg text-gray-700">Your Proof of Identity</CardTitle>
+                                        <CardDescription>Step 3: Your first step on this new path.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-gray-700 italic">"{architectAnswers.proof || 'Not set'}"</p>
+                                    </CardContent>
+                                </Card>
                             </div>
 
                             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
