@@ -28,7 +28,7 @@ const pillarDetails: Record<Pillar, { icon: JSX.Element }> = {
 };
 
 const PillarCard = ({ pillar, recommendedPillars }: { pillar: PillarInfo, recommendedPillars: Pillar[] }) => (
-    <div className="flex items-center gap-4 p-4 rounded-lg bg-white border cursor-grab transition-all shadow-sm">
+    <div className="flex items-center gap-4 p-4 rounded-lg bg-white border cursor-grab shadow-sm">
       {pillar.icon}
       <div className="flex-grow">
         <h4 className="font-semibold">{pillar.name}</h4>
@@ -46,7 +46,7 @@ const DropZone = ({ title, droppableId, pillars, recommendedPillars }: { title: 
           <div
             {...provided.droppableProps}
             ref={provided.innerRef}
-            className={`p-4 w-full min-h-[110px] bg-gray-50/50 border-2 border-dashed rounded-lg flex flex-col justify-center items-center gap-2 transition-colors ${snapshot.isDraggingOver ? 'border-purple-400 bg-purple-50' : 'border-gray-300'}`}
+            className={`p-4 w-full min-h-[110px] bg-gray-50/50 border-2 border-dashed rounded-lg flex flex-col justify-center items-center ${snapshot.isDraggingOver ? 'border-purple-400 bg-purple-50' : 'border-gray-300'}`}
           >
             {pillars.length === 0 ? (
               <p className="text-gray-400">Drag pillar here</p>
@@ -58,7 +58,7 @@ const DropZone = ({ title, droppableId, pillars, recommendedPillars }: { title: 
                       ref={provided.innerRef}
                       {...provided.draggableProps}
                       {...provided.dragHandleProps}
-                      className="w-full"
+                      className="w-full mb-2"
                     >
                       <PillarCard pillar={pillar} recommendedPillars={recommendedPillars} />
                     </div>
@@ -193,7 +193,7 @@ export const PriorityRanking = ({ progress, onComplete, value }: PriorityRanking
                         <div
                             {...provided.droppableProps}
                             ref={provided.innerRef}
-                            className={`space-y-3 p-2 rounded-lg transition-colors min-h-[100px] ${snapshot.isDraggingOver ? 'bg-blue-50' : 'bg-gray-50/50'}`}
+                            className={`p-2 rounded-lg min-h-[100px] ${snapshot.isDraggingOver ? 'bg-blue-50' : 'bg-gray-50/50'}`}
                         >
                             {unassigned.map((pillar, index) => (
                             <Draggable key={pillar.id} draggableId={pillar.id} index={index}>
@@ -202,6 +202,7 @@ export const PriorityRanking = ({ progress, onComplete, value }: PriorityRanking
                                     ref={provided.innerRef}
                                     {...provided.draggableProps}
                                     {...provided.dragHandleProps}
+                                    className="mb-3"
                                 >
                                     <PillarCard pillar={pillar} recommendedPillars={recommendedPillars} />
                                 </div>
