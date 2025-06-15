@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Settings } from 'lucide-react';
@@ -80,6 +81,7 @@ const FutureSelfArchitectSection = ({ architect, onStart, isQuestionnaireComplet
               </div>
               <Button
                 onClick={handleStartClick}
+                size="lg"
                 className={cn(
                   "w-full justify-between no-print",
                   !isQuestionnaireComplete && "opacity-50 cursor-not-allowed"
