@@ -39,11 +39,14 @@ const FutureSelfArchitectSection = ({ architect, onStart, isQuestionnaireComplet
   const [isDoneModalOpen, setIsDoneModalOpen] = useState(false);
   const [habitToMark, setHabitToMark] = useState<number | null>(null);
 
-  const habits = architect || [];
+  const allHabits = architect || [];
+  const activeHabits = allHabits.filter(h => !h.isCompleted);
+  
+  const habits = activeHabits;
   const totalPages = habits.length;
   const currentHabit = habits.length > 0 ? habits[currentPage - 1] : undefined;
 
-  const activeHabitsCount = habits.filter(h => !h.isCompleted).length;
+  const activeHabitsCount = activeHabits.length;
   const canAddHabit = activeHabitsCount < 2;
 
   const systems = currentHabit?.system?.split('\n').filter(s => s.trim() !== '') || [];
@@ -70,12 +73,22 @@ const FutureSelfArchitectSection = ({ architect, onStart, isQuestionnaireComplet
   };
 
   const handleEditClick = () => {
-    onStart(currentPage - 1);
+    if (currentHabit) {
+      const originalIndex = allHabits.findIndex(h => h.identity === currentHabit.identity && h.system === currentHabit.system && h.proof === currentHabit.proof && !h.isCompleted);
+      if (originalIndex !== -1) {
+        onStart(originalIndex);
+      }
+    }
   };
   
   const handleMarkAsDoneClick = () => {
-    setHabitToMark(currentPage - 1);
-    setIsDoneModalOpen(true);
+    if (currentHabit) {
+      const originalIndex = allHabits.findIndex(h => h.identity === currentHabit.identity && h.system === currentHabit.system && h.proof === currentHabit.proof && !h.isCompleted);
+      if (originalIndex !== -1) {
+        setHabitToMark(originalIndex);
+        setIsDoneModalOpen(true);
+      }
+    }
   };
 
   const handleDoneSubmit = (data: MarkAsDoneData) => {

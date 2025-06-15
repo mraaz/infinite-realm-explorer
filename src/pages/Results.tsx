@@ -6,6 +6,7 @@ import ResultsHeader from '@/components/results/ResultsHeader';
 import ChartsSection from '@/components/results/ChartsSection';
 import InsightSynthesis from '@/components/results/InsightSynthesis';
 import FutureSelfArchitectSection from '@/components/results/FutureSelfArchitectSection';
+import HabitsTimeline from '@/components/results/HabitsTimeline';
 import ResultsActions from '@/components/results/ResultsActions';
 import ResultsFooter from '@/components/results/ResultsFooter';
 import insightSyntheses from '@/data/insights.json';
@@ -40,6 +41,8 @@ const Results = () => {
   const handlePillarClick = (pillar: string) => {
     setActivePillar(current => (current === pillar ? undefined : pillar));
   };
+
+  const completedHabits = futureSelfArchitect?.filter(h => h.isCompleted) || [];
   
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
@@ -66,6 +69,7 @@ const Results = () => {
             isQuestionnaireComplete={isFutureQuestionnaireComplete}
             onMarkAsDone={handleMarkHabitAsDone}
           />
+          <HabitsTimeline habits={completedHabits} />
           <PdfFooter />
         </div>
         <ResultsActions 
