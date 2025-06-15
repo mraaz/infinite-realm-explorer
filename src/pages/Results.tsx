@@ -8,7 +8,7 @@ import ChartsSection from '@/components/results/ChartsSection';
 import InsightSynthesis from '@/components/results/InsightSynthesis';
 import FutureSelfArchitectSection from '@/components/results/FutureSelfArchitectSection';
 import ResultsActions from '@/components/results/ResultsActions';
-import ResultsFooter from '@/components/ResultsFooter';
+import ResultsFooter from '@/components/results/ResultsFooter';
 import insightSyntheses from '@/data/insights.json';
 
 const Results = () => {
