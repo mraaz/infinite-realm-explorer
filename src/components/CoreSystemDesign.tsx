@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Lightbulb, PlusCircle, XCircle } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 
 interface CoreSystemDesignProps {
   chosenIdentity: string;
@@ -19,35 +19,21 @@ const promptFocusMapping: Record<string, string> = {
 };
 
 const CoreSystemDesign = ({ chosenIdentity, mainFocus, onComplete, value }: CoreSystemDesignProps) => {
-  const initialSystems = value ? value.split('\n').filter(s => s.trim() !== '') : [];
-  const [systems, setSystems] = useState<string[]>(initialSystems.length > 0 ? initialSystems : ['']);
+  const [system, setSystem] = useState<string>(value || '');
   const focusText = promptFocusMapping[mainFocus.toLowerCase()] || 'this becomes';
 
-  const handleSystemChange = (index: number, newValue: string) => {
-    const newSystems = [...systems];
-    newSystems[index] = newValue;
-    setSystems(newSystems);
-  };
-
-  const addSystem = () => {
-    setSystems([...systems, '']);
-  };
-
-  const removeSystem = (index: number) => {
-    if (systems.length > 1) {
-      const newSystems = systems.filter((_, i) => i !== index);
-      setSystems(newSystems);
-    }
+  const handleSystemChange = (newValue: string) => {
+    setSystem(newValue);
   };
 
   const handleComplete = () => {
-    const validSystems = systems.filter(s => s.trim() !== '');
+    const validSystems = system.split('\n').filter(s => s.trim() !== '');
     if (validSystems.length > 0) {
       onComplete(validSystems.join('\n'));
     }
   };
 
-  const allSystemsFilled = systems.every(s => s.trim() !== '');
+  const isSystemFilled = system.trim() !== '';
 
   return (
     <div className="text-left max-w-2xl mx-auto">
@@ -63,39 +49,26 @@ const CoreSystemDesign = ({ chosenIdentity, mainFocus, onComplete, value }: Core
           </div>
           <div className="ml-3">
             <p className="text-sm">
-              <span className="font-bold">Tip:</span> A system is a repeatable process, not a one-off task. Think about when, where, and how you'll consistently take action.
+              <span className="font-bold">Tip:</span> A system is a repeatable process, not a one-off task. You can add multiple systems by writing each on a new line.
             </p>
           </div>
         </div>
       </div>
       
       <div className="space-y-4 mb-6">
-        <label htmlFor="system-description-0" className="font-semibold text-gray-700 mb-2 block">Your Weekly Systems:</label>
-        {systems.map((system, index) => (
-          <div key={index} className="flex items-start gap-2">
-            <Textarea 
-              id={`system-description-${index}`}
-              value={system}
-              onChange={(e) => handleSystemChange(index, e.target.value)}
-              placeholder="e.g., 'Every Sunday evening, I will plan and schedule my three workouts for the upcoming week directly in my work calendar.'"
-              rows={3}
-              className="flex-grow"
-            />
-            {systems.length > 1 && (
-              <Button variant="ghost" size="icon" onClick={() => removeSystem(index)} className="text-red-500 hover:text-red-700 hover:bg-red-100/80 shrink-0">
-                <XCircle className="h-5 w-5" />
-              </Button>
-            )}
-          </div>
-        ))}
-        
-        <Button variant="outline" onClick={addSystem} className="w-full justify-center">
-          <PlusCircle className="mr-2 h-4 w-4" /> Add Another System
-        </Button>
+        <label htmlFor="system-description" className="font-semibold text-gray-700 mb-2 block">Your Weekly Systems:</label>
+        <Textarea 
+          id="system-description"
+          value={system}
+          onChange={(e) => handleSystemChange(e.target.value)}
+          placeholder="e.g., 'Every Sunday evening, I will plan and schedule my three workouts for the upcoming week directly in my work calendar.'"
+          rows={5}
+          className="flex-grow"
+        />
       </div>
 
       <div className="text-center">
-        <Button onClick={handleComplete} disabled={!allSystemsFilled}>
+        <Button onClick={handleComplete} disabled={!isSystemFilled}>
           Confirm Systems
         </Button>
       </div>
