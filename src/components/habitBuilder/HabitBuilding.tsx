@@ -49,6 +49,14 @@ const HabitBuilding = ({ pillar, archetype, onNext, isEditing, initialData }: Ha
     onNext({ habitStatement, action, duration, frequency });
   };
 
+  const handleGoBack = () => {
+    setCustomMode(false);
+    setSelectedHabit(null);
+    setAction('');
+    setDuration('');
+    setFrequency('');
+  };
+
   const isValid = action && duration && frequency;
 
   return (
@@ -91,7 +99,7 @@ const HabitBuilding = ({ pillar, archetype, onNext, isEditing, initialData }: Ha
       {(customMode || selectedHabit || isEditing) && (
         <Card className="text-left max-w-2xl mx-auto">
           <CardContent className="p-6">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Customize Your Habit</h3>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">Customise Your Habit</h3>
             
             <div className="space-y-4">
               <div>
@@ -136,9 +144,9 @@ const HabitBuilding = ({ pillar, archetype, onNext, isEditing, initialData }: Ha
             </div>
 
             <div className="mt-6 flex gap-2">
-              {!customMode && (
-                <Button variant="outline" onClick={() => setCustomMode(true)}>
-                  Start Over
+              {customMode && (
+                <Button variant="outline" onClick={handleGoBack}>
+                  Go Back
                 </Button>
               )}
               <Button onClick={handleNext} disabled={!isValid} className="flex-1">
