@@ -1,7 +1,6 @@
-
 import { useState, useRef } from 'react';
 import Header from '@/components/Header';
-import { Insight } from '@/components/results/InsightSynthesis';
+import { Insight } from '@/types/insights';
 import ResultsHeader from '@/components/results/ResultsHeader';
 import ChartsSection from '@/components/results/ChartsSection';
 import InsightSynthesis from '@/components/results/InsightSynthesis';

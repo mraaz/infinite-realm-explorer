@@ -1,13 +1,13 @@
 
-import { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Settings } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { MarkAsDoneDialog, MarkAsDoneData } from './MarkAsDoneDialog';
 import { FutureSelfArchitect } from '@/types/results';
 import ArchitectEmptyState from './architect/ArchitectEmptyState';
 import HabitCard from './architect/HabitCard';
 import ArchitectActions from './architect/ArchitectActions';
+import { useArchitectSection } from '@/hooks/useArchitectSection';
 
 interface FutureSelfArchitectSectionProps {
   architect?: FutureSelfArchitect[];
@@ -16,81 +16,32 @@ interface FutureSelfArchitectSectionProps {
   onMarkAsDone: (habitIndex: number, data: MarkAsDoneData) => void;
 }
 
-const FutureSelfArchitectSection = ({ architect, onStart, isQuestionnaireComplete, onMarkAsDone }: FutureSelfArchitectSectionProps) => {
-  const { toast } = useToast();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isDoneModalOpen, setIsDoneModalOpen] = useState(false);
-  const [habitToMark, setHabitToMark] = useState<number | null>(null);
-
-  const allHabits = architect || [];
-  const activeHabits = allHabits.filter(h => !h.isCompleted);
-  
-  const habits = activeHabits;
-  const totalPages = habits.length;
-  
-  if (currentPage > totalPages && totalPages > 0) {
-    setCurrentPage(totalPages);
-  }
-
-  const currentHabit = habits.length > 0 ? habits[currentPage - 1] : undefined;
-
-  const activeHabitsCount = activeHabits.length;
-  const canAddHabit = activeHabitsCount < 2;
-
-  const handleAddClick = () => {
-    if (isQuestionnaireComplete) {
-      if (canAddHabit) {
-        onStart();
-      } else {
-        toast({
-          title: "Habit Limit Reached",
-          description: "You can only have two active habits. Mark one as complete to add another.",
-        });
-      }
-    } else {
-      toast({
-        title: "Action Required",
-        description: "Please complete the Future Self Questionnaire before you can proceed.",
-      });
-    }
-  };
-
-  const handleEditClick = () => {
-    if (currentHabit) {
-      const originalIndex = allHabits.findIndex(h => h.identity === currentHabit.identity && h.system === currentHabit.system && h.proof === currentHabit.proof && !h.isCompleted);
-      if (originalIndex !== -1) {
-        onStart(originalIndex);
-      }
-    }
-  };
-  
-  const handleMarkAsDoneClick = () => {
-    if (currentHabit) {
-      const originalIndex = allHabits.findIndex(h => h.identity === currentHabit.identity && h.system === currentHabit.system && h.proof === currentHabit.proof && !h.isCompleted);
-      if (originalIndex !== -1) {
-        setHabitToMark(originalIndex);
-        setIsDoneModalOpen(true);
-      }
-    }
-  };
-
-  const handleDoneSubmit = (data: MarkAsDoneData) => {
-    if (habitToMark !== null) {
-      onMarkAsDone(habitToMark, data);
-    }
-    setIsDoneModalOpen(false);
-    setHabitToMark(null);
-  };
-
-  const handlePreviousHabit = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setCurrentPage((prev) => Math.max(prev - 1, 1));
-  };
-
-  const handleNextHabit = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-  };
+const FutureSelfArchitectSection = ({ 
+  architect, 
+  onStart, 
+  isQuestionnaireComplete, 
+  onMarkAsDone 
+}: FutureSelfArchitectSectionProps) => {
+  const {
+    currentPage,
+    totalPages,
+    currentHabit,
+    habits,
+    canAddHabit,
+    isDoneModalOpen,
+    setIsDoneModalOpen,
+    handleAddClick,
+    handleEditClick,
+    handleMarkAsDoneClick,
+    handleDoneSubmit,
+    handlePreviousHabit,
+    handleNextHabit,
+  } = useArchitectSection({
+    architect,
+    isQuestionnaireComplete,
+    onStart,
+    onMarkAsDone,
+  });
 
   return (
     <>

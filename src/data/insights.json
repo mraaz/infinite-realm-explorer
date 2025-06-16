@@ -4,24 +4,40 @@
     "title": "The Burnout Risk",
     "description": "Your profile shows a pattern of high professional output (e.g., 55 hours/week) combined with low personal energy reserves. This is a classic indicator of potential burnout, where performance is sustained at the cost of personal wellbeing.",
     "icon": "AlertTriangle",
-    "color": "orange-400"
+    "color": "orange",
+    "backContent": {
+      "title": "Action Steps",
+      "content": "Consider setting boundaries around work hours. Try the 'Two-Minute Rule' - if something takes less than 2 minutes, do it now. For bigger tasks, time-block your calendar to protect deep work time."
+    }
   },
   {
     "title": "The Anxious Saver",
     "description": "Your profile shows excellent saving habits, which is a ripper strength. However, this is paired with low confidence about your financial future. This suggests your financial stress may be linked to your mindset or overall plan, rather than your actions.",
     "icon": "Lightbulb",
-    "color": "blue-400"
+    "color": "blue",
+    "backContent": {
+      "title": "Money Mindset",
+      "content": "Your saving habits are already stellar! Consider creating a 'Financial Vision Board' - visualize your goals and celebrate small wins. Sometimes anxiety comes from not having a clear picture of 'enough'."
+    }
   },
   {
     "title": "Social Battery Drain",
     "description": "Your profile indicates you are spending a fair dinkum amount of time in social situations, but your sense of true belonging and connection remains low. This pattern can often lead to feeling drained rather than energised by your social life.",
     "icon": "SquareCode",
-    "color": "purple-400"
+    "color": "purple",
+    "backContent": {
+      "title": "Social Recharge",
+      "content": "Quality over quantity in relationships. Try the 'Energy Audit' - after social events, note how you feel. Seek out connections that energize rather than drain you. It's okay to be selective."
+    }
   },
   {
     "title": "Untapped Support System",
     "description": "Your strong sense of connection is a powerful asset. Your profile suggests you are facing significant stress in your career or finances, but you have a bonza support system you can lean on to navigate these challenges.",
     "icon": "Users",
-    "color": "green-500"
+    "color": "green",
+    "backContent": {
+      "title": "Support Network",
+      "content": "Your connections are a superpower! Consider creating a 'Support Map' - identify who you can turn to for different types of help. Don't forget to offer support back - it strengthens the network."
+    }
   }
 ]
