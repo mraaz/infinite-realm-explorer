@@ -23,7 +23,7 @@ export const usePdfReport = (
     const showPdfElements = () => {
       const pdfOnlyElements = document.querySelectorAll('.pdf-only');
       pdfOnlyElements.forEach(element => {
-        (element as HTMLElement).style.display = 'block';
+        (element as HTMLElement).style.setProperty('display', 'block', 'important');
       });
     };
 
@@ -31,7 +31,7 @@ export const usePdfReport = (
     const hidePdfElements = () => {
       const pdfOnlyElements = document.querySelectorAll('.pdf-only');
       pdfOnlyElements.forEach(element => {
-        (element as HTMLElement).style.display = 'none';
+        (element as HTMLElement).style.setProperty('display', 'none', 'important');
       });
     };
 
