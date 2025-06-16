@@ -7,6 +7,7 @@ import { FutureSelfArchitect } from '@/types/results';
 import ArchitectEmptyState from './architect/ArchitectEmptyState';
 import HabitCard from './architect/HabitCard';
 import ArchitectActions from './architect/ArchitectActions';
+import HabitNavigation from './architect/HabitNavigation';
 import { useArchitectSection } from '@/hooks/useArchitectSection';
 
 interface FutureSelfArchitectSectionProps {
@@ -43,6 +44,12 @@ const FutureSelfArchitectSection = ({
     onMarkAsDone,
   });
 
+  const handleWeeklyCheckin = (completionCount: number) => {
+    // This is a placeholder for weekly checkin functionality
+    // In the new system, this would be handled differently
+    console.log('Weekly checkin:', completionCount);
+  };
+
   return (
     <>
       <section className="mb-16 flex justify-center">
@@ -55,13 +62,20 @@ const FutureSelfArchitectSection = ({
               <h2>Future Self Architect</h2>
             </div>
             {currentHabit ? (
-              <HabitCard 
-                habit={currentHabit}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPreviousHabit={handlePreviousHabit}
-                onNextHabit={handleNextHabit}
-              />
+              <div>
+                <HabitCard 
+                  habit={currentHabit}
+                  habitIndex={currentPage - 1}
+                  onEdit={handleEditClick}
+                  onWeeklyCheckin={handleWeeklyCheckin}
+                />
+                <HabitNavigation
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPrevious={handlePreviousHabit}
+                  onNext={handleNextHabit}
+                />
+              </div>
             ) : (
               <ArchitectEmptyState />
             )}
