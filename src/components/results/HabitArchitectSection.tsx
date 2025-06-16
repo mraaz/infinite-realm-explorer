@@ -44,8 +44,8 @@ const HabitArchitectSection = ({
   const handleAddHabit = () => {
     if (!canAddHabit) {
       toast({
-        title: "Sorry, it's hard to manage more than two habits at a time.",
-        description: "Complete an existing habit to add a new one.",
+        title: "You can only have two habits at a time.",
+        description: "It's hard to juggle more. Complete an existing habit to add a new one.",
       });
       return;
     }
@@ -93,7 +93,6 @@ const HabitArchitectSection = ({
                 onClick={handleAddHabit}
                 variant="outline"
                 className="w-full justify-center no-print h-11 px-8 rounded-md"
-                disabled={!canAddHabit}
               >
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Build Another Habit
