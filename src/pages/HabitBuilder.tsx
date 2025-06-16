@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -6,6 +5,7 @@ import PillarSelection from '@/components/habitBuilder/PillarSelection';
 import ArchetypeSelection from '@/components/habitBuilder/ArchetypeSelection';
 import HabitBuilding from '@/components/habitBuilder/HabitBuilding';
 import HabitUnlocked from '@/components/habitBuilder/HabitUnlocked';
+import { QuestionnaireSteps } from '@/components/habitBuilder/QuestionnaireSteps';
 import { useQuestionnaireStore } from '@/store/questionnaireStore';
 
 type BuilderStep = 'pillar' | 'archetype' | 'habit' | 'unlocked';
@@ -43,6 +43,16 @@ const HabitBuilder = () => {
       setCurrentStep('habit');
     }
   }, [isEditing, editHabitIndex, futureQuestionnaire]);
+
+  const getStepNumber = () => {
+    switch (currentStep) {
+      case 'pillar': return 1;
+      case 'archetype': return 2;
+      case 'habit': return 3;
+      case 'unlocked': return 4;
+      default: return 1;
+    }
+  };
 
   const handleNext = (data: Partial<HabitData>) => {
     setHabitData(prev => ({ ...prev, ...data }));
@@ -140,7 +150,22 @@ const HabitBuilder = () => {
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <Header />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-        {renderStep()}
+        <div className="w-full max-w-5xl mx-auto">
+          <div className="bg-white/60 p-6 md:p-10 rounded-2xl shadow-lg border border-gray-200/80">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">
+                The Habit Architect
+              </h1>
+              <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+                Design a custom habit system tailored to your goals and lifestyle.
+              </p>
+            </div>
+
+            <QuestionnaireSteps step={getStepNumber()} />
+            
+            {renderStep()}
+          </div>
+        </div>
       </main>
     </div>
   );
