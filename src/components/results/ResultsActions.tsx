@@ -63,7 +63,7 @@ const ResultsActions = ({ isArchitectComplete, onDownload }: ResultsActionsProps
           className="w-full sm:w-auto justify-center font-semibold"
         >
           <Download size={18} className="mr-2" />
-          Download Full Report
+          Print / Save as PDF
         </Button>
       </section>
       
