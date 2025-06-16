@@ -160,8 +160,6 @@ const HabitBuilder = () => {
                 Design a custom habit system tailored to your goals and lifestyle.
               </p>
             </div>
-
-            <QuestionnaireSteps step={getStepNumber()} />
             
             {renderStep()}
           </div>
