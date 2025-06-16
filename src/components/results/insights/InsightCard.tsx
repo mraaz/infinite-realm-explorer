@@ -9,9 +9,10 @@ interface InsightCardProps {
   insight: Insight;
   isFlipped: boolean;
   onClick: () => void;
+  isFirstCard?: boolean;
 }
 
-const InsightCard = ({ insight, isFlipped, onClick }: InsightCardProps) => {
+const InsightCard = ({ insight, isFlipped, onClick, isFirstCard = false }: InsightCardProps) => {
   const Icon = getIcon(insight.icon);
   const colorTheme = getInsightColor(insight.color);
 
@@ -28,10 +29,12 @@ const InsightCard = ({ insight, isFlipped, onClick }: InsightCardProps) => {
             <span>Observation: {insight.title}</span>
           </h3>
           <p className="text-gray-600 mb-4">{insight.description}</p>
-          <div className="flex items-center justify-end text-sm text-gray-400">
-            <RotateCcw className="h-4 w-4 mr-1" />
-            <span>Click to flip</span>
-          </div>
+          {isFirstCard && (
+            <div className="flex items-center justify-end text-sm text-gray-400">
+              <RotateCcw className="h-4 w-4 mr-1" />
+              <span>Click to flip</span>
+            </div>
+          )}
         </div>
         
         {/* Back of card */}
@@ -41,10 +44,12 @@ const InsightCard = ({ insight, isFlipped, onClick }: InsightCardProps) => {
             <span>{insight.backContent.title}</span>
           </h3>
           <p className="text-purple-700 text-sm leading-relaxed mb-4">{insight.backContent.content}</p>
-          <div className="flex items-center justify-end text-sm text-purple-400">
-            <RotateCcw className="h-4 w-4 mr-1" />
-            <span>Click to flip back</span>
-          </div>
+          {isFirstCard && (
+            <div className="flex items-center justify-end text-sm text-purple-400">
+              <RotateCcw className="h-4 w-4 mr-1" />
+              <span>Click to flip back</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

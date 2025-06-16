@@ -22,6 +22,7 @@ const InsightSynthesis = ({ insights }: InsightSynthesisProps) => {
             insight={insight}
             isFlipped={flippedCards[index]}
             onClick={() => handleCardClick(index)}
+            isFirstCard={index === 0}
           />
         ))}
       </div>
