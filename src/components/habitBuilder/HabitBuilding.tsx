@@ -4,7 +4,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import OverallProgressBar from '@/components/OverallProgressBar';
 
 interface HabitBuildingProps {
   pillar: string;
@@ -63,8 +62,6 @@ const HabitBuilding = ({ pillar, archetype, onNext, onPrevious, isEditing, initi
 
   return (
     <div className="max-w-4xl mx-auto text-center">
-      <OverallProgressBar value={75} />
-      
       <h1 className="text-3xl font-bold text-gray-800 mb-4">
         Build Your Habit
       </h1>
@@ -161,7 +158,7 @@ const HabitBuilding = ({ pillar, archetype, onNext, onPrevious, isEditing, initi
         </Card>
       )}
 
-      {/* Add Previous button at the bottom when not editing */}
+      {/* Previous button - always show when not editing and onPrevious is available */}
       {!isEditing && onPrevious && (
         <div className="mt-8">
           <Button variant="outline" onClick={onPrevious}>
