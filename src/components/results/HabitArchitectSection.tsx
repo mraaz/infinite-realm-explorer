@@ -27,8 +27,14 @@ const HabitArchitectSection = ({
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  console.log('HabitArchitectSection - Received architect data:', architect);
+  console.log('HabitArchitectSection - isQuestionnaireComplete:', isQuestionnaireComplete);
+
   const activeHabits = architect?.filter(h => !h.isCompleted) || [];
   const canAddHabit = activeHabits.length < 2;
+
+  console.log('HabitArchitectSection - Active habits:', activeHabits);
+  console.log('HabitArchitectSection - Can add habit:', canAddHabit);
 
   const handleDesignHabits = () => {
     if (!isQuestionnaireComplete) {

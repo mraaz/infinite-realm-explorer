@@ -13,8 +13,13 @@ export const useResultsData = () => {
   
   const futureQuestionnaire: FutureQuestionnaire | undefined = locationFutureQuestionnaire || storeFutureQuestionnaire;
 
+  console.log('useResultsData - Location state:', location.state);
+  console.log('useResultsData - Store futureQuestionnaire:', storeFutureQuestionnaire);
+  console.log('useResultsData - Final futureQuestionnaire:', futureQuestionnaire);
+
   useEffect(() => {
     if (locationFutureQuestionnaire) {
+      console.log('useResultsData - Updating store with location data:', locationFutureQuestionnaire);
       actions.setFutureQuestionnaire(locationFutureQuestionnaire);
     }
   }, [locationFutureQuestionnaire, actions]);
@@ -35,6 +40,8 @@ export const useResultsData = () => {
         mainFocus: priorities.mainFocus,
       }))
       .filter(a => a.identity && a.system && a.proof);
+      
+    console.log('useResultsData - Processed futureSelfArchitect:', futureSelfArchitect);
   }
 
   return {

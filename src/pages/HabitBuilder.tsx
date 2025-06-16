@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -43,6 +44,9 @@ const HabitBuilder = () => {
   const isEditing = editHabitIndex !== undefined;
 
   useEffect(() => {
+    console.log('HabitBuilder - Current futureQuestionnaire:', futureQuestionnaire);
+    console.log('HabitBuilder - Is editing:', isEditing, 'Edit index:', editHabitIndex);
+    
     // If editing, populate existing data
     if (isEditing && futureQuestionnaire?.architect?.[editHabitIndex]) {
       const existingHabit = futureQuestionnaire.architect[editHabitIndex];
@@ -116,6 +120,9 @@ const HabitBuilder = () => {
   };
 
   const handleFinish = () => {
+    console.log('HabitBuilder - Finishing with habitData:', habitData);
+    console.log('HabitBuilder - Current futureQuestionnaire before save:', futureQuestionnaire);
+    
     // Save habit to store
     const newHabit = {
       identity: habitData.archetype!,
@@ -126,6 +133,8 @@ const HabitBuilder = () => {
       streakWeeks: [],
       currentStreak: 0,
     };
+
+    console.log('HabitBuilder - New habit being created:', newHabit);
 
     let updatedFutureQuestionnaire;
 
@@ -145,6 +154,8 @@ const HabitBuilder = () => {
         architect: updatedArchitect,
       };
     }
+
+    console.log('HabitBuilder - Updated futureQuestionnaire:', updatedFutureQuestionnaire);
 
     // Update the store
     actions.setFutureQuestionnaire(updatedFutureQuestionnaire);
