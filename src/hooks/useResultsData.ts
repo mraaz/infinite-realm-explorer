@@ -37,6 +37,12 @@ export const useResultsData = () => {
       .map(arch => ({
         ...arch,
         mainFocus: (arch as any).mainFocus || futureQuestionnaire.priorities?.mainFocus || 'unknown',
+        // Preserve all streak-related properties
+        streakWeeks: arch.streakWeeks || [],
+        currentStreak: arch.currentStreak || 0,
+        isCompleted: arch.isCompleted || false,
+        completionDate: arch.completionDate,
+        completionNotes: arch.completionNotes,
       }))
       .filter(a => a.identity && a.system && a.proof);
       
