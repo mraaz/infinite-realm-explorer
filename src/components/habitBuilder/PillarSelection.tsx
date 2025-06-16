@@ -3,7 +3,6 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/Icon';
-import OverallProgressBar from '@/components/OverallProgressBar';
 import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -38,8 +37,6 @@ const PillarSelection = ({ onNext }: PillarSelectionProps) => {
           Cancel
         </Button>
       </div>
-
-      <OverallProgressBar value={25} />
       
       <h1 className="text-3xl font-bold text-gray-800 mb-4">
         Choose Your Focus Pillar
