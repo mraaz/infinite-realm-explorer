@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+
+import React, { useState, useRef, useEffect } from 'react';
 import { Insight } from '@/types/insights';
 import { useInsightCards } from '@/hooks/useInsightCards';
 import InsightCard from './insights/InsightCard';
