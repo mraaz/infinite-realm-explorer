@@ -69,7 +69,7 @@ const InsightSynthesis = ({ insights }: InsightSynthesisProps) => {
                 {/* Front of card */}
                 <div className="flip-card-front bg-white/60 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-gray-200/80">
                   <h3 className="font-bold text-gray-800 mb-2 text-lg flex items-center">
-                    {/* This JSX will now pass type checking without errors. */}
+                    {/* Apply the color class directly to the icon */}
                     {Icon && <Icon className={`mr-2 h-5 w-5 ${insight.color}`} aria-hidden="true" />}
                     <span>Observation: {insight.title}</span>
                   </h3>
