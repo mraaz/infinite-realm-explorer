@@ -35,30 +35,30 @@ const InsightCard = ({
         style={{ animationDelay: showPeekAnimation ? `${animationDelay}ms` : undefined }}
       >
         {/* Front of card */}
-        <div className="flip-card-front bg-white/60 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-gray-200/80">
-          <h3 className="font-bold text-gray-800 mb-2 text-lg flex items-center">
-            <Icon className={`mr-2 h-5 w-5 ${colorTheme.stroke}`} aria-hidden="true" />
-            <span>Observation: {insight.title}</span>
+        <div className="flip-card-front bg-white/60 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-gray-200/80 overflow-hidden">
+          <h3 className="font-bold text-gray-800 mb-2 text-lg flex items-start break-words">
+            <Icon className={`mr-2 h-5 w-5 ${colorTheme.stroke} flex-shrink-0 mt-0.5`} aria-hidden="true" />
+            <span className="break-words hyphens-auto">Observation: {insight.title}</span>
           </h3>
-          <p className="text-gray-600 mb-4">{insight.description}</p>
+          <p className="text-gray-600 mb-4 text-sm leading-relaxed break-words hyphens-auto overflow-hidden">{insight.description}</p>
           {isFirstCard && (
             <div className="flex items-center justify-end text-sm text-gray-400">
-              <RotateCcw className="h-4 w-4 mr-1" />
+              <RotateCcw className="h-4 w-4 mr-1 flex-shrink-0" />
               <span>Click to flip</span>
             </div>
           )}
         </div>
         
         {/* Back of card */}
-        <div className="flip-card-back bg-gradient-to-br from-purple-50 to-blue-50 p-6 rounded-2xl shadow-lg border border-purple-200/80">
-          <h3 className="font-bold text-purple-800 mb-3 text-lg flex items-center">
-            <Icon className="mr-2 h-5 w-5 text-purple-600" aria-hidden="true" />
-            <span>{insight.backContent.title}</span>
+        <div className="flip-card-back bg-gradient-to-br from-purple-50 to-blue-50 p-6 rounded-2xl shadow-lg border border-purple-200/80 overflow-hidden">
+          <h3 className="font-bold text-purple-800 mb-3 text-lg flex items-start break-words">
+            <Icon className="mr-2 h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <span className="break-words hyphens-auto">{insight.backContent.title}</span>
           </h3>
-          <p className="text-purple-700 text-sm leading-relaxed mb-4">{insight.backContent.content}</p>
+          <p className="text-purple-700 text-sm leading-relaxed mb-4 break-words hyphens-auto overflow-hidden">{insight.backContent.content}</p>
           {isFirstCard && (
             <div className="flex items-center justify-end text-sm text-purple-400">
-              <RotateCcw className="h-4 w-4 mr-1" />
+              <RotateCcw className="h-4 w-4 mr-1 flex-shrink-0" />
               <span>Click to flip back</span>
             </div>
           )}
