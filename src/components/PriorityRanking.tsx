@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Target, PiggyBank, Heart, Users, ArrowRight } from 'lucide-react';
+import { Target, PiggyBank, Heart, Users } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
 import { Pillar, PillarInfo, PriorityRankingProps } from './priority-ranking/types';
 import PillarCard from './priority-ranking/PillarCard';
@@ -117,9 +116,22 @@ export const PriorityRanking = ({ progress, onComplete, value }: PriorityRanking
         const newSourceList = listMap[sourceId].filter(p => p.id !== evicted.id);
         setterMap[sourceId](newSourceList);
     }
+
+    // Check if task is complete after drag and notify parent
+    const newMainFocus = destId === 'main' ? destList : (sourceId === 'main' ? sourceList : mainFocus);
+    const newSecondaryFocus = destId === 'secondary' ? destList : (sourceId === 'secondary' ? sourceList : secondaryFocus);
+    const newMaintenance = destId === 'maintenance' ? destList : (sourceId === 'maintenance' ? sourceList : maintenance);
+    
+    const isNowComplete = newMainFocus.length === 1 && newSecondaryFocus.length === 1 && newMaintenance.length === 2;
+    
+    if (isNowComplete) {
+      onComplete({
+        mainFocus: newMainFocus[0]!.id,
+        secondaryFocus: newSecondaryFocus[0]!.id,
+        maintenance: newMaintenance.map(p => p.id),
+      });
+    }
   };
-  
-  const isComplete = mainFocus.length === 1 && secondaryFocus.length === 1 && maintenance.length === 2;
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -161,15 +173,6 @@ export const PriorityRanking = ({ progress, onComplete, value }: PriorityRanking
                     <DropZone title="Secondary Focus (1 pillar)" droppableId="secondary" pillars={secondaryFocus} recommendedPillars={recommendedPillars}/>
                     <DropZone title="Maintenance Mode (2 pillars)" droppableId="maintenance" pillars={maintenance} recommendedPillars={recommendedPillars}/>
                 </div>
-            </div>
-            <div className="mt-12 flex justify-end">
-                <Button 
-                size="lg" 
-                disabled={!isComplete} 
-                onClick={() => onComplete({ mainFocus: mainFocus[0]!.id, secondaryFocus: secondaryFocus[0]!.id, maintenance: maintenance.map(p => p.id) })}
-                >
-                Next <ArrowRight className="ml-2" />
-                </Button>
             </div>
         </div>
     </DragDropContext>
