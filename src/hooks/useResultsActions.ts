@@ -35,6 +35,7 @@ export const useResultsActions = (futureQuestionnaire: FutureQuestionnaire | und
         const updatedFq = updateHabitStreak(futureQuestionnaire, habitIndex, completionCount);
         if (updatedFq) {
             actions.setFutureQuestionnaire(updatedFq);
+            navigateToResults(updatedFq);
         }
     };
 
