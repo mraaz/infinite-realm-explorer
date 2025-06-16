@@ -1,6 +1,5 @@
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 
 interface ProofOfIdentityProps {
@@ -12,17 +11,9 @@ interface ProofOfIdentityProps {
 const ProofOfIdentity = ({ chosenIdentity, onComplete, value }: ProofOfIdentityProps) => {
   const [proof, setProof] = useState(value || '');
 
-  const handleComplete = () => {
-    if (proof) {
-      console.log(
-        "Simulating final step of Future Self Architect. Submitting proof:", 
-        JSON.stringify({ proof }, null, 2)
-      );
-      console.log(
-        "In a real implementation, a full object would be sent to the backend here including identity, system, and proof."
-      );
-      onComplete(proof);
-    }
+  const handleProofChange = (newValue: string) => {
+    setProof(newValue);
+    onComplete(newValue);
   };
 
   return (
@@ -37,16 +28,10 @@ const ProofOfIdentity = ({ chosenIdentity, onComplete, value }: ProofOfIdentityP
         <Textarea 
           id="proof-description"
           value={proof}
-          onChange={(e) => setProof(e.target.value)}
+          onChange={(e) => handleProofChange(e.target.value)}
           placeholder="e.g., 'I will go into my calendar right now and block out 30 minutes for a walk tomorrow lunchtime.'"
           rows={4}
         />
-      </div>
-
-      <div className="text-center">
-        <Button onClick={handleComplete} disabled={!proof}>
-          Confirm Action
-        </Button>
       </div>
     </div>
   );

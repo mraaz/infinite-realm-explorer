@@ -1,10 +1,8 @@
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { futureQuestions } from '@/data/futureQuestions';
-import { ArrowRight } from 'lucide-react';
 
 type Pillar = 'Career' | 'Financials' | 'Health' | 'Connections';
 type Answers = Record<string, string>;
@@ -19,11 +17,11 @@ export const DeepDive = ({ pillar, onComplete, value }: DeepDiveProps) => {
   const questions = futureQuestions.filter(q => q.type === 'deep_dive' && q.pillar === pillar);
   const [answers, setAnswers] = useState<Answers>(value || {});
 
-  const handleAnswerChange = (questionId: string, value: string) => {
-    setAnswers(prev => ({ ...prev, [questionId]: value }));
+  const handleAnswerChange = (questionId: string, newValue: string) => {
+    const updatedAnswers = { ...answers, [questionId]: newValue };
+    setAnswers(updatedAnswers);
+    onComplete(updatedAnswers);
   };
-
-  const isComplete = questions.every(q => answers[q.id] && answers[q.id].trim() !== '');
 
   return (
     <div className="w-full">
@@ -45,11 +43,6 @@ export const DeepDive = ({ pillar, onComplete, value }: DeepDiveProps) => {
             />
           </div>
         ))}
-      </div>
-      <div className="mt-12 flex justify-end">
-        <Button size="lg" disabled={!isComplete} onClick={() => onComplete(answers)}>
-          Next <ArrowRight className="ml-2" />
-        </Button>
       </div>
     </div>
   );

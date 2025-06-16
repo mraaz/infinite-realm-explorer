@@ -1,6 +1,5 @@
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Lightbulb } from 'lucide-react';
 
@@ -24,16 +23,8 @@ const CoreSystemDesign = ({ chosenIdentity, mainFocus, onComplete, value }: Core
 
   const handleSystemChange = (newValue: string) => {
     setSystem(newValue);
+    onComplete(newValue);
   };
-
-  const handleComplete = () => {
-    const validSystems = system.split('\n').filter(s => s.trim() !== '');
-    if (validSystems.length > 0) {
-      onComplete(validSystems.join('\n'));
-    }
-  };
-
-  const isSystemFilled = system.trim() !== '';
 
   return (
     <div className="text-left max-w-2xl mx-auto">
@@ -65,12 +56,6 @@ const CoreSystemDesign = ({ chosenIdentity, mainFocus, onComplete, value }: Core
           rows={5}
           className="flex-grow"
         />
-      </div>
-
-      <div className="text-center">
-        <Button onClick={handleComplete} disabled={!isSystemFilled}>
-          Confirm Systems
-        </Button>
       </div>
     </div>
   );
