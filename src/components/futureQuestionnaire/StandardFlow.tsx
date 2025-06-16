@@ -3,7 +3,6 @@ import React from 'react';
 import { PriorityRanking } from '@/components/PriorityRanking';
 import { DeepDive } from '@/components/DeepDive';
 import { MaintenanceBaseline } from '@/components/MaintenanceBaseline';
-import { QuestionnaireNavigation } from './QuestionnaireNavigation';
 import { PillarProgress } from '@/components/NewQuadrantChart';
 import { Pillar } from '@/components/priority-ranking/types';
 
@@ -34,70 +33,38 @@ export const StandardFlow: React.FC<StandardFlowProps> = ({
     switch (step) {
         case 1:
             return (
-                <div>
-                    <PriorityRanking 
-                        progress={progress} 
-                        onComplete={onPrioritiesComplete} 
-                        value={priorities} 
-                    />
-                    <QuestionnaireNavigation
-                        step={step}
-                        isArchitect={false}
-                        onNext={() => priorities && onPrioritiesComplete(priorities)}
-                        nextDisabled={!priorities}
-                    />
-                </div>
+                <PriorityRanking 
+                    progress={progress} 
+                    onComplete={onPrioritiesComplete} 
+                    value={priorities} 
+                />
             );
         case 2:
             if (!priorities) return null;
             return (
-                <div>
-                    <DeepDive 
-                        pillar={priorities.mainFocus as any} 
-                        onComplete={onDeepDiveComplete} 
-                        value={answers} 
-                    />
-                    <QuestionnaireNavigation
-                        step={step}
-                        isArchitect={false}
-                        onPrevious={onPrevious}
-                        onNext={() => onDeepDiveComplete(answers)}
-                    />
-                </div>
+                <DeepDive 
+                    pillar={priorities.mainFocus as any} 
+                    onComplete={onDeepDiveComplete} 
+                    value={answers} 
+                />
             );
         case 3:
             if (!priorities) return null;
             return (
-                <div>
-                    <DeepDive 
-                        pillar={priorities.secondaryFocus as any} 
-                        onComplete={onDeepDiveComplete} 
-                        value={answers} 
-                    />
-                    <QuestionnaireNavigation
-                        step={step}
-                        isArchitect={false}
-                        onPrevious={onPrevious}
-                        onNext={() => onDeepDiveComplete(answers)}
-                    />
-                </div>
+                <DeepDive 
+                    pillar={priorities.secondaryFocus as any} 
+                    onComplete={onDeepDiveComplete} 
+                    value={answers} 
+                />
             );
         case 4:
             if (!priorities) return null;
             return (
-                <div>
-                    <MaintenanceBaseline 
-                        maintenancePillars={priorities.maintenance as any} 
-                        onComplete={onMaintenanceComplete} 
-                        value={answers} 
-                    />
-                    <QuestionnaireNavigation
-                        step={step}
-                        isArchitect={false}
-                        onPrevious={onPrevious}
-                        onNext={() => onMaintenanceComplete(answers)}
-                    />
-                </div>
+                <MaintenanceBaseline 
+                    maintenancePillars={priorities.maintenance as any} 
+                    onComplete={onMaintenanceComplete} 
+                    value={answers} 
+                />
             );
         default:
             return null;

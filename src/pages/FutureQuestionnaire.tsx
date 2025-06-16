@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Pillar } from '@/components/priority-ranking/types';
 import { QuestionnaireSteps } from '@/components/futureQuestionnaire/QuestionnaireSteps';
+import { QuestionnaireNavigation } from '@/components/futureQuestionnaire/QuestionnaireNavigation';
 import { ArchitectFlow } from '@/components/futureQuestionnaire/ArchitectFlow';
 import { StandardFlow } from '@/components/futureQuestionnaire/StandardFlow';
 import { ConfirmationStep } from '@/components/futureQuestionnaire/ConfirmationStep';
@@ -104,6 +105,28 @@ const FutureQuestionnaire = () => {
         setStep(prev => Math.max(prev - 1, 1));
     };
 
+    const handleNext = () => {
+        if (isArchitect) {
+            if (step === 1 && architectAnswers.identity) {
+                handleIdentityComplete(architectAnswers.identity);
+            } else if (step === 2 && architectAnswers.system) {
+                handleSystemComplete(architectAnswers.system);
+            } else if (step === 3 && architectAnswers.proof) {
+                handleProofComplete(architectAnswers.proof);
+            }
+        } else {
+            if (step === 1 && priorities) {
+                handlePrioritiesComplete(priorities);
+            } else if (step === 2 && answers) {
+                handleDeepDiveComplete(answers);
+            } else if (step === 3 && answers) {
+                handleDeepDiveComplete(answers);
+            } else if (step === 4 && answers) {
+                handleMaintenanceComplete(answers);
+            }
+        }
+    };
+
     const handleRetake = () => {
         setStep(1);
     };
@@ -139,6 +162,18 @@ const FutureQuestionnaire = () => {
 
     const handleConfirmCancel = () => {
         navigate('/results', { state: location.state });
+    };
+
+    const isNextDisabled = () => {
+        if (isArchitect) {
+            if (step === 1) return !architectAnswers.identity;
+            if (step === 2) return !architectAnswers.system;
+            if (step === 3) return !architectAnswers.proof;
+        } else {
+            if (step === 1) return !priorities;
+            if (step === 2 || step === 3 || step === 4) return !answers || Object.keys(answers).length === 0;
+        }
+        return false;
     };
 
     if (!progress) {
@@ -256,6 +291,16 @@ const FutureQuestionnaire = () => {
                         <QuestionnaireSteps step={step} isArchitect={isArchitect} />
                         
                         {renderCurrentStep()}
+
+                        {step < (isArchitect ? 4 : 5) && (
+                            <QuestionnaireNavigation
+                                step={step}
+                                isArchitect={isArchitect}
+                                onPrevious={step > 1 ? handlePrevious : undefined}
+                                onNext={handleNext}
+                                nextDisabled={isNextDisabled()}
+                            />
+                        )}
                     </div>
                 </div>
             </main>
