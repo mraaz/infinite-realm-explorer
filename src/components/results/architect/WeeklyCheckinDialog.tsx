@@ -52,7 +52,7 @@ const WeeklyCheckinDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-w-[90vw] mx-auto">
         <DialogHeader>
           <DialogTitle>Weekly Check-in</DialogTitle>
           <DialogDescription>
@@ -60,24 +60,24 @@ const WeeklyCheckinDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 py-4">
           <div>
             <p className="text-sm text-gray-600 mb-3">
               Your goal: {habit.system}
             </p>
-            <p className="text-sm font-medium text-gray-700 mb-3">
+            <p className="text-sm font-medium text-gray-700 mb-4">
               How many times did you complete this habit last week?
             </p>
           </div>
 
-          <div className="flex gap-2 justify-center">
+          <div className="flex flex-wrap gap-2 justify-center">
             {Array.from({ length: targetFrequency + 2 }, (_, i) => (
               <Button
                 key={i}
                 variant={selectedCount === i ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedCount(i)}
-                className="w-12 h-12"
+                className="w-12 h-12 text-sm"
               >
                 {i === targetFrequency + 1 ? `${targetFrequency}+` : i}
               </Button>
@@ -85,17 +85,17 @@ const WeeklyCheckinDialog = ({
           </div>
 
           {selectedCount !== null && (
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
+            <div className="text-center p-3 bg-gray-50 rounded-lg mt-4">
               <p className="text-sm font-medium">{getCompletionMessage()}</p>
             </div>
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>
+          <Button onClick={handleSubmit} className="w-full sm:w-auto">
             Submit Check-in
           </Button>
         </DialogFooter>
