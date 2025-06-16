@@ -69,6 +69,11 @@
   }
 }
 
+/* Hide PDF-only elements on screen by default */
+.pdf-only {
+  display: none !important;
+}
+
 /* PDF specific styles */
 @media print {
   .no-print {
@@ -85,12 +90,5 @@
   
   .pdf-only {
     display: block !important;
-  }
-}
-
-/* Hide PDF-only elements on screen */
-@media screen {
-  .pdf-only {
-    display: none !important;
   }
 }
