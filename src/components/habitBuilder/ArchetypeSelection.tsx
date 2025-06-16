@@ -2,7 +2,6 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import OverallProgressBar from '@/components/OverallProgressBar';
 import archetypes from '@/data/archetypes.json';
 
 interface ArchetypeSelectionProps {
@@ -20,8 +19,6 @@ const ArchetypeSelection = ({ pillar, onNext, onPrevious }: ArchetypeSelectionPr
 
   return (
     <div className="max-w-4xl mx-auto text-center">
-      <OverallProgressBar value={50} />
-      
       <h1 className="text-3xl font-bold text-gray-800 mb-4">
         Choose Your Archetype
       </h1>

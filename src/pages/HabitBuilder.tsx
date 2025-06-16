@@ -183,8 +183,8 @@ const HabitBuilder = () => {
       <Header />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <div className="w-full max-w-5xl mx-auto">
-          {/* Cancel button outside the card for pillar step only */}
-          {currentStep === 'pillar' && (
+          {/* Cancel button outside the card for non-editing mode */}
+          {!isEditing && (
             <div className="flex justify-end mb-4">
               <Button
                 variant="outline"
