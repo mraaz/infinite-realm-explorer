@@ -432,28 +432,6 @@ const FutureQuestionnaire = () => {
         }
     }
 
-    // Add Previous button to each step component that supports it
-    const renderCurrentStepWithPrevious = () => {
-        const currentComponent = CurrentStepComponent();
-        
-        // For steps 2-4 in non-architect flow and steps 2-3 in architect flow, add Previous button if not already present
-        if (((!isArchitect && step >= 2 && step <= 4) || (isArchitect && step >= 2 && step <= 3)) && currentComponent) {
-            return (
-                <div>
-                    {currentComponent}
-                    <div className="flex justify-center mt-8">
-                        <Button variant="outline" onClick={handlePrevious}>
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Previous
-                        </Button>
-                    </div>
-                </div>
-            );
-        }
-        
-        return currentComponent;
-    };
-
     const Stepper = () => {
         const stepsToRender = isArchitect ? ARCHITECT_STEPS : STEPS;
         return (
@@ -517,7 +495,7 @@ const FutureQuestionnaire = () => {
 
                         <Stepper />
                         
-                        {step === 5 || step === 4 ? CurrentStepComponent() : renderCurrentStepWithPrevious()}
+                        <CurrentStepComponent />
 
                     </div>
                 </div>
