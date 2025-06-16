@@ -30,14 +30,13 @@ export const useResultsData = () => {
 
   let futureSelfArchitect: FutureSelfArchitect[] | undefined;
 
-  if (futureQuestionnaire?.priorities?.mainFocus && futureQuestionnaire?.architect) {
-    const { priorities, architect: architectAnswers } = futureQuestionnaire;
-    const architects = Array.isArray(architectAnswers) ? architectAnswers : [architectAnswers];
+  if (futureQuestionnaire?.architect) {
+    const architects = Array.isArray(futureQuestionnaire.architect) ? futureQuestionnaire.architect : [futureQuestionnaire.architect];
 
     futureSelfArchitect = architects
       .map(arch => ({
         ...arch,
-        mainFocus: priorities.mainFocus,
+        mainFocus: arch.mainFocus || futureQuestionnaire.priorities?.mainFocus || 'unknown',
       }))
       .filter(a => a.identity && a.system && a.proof);
       
