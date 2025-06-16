@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -184,7 +185,7 @@ const FutureQuestionnaire = () => {
                         <div>
                             <IdentityArchetypeSelection mainFocus={priorities.mainFocus.toLowerCase()} onComplete={handleIdentityComplete} value={architectAnswers.identity} />
                             <div className="flex justify-between items-center mt-8">
-                                <div className="w-24"></div> {/* Spacer for alignment */}
+                                <div className="w-24"></div>
                                 <Button 
                                     size="lg" 
                                     onClick={() => handleIdentityComplete(architectAnswers.identity)}
