@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -21,7 +22,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, ArrowLeft } from 'lucide-react';
 import { futureQuestions } from '@/data/futureQuestions';
 import { Pillar } from '@/components/priority-ranking/types';
 
@@ -117,6 +118,10 @@ const FutureQuestionnaire = () => {
     const handleProofComplete = (proof: string) => {
         setArchitectAnswers(prev => ({ ...prev, proof }));
         setStep(4);
+    };
+
+    const handlePrevious = () => {
+        setStep(prev => Math.max(prev - 1, 1));
     };
 
     const handleRetake = () => {
@@ -218,9 +223,15 @@ const FutureQuestionnaire = () => {
                                 </Card>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
-                                <Button variant="outline" size="lg" onClick={handleRetake}>Retake Questionnaire</Button>
-                                <Button size="lg" onClick={handleConfirm}>Show Me My Future Self, mate</Button>
+                            <div className="flex flex-col sm:flex-row justify-between gap-4 mt-8">
+                                <Button variant="outline" size="lg" onClick={handlePrevious}>
+                                    <ArrowLeft className="mr-2 h-4 w-4" />
+                                    Previous
+                                </Button>
+                                <div className="flex gap-4">
+                                    <Button variant="outline" size="lg" onClick={handleRetake}>Retake Questionnaire</Button>
+                                    <Button size="lg" onClick={handleConfirm}>Show Me My Future Self, mate</Button>
+                                </div>
                             </div>
                         </div>
                     );
@@ -274,9 +285,15 @@ const FutureQuestionnaire = () => {
                             </div>
                         )}
 
-                        <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
-                            <Button variant="outline" size="lg" onClick={handleRetake}>Retake Questionnaire</Button>
-                            <Button size="lg" onClick={handleConfirm}>Show Me My Future Self, mate</Button>
+                        <div className="flex flex-col sm:flex-row justify-between gap-4 mt-8">
+                            <Button variant="outline" size="lg" onClick={handlePrevious}>
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Previous
+                            </Button>
+                            <div className="flex gap-4">
+                                <Button variant="outline" size="lg" onClick={handleRetake}>Retake Questionnaire</Button>
+                                <Button size="lg" onClick={handleConfirm}>Show Me My Future Self, mate</Button>
+                            </div>
                         </div>
                     </div>
                 );
@@ -284,6 +301,28 @@ const FutureQuestionnaire = () => {
                 return null;
         }
     }
+
+    // Add Previous button to each step component that supports it
+    const renderCurrentStepWithPrevious = () => {
+        const currentComponent = CurrentStepComponent();
+        
+        // For steps 2-4 in non-architect flow and steps 2-3 in architect flow, add Previous button if not already present
+        if (((!isArchitect && step >= 2 && step <= 4) || (isArchitect && step >= 2 && step <= 3)) && currentComponent) {
+            return (
+                <div>
+                    {currentComponent}
+                    <div className="flex justify-center mt-8">
+                        <Button variant="outline" onClick={handlePrevious}>
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Previous
+                        </Button>
+                    </div>
+                </div>
+            );
+        }
+        
+        return currentComponent;
+    };
 
     const Stepper = () => {
         const stepsToRender = isArchitect ? ARCHITECT_STEPS : STEPS;
@@ -314,7 +353,7 @@ const FutureQuestionnaire = () => {
             <main className="flex-grow flex flex-col items-center px-4 py-8 md:py-12">
                 <div className="w-full max-w-5xl">
                     <div className="flex justify-end items-center mb-4 min-h-[40px]">
-                        {step < 5 && (
+                        {step < (isArchitect ? 4 : 5) && (
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="ghost">Cancel and Return to Results</Button>
@@ -348,7 +387,7 @@ const FutureQuestionnaire = () => {
 
                         <Stepper />
                         
-                        <CurrentStepComponent />
+                        {step === 5 || step === 4 ? CurrentStepComponent() : renderCurrentStepWithPrevious()}
 
                     </div>
                 </div>
