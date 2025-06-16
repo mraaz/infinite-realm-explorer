@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -9,6 +10,13 @@ export default {
 		"./src/**/*.{ts,tsx}",
 	],
 	prefix: "",
+	// Add safelist to prevent Tailwind from purging dynamic color classes
+	safelist: [
+		'stroke-orange-400',
+		'stroke-blue-400',
+		'stroke-green-500',
+		// Add any other dynamic stroke, fill, or text colors you might use here
+	],
 	theme: {
 		container: {
 			center: true,
