@@ -36,7 +36,7 @@ export const useResultsData = () => {
     futureSelfArchitect = architects
       .map(arch => ({
         ...arch,
-        mainFocus: arch.mainFocus || futureQuestionnaire.priorities?.mainFocus || 'unknown',
+        mainFocus: (arch as any).mainFocus || futureQuestionnaire.priorities?.mainFocus || 'unknown',
       }))
       .filter(a => a.identity && a.system && a.proof);
       
