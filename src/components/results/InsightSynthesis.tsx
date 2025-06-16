@@ -40,8 +40,9 @@ const InsightSynthesis = ({ insights }: InsightSynthesisProps) => {
             insight={insight}
             isFlipped={flippedCards[index]}
             onClick={() => handleCardClick(index)}
-            showPeekAnimation={index === 0 && hasAnimated}
+            showPeekAnimation={hasAnimated}
             isFirstCard={index === 0}
+            animationDelay={index * 200}
           />
         ))}
       </div>

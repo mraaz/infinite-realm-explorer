@@ -11,9 +11,17 @@ interface InsightCardProps {
   onClick: () => void;
   showPeekAnimation?: boolean;
   isFirstCard?: boolean;
+  animationDelay?: number;
 }
 
-const InsightCard = ({ insight, isFlipped, onClick, showPeekAnimation = false, isFirstCard = false }: InsightCardProps) => {
+const InsightCard = ({ 
+  insight, 
+  isFlipped, 
+  onClick, 
+  showPeekAnimation = false, 
+  isFirstCard = false,
+  animationDelay = 0
+}: InsightCardProps) => {
   const Icon = getIcon(insight.icon);
   const colorTheme = getInsightColor(insight.color);
 
@@ -22,7 +30,10 @@ const InsightCard = ({ insight, isFlipped, onClick, showPeekAnimation = false, i
       className="flip-card cursor-pointer h-48"
       onClick={onClick}
     >
-      <div className={`flip-card-inner ${isFlipped ? 'flipped' : ''} ${showPeekAnimation ? 'animate-peek' : ''}`}>
+      <div 
+        className={`flip-card-inner ${isFlipped ? 'flipped' : ''} ${showPeekAnimation ? 'animate-peek' : ''}`}
+        style={{ animationDelay: showPeekAnimation ? `${animationDelay}ms` : undefined }}
+      >
         {/* Front of card */}
         <div className="flip-card-front bg-white/60 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-gray-200/80">
           <h3 className="font-bold text-gray-800 mb-2 text-lg flex items-center">
