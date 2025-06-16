@@ -1,10 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import Icon from '@/components/Icon';
-import { X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 interface PillarSelectionProps {
   onNext: (data: { pillar: string }) => void;
@@ -18,26 +15,8 @@ const pillars = [
 ] as const;
 
 const PillarSelection = ({ onNext }: PillarSelectionProps) => {
-  const navigate = useNavigate();
-
-  const handleCancel = () => {
-    navigate('/results');
-  };
-
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="flex justify-end mb-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleCancel}
-          className="flex items-center gap-2"
-        >
-          <X className="h-4 w-4" />
-          Cancel
-        </Button>
-      </div>
-      
       <div className="text-center">
         <h1 className="text-3xl font-bold text-gray-800 mb-4">
           Choose Your Focus Pillar

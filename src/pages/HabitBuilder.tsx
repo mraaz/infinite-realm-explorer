@@ -183,6 +183,21 @@ const HabitBuilder = () => {
       <Header />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <div className="w-full max-w-5xl mx-auto">
+          {/* Cancel button outside the card for pillar step only */}
+          {currentStep === 'pillar' && (
+            <div className="flex justify-end mb-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancel}
+                className="flex items-center gap-2"
+              >
+                <X className="h-4 w-4" />
+                Cancel
+              </Button>
+            </div>
+          )}
+          
           <div className="bg-white/60 p-6 md:p-10 rounded-2xl shadow-lg border border-gray-200/80">
             <div className="flex justify-between items-start mb-8">
               <div className="text-center flex-1">
