@@ -1,8 +1,10 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import OverallProgressBar from '@/components/OverallProgressBar';
 
 interface HabitBuildingProps {
   pillar: string;
@@ -61,6 +63,8 @@ const HabitBuilding = ({ pillar, archetype, onNext, onPrevious, isEditing, initi
 
   return (
     <div className="max-w-4xl mx-auto text-center">
+      <OverallProgressBar value={75} />
+      
       <h1 className="text-3xl font-bold text-gray-800 mb-4">
         Build Your Habit
       </h1>
@@ -91,7 +95,7 @@ const HabitBuilding = ({ pillar, archetype, onNext, onPrevious, isEditing, initi
           </div>
           
           <Button variant="outline" onClick={() => setCustomMode(true)}>
-            Create Your Own
+            Customise Your Own
           </Button>
         </div>
       )}
