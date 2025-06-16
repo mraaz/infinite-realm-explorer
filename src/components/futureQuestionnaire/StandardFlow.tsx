@@ -14,7 +14,7 @@ interface StandardFlowProps {
     progress: PillarProgress;
     priorities: Priorities | null;
     answers: Answers;
-    onPrioritiesComplete: (chosenPriorities: Priorities) => void;
+    onPrioritiesChange: (chosenPriorities: Priorities | null) => void;
     onDeepDiveComplete: (deepDiveAnswers: Answers) => void;
     onMaintenanceComplete: (maintenanceAnswers: Answers) => void;
     onPrevious: () => void;
@@ -25,7 +25,7 @@ export const StandardFlow: React.FC<StandardFlowProps> = ({
     progress,
     priorities,
     answers,
-    onPrioritiesComplete,
+    onPrioritiesChange,
     onDeepDiveComplete,
     onMaintenanceComplete,
     onPrevious,
@@ -35,7 +35,7 @@ export const StandardFlow: React.FC<StandardFlowProps> = ({
             return (
                 <PriorityRanking 
                     progress={progress} 
-                    onComplete={onPrioritiesComplete} 
+                    onComplete={onPrioritiesChange} 
                     value={priorities} 
                 />
             );

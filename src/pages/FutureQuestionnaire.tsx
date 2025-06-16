@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -70,9 +69,9 @@ const FutureQuestionnaire = () => {
         }
     }, [isArchitect, progress, priorities]);
 
-    const handlePrioritiesComplete = (chosenPriorities: Priorities) => {
+    // RENAMED and SIMPLIFIED - only updates the data, doesn't navigate
+    const handlePrioritiesChange = (chosenPriorities: Priorities | null) => {
         setPriorities(chosenPriorities);
-        setStep(2);
     };
 
     const handleDeepDiveComplete = (deepDiveAnswers: Answers) => {
@@ -105,26 +104,9 @@ const FutureQuestionnaire = () => {
         setStep(prev => Math.max(prev - 1, 1));
     };
 
+    // SIMPLIFIED - only handles navigation to next step
     const handleNext = () => {
-        if (isArchitect) {
-            if (step === 1 && architectAnswers.identity) {
-                handleIdentityComplete(architectAnswers.identity);
-            } else if (step === 2 && architectAnswers.system) {
-                handleSystemComplete(architectAnswers.system);
-            } else if (step === 3 && architectAnswers.proof) {
-                handleProofComplete(architectAnswers.proof);
-            }
-        } else {
-            if (step === 1 && priorities) {
-                handlePrioritiesComplete(priorities);
-            } else if (step === 2 && answers) {
-                handleDeepDiveComplete(answers);
-            } else if (step === 3 && answers) {
-                handleDeepDiveComplete(answers);
-            } else if (step === 4 && answers) {
-                handleMaintenanceComplete(answers);
-            }
-        }
+        setStep(prev => prev + 1);
     };
 
     const handleRetake = () => {
@@ -242,7 +224,7 @@ const FutureQuestionnaire = () => {
                 progress={progress}
                 priorities={priorities}
                 answers={answers}
-                onPrioritiesComplete={handlePrioritiesComplete}
+                onPrioritiesChange={handlePrioritiesChange}
                 onDeepDiveComplete={handleDeepDiveComplete}
                 onMaintenanceComplete={handleMaintenanceComplete}
                 onPrevious={handlePrevious}
