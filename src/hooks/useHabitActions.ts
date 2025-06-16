@@ -1,12 +1,14 @@
 
 import { useQuestionnaireStore } from '@/store/questionnaireStore';
 import { useFireworks } from '@/hooks/useFireworks';
+import { useToast } from '@/hooks/use-toast';
 import { MarkAsDoneData } from '@/components/results/MarkAsDoneDialog';
 import { FutureQuestionnaire } from '@/types/results';
 
 export const useHabitActions = () => {
   const { actions } = useQuestionnaireStore();
   const { fire } = useFireworks();
+  const { toast } = useToast();
 
   const markHabitAsDone = (
     futureQuestionnaire: FutureQuestionnaire | undefined,
@@ -87,6 +89,10 @@ export const useHabitActions = () => {
 
     if (isEstablished) {
       fire();
+      toast({
+        title: "Congrats!!! 🎉",
+        description: "Well done you can now unlock another habit!",
+      });
     }
 
     const updatedFq = {
