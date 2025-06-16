@@ -25,7 +25,7 @@ const PillarSelection = ({ onNext }: PillarSelectionProps) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto text-center">
+    <div className="max-w-4xl mx-auto">
       <div className="flex justify-end mb-4">
         <Button
           variant="outline"
@@ -38,28 +38,30 @@ const PillarSelection = ({ onNext }: PillarSelectionProps) => {
         </Button>
       </div>
       
-      <h1 className="text-3xl font-bold text-gray-800 mb-4">
-        Choose Your Focus Pillar
-      </h1>
-      <p className="text-lg text-gray-600 mb-8">
-        Which area of your life do you want to build a new system for?
-      </p>
+      <div className="text-center">
+        <h1 className="text-3xl font-bold text-gray-800 mb-4">
+          Choose Your Focus Pillar
+        </h1>
+        <p className="text-lg text-gray-600 mb-8">
+          Which area of your life do you want to build a new system for?
+        </p>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-        {pillars.map((pillar) => (
-          <Card
-            key={pillar.id}
-            className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
-            onClick={() => onNext({ pillar: pillar.id })}
-          >
-            <CardContent className="p-6 text-center">
-              <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${pillar.color} flex items-center justify-center mx-auto mb-4`}>
-                <Icon name={pillar.icon} className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-800">{pillar.name}</h3>
-            </CardContent>
-          </Card>
-        ))}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {pillars.map((pillar) => (
+            <Card
+              key={pillar.id}
+              className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+              onClick={() => onNext({ pillar: pillar.id })}
+            >
+              <CardContent className="p-6 text-center">
+                <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${pillar.color} flex items-center justify-center mx-auto mb-4`}>
+                  <Icon name={pillar.icon} className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800">{pillar.name}</h3>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   );
