@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -128,24 +127,36 @@ const HabitBuilder = () => {
       currentStreak: 0,
     };
 
+    let updatedFutureQuestionnaire;
+
     if (isEditing) {
       // Update existing habit
       const updatedArchitect = [...(futureQuestionnaire?.architect || [])];
       updatedArchitect[editHabitIndex] = newHabit;
-      actions.setFutureQuestionnaire({
+      updatedFutureQuestionnaire = {
         ...futureQuestionnaire!,
         architect: updatedArchitect,
-      });
+      };
     } else {
       // Add new habit
       const updatedArchitect = [...(futureQuestionnaire?.architect || []), newHabit];
-      actions.setFutureQuestionnaire({
+      updatedFutureQuestionnaire = {
         ...futureQuestionnaire!,
         architect: updatedArchitect,
-      });
+      };
     }
 
-    navigate('/results');
+    // Update the store
+    actions.setFutureQuestionnaire(updatedFutureQuestionnaire);
+
+    // Navigate back to results with the updated data
+    navigate('/results', {
+      state: {
+        futureQuestionnaire: updatedFutureQuestionnaire,
+        ...location.state
+      },
+      replace: true
+    });
   };
 
   const renderStep = () => {
