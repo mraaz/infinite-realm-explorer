@@ -76,12 +76,10 @@ const FutureQuestionnaire = () => {
 
     const handleDeepDiveComplete = (deepDiveAnswers: Answers) => {
         setAnswers(deepDiveAnswers);
-        setStep(prev => prev + 1);
     };
 
     const handleMaintenanceComplete = (maintenanceAnswers: Answers) => {
         setAnswers(maintenanceAnswers);
-        setStep(5);
     };
 
     // Architect flow handlers
