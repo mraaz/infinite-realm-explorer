@@ -14,7 +14,12 @@ export default {
 	safelist: [
 		'stroke-orange-400',
 		'stroke-blue-400',
+		'stroke-purple-400',
 		'stroke-green-500',
+		'stroke-red-400',
+		'stroke-yellow-400',
+		'stroke-indigo-400',
+		'stroke-pink-400',
 		// Add any other dynamic stroke, fill, or text colors you might use here
 	],
 	theme: {
