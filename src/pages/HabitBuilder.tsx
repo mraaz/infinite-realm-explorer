@@ -251,6 +251,8 @@ const HabitBuilder = () => {
               )}
             </div>
             
+            <QuestionnaireSteps step={getStepNumber()} />
+            
             {renderStep()}
           </div>
         </div>
