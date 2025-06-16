@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ interface HabitBuildingProps {
   pillar: string;
   archetype: string;
   onNext: (data: { habitStatement: string; action: string; duration: string; frequency: string }) => void;
+  onPrevious?: () => void;
   isEditing?: boolean;
   initialData?: any;
 }
@@ -28,7 +28,7 @@ const starterHabits = {
   // Add more archetypes as needed
 };
 
-const HabitBuilding = ({ pillar, archetype, onNext, isEditing, initialData }: HabitBuildingProps) => {
+const HabitBuilding = ({ pillar, archetype, onNext, onPrevious, isEditing, initialData }: HabitBuildingProps) => {
   const [selectedHabit, setSelectedHabit] = useState<any>(null);
   const [customMode, setCustomMode] = useState(false);
   const [action, setAction] = useState(initialData?.action || '');
@@ -155,6 +155,15 @@ const HabitBuilding = ({ pillar, archetype, onNext, isEditing, initialData }: Ha
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Add Previous button at the bottom when not editing */}
+      {!isEditing && onPrevious && (
+        <div className="mt-8">
+          <Button variant="outline" onClick={onPrevious}>
+            Previous
+          </Button>
+        </div>
       )}
     </div>
   );

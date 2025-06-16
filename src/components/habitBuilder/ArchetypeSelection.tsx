@@ -1,14 +1,16 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import archetypes from '@/data/archetypes.json';
 
 interface ArchetypeSelectionProps {
   pillar: string;
   onNext: (data: { archetype: string }) => void;
+  onPrevious?: () => void;
 }
 
-const ArchetypeSelection = ({ pillar, onNext }: ArchetypeSelectionProps) => {
+const ArchetypeSelection = ({ pillar, onNext, onPrevious }: ArchetypeSelectionProps) => {
   const pillarData = archetypes[pillar as keyof typeof archetypes];
 
   if (!pillarData) {
@@ -42,6 +44,14 @@ const ArchetypeSelection = ({ pillar, onNext }: ArchetypeSelectionProps) => {
           </Card>
         ))}
       </div>
+
+      {onPrevious && (
+        <div className="mt-8">
+          <Button variant="outline" onClick={onPrevious}>
+            Previous
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

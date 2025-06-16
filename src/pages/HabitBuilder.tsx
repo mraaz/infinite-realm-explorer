@@ -60,6 +60,20 @@ const HabitBuilder = () => {
     }
   };
 
+  const handlePrevious = () => {
+    switch (currentStep) {
+      case 'archetype':
+        setCurrentStep('pillar');
+        break;
+      case 'habit':
+        setCurrentStep('archetype');
+        break;
+      case 'unlocked':
+        setCurrentStep('habit');
+        break;
+    }
+  };
+
   const handleFinish = () => {
     // Save habit to store
     const newHabit = {
@@ -97,13 +111,20 @@ const HabitBuilder = () => {
       case 'pillar':
         return <PillarSelection onNext={handleNext} />;
       case 'archetype':
-        return <ArchetypeSelection pillar={habitData.pillar!} onNext={handleNext} />;
+        return (
+          <ArchetypeSelection 
+            pillar={habitData.pillar!} 
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+          />
+        );
       case 'habit':
         return (
           <HabitBuilding 
             pillar={habitData.pillar!}
             archetype={habitData.archetype!}
             onNext={handleNext}
+            onPrevious={handlePrevious}
             isEditing={isEditing}
             initialData={habitData}
           />
