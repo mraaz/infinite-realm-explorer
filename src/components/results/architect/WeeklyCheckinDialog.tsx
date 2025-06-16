@@ -24,7 +24,7 @@ const WeeklyCheckinDialog = ({
   habit,
   onSubmit,
 }: WeeklyCheckinDialogProps) => {
-  const [selectedCount, setSelectedCount] = useState<number>(0);
+  const [selectedCount, setSelectedCount] = useState<number | null>(null);
 
   // Extract target frequency from habit system (this is a simplified extraction)
   const extractTargetFrequency = (system: string): number => {
@@ -35,12 +35,23 @@ const WeeklyCheckinDialog = ({
   const targetFrequency = extractTargetFrequency(habit.system);
 
   const handleSubmit = () => {
-    onSubmit(selectedCount);
-    onOpenChange(false);
-    setSelectedCount(0);
+    if (selectedCount !== null) {
+      onSubmit(selectedCount);
+      onOpenChange(false);
+      setSelectedCount(null);
+    }
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setSelectedCount(null);
+    }
+    onOpenChange(open);
   };
 
   const getCompletionMessage = () => {
+    if (selectedCount === null) return null;
+    
     if (selectedCount >= targetFrequency) {
       return "🏆 Outstanding! You hit your target!";
     } else if (selectedCount > 0) {
@@ -51,7 +62,7 @@ const WeeklyCheckinDialog = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md max-w-[90vw] mx-auto">
         <DialogHeader>
           <DialogTitle>Weekly Check-in</DialogTitle>
@@ -92,10 +103,14 @@ const WeeklyCheckinDialog = ({
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
+          <Button variant="outline" onClick={() => handleOpenChange(false)} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button onClick={handleSubmit} className="w-full sm:w-auto">
+          <Button 
+            onClick={handleSubmit} 
+            className="w-full sm:w-auto"
+            disabled={selectedCount === null}
+          >
             Submit Check-in
           </Button>
         </DialogFooter>
