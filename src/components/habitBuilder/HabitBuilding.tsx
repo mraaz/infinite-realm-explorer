@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 interface HabitBuildingProps {
   pillar: string;
@@ -61,17 +62,19 @@ const HabitBuilding = ({ pillar, archetype, onNext, onPrevious, isEditing, initi
   const isValid = action && duration && frequency;
 
   return (
-    <div className="max-w-4xl mx-auto text-center">
-      <h1 className="text-3xl font-bold text-gray-800 mb-4">
-        Build Your Habit
-      </h1>
-      <p className="text-lg text-gray-600 mb-8">
-        You've chosen the path of <strong>"{archetype}"</strong>. Let's build the small, consistent habit for this identity.
-      </p>
+    <div className="max-w-4xl mx-auto">
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-800 mb-4">
+          Build Your Habit
+        </h1>
+        <p className="text-lg text-gray-600 mb-8">
+          You've chosen the path of <strong>"{archetype}"</strong>. Let's build the small, consistent habit for this identity.
+        </p>
+      </div>
 
       {!customMode && suggestions.length > 0 && (
         <div className="mb-8">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">Choose a Starter Habit</h3>
+          <h3 className="text-xl font-semibold text-gray-800 mb-4 text-center">Choose a Starter Habit</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             {suggestions.map((habit, index) => (
               <Card
@@ -91,9 +94,11 @@ const HabitBuilding = ({ pillar, archetype, onNext, onPrevious, isEditing, initi
             ))}
           </div>
           
-          <Button variant="outline" onClick={() => setCustomMode(true)}>
-            Customise Your Own
-          </Button>
+          <div className="text-center">
+            <Button variant="outline" onClick={() => setCustomMode(true)}>
+              Customise Your Own
+            </Button>
+          </div>
         </div>
       )}
 
@@ -144,28 +149,38 @@ const HabitBuilding = ({ pillar, archetype, onNext, onPrevious, isEditing, initi
               </p>
             </div>
 
-            <div className="mt-6 flex gap-2">
-              {customMode && (
+            {customMode && (
+              <div className="mt-6">
                 <Button variant="outline" onClick={handleGoBack}>
                   Go Back
                 </Button>
-              )}
-              <Button onClick={handleNext} disabled={!isValid} className="flex-1">
-                {isEditing ? 'Update Habit' : 'Lock In This Habit'}
-              </Button>
-            </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {/* Previous button - always show when not editing and onPrevious is available */}
-      {!isEditing && onPrevious && (
-        <div className="mt-8">
-          <Button variant="outline" onClick={onPrevious}>
+      {/* Navigation buttons at the bottom */}
+      <div className="flex justify-between items-center mt-8">
+        {onPrevious ? (
+          <Button variant="outline" size="lg" onClick={onPrevious}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Previous
           </Button>
-        </div>
-      )}
+        ) : (
+          <div className="w-24"></div>
+        )}
+        
+        <Button 
+          size="lg" 
+          onClick={handleNext}
+          disabled={!isValid}
+          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90"
+        >
+          {isEditing ? 'Update Habit' : 'Lock In This Habit'}
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 };
