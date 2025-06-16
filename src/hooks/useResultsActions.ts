@@ -9,7 +9,7 @@ import { useHabitActions } from './useHabitActions';
 export const useResultsActions = (futureQuestionnaire: FutureQuestionnaire | undefined, progress: PillarProgress) => {
     const { actions } = useQuestionnaireStore();
     const { navigateToRetake, navigateToFutureQuestionnaire, navigateToResults } = useNavigationActions(progress);
-    const { markHabitAsDone } = useHabitActions();
+    const { markHabitAsDone, updateHabitStreak } = useHabitActions();
 
     const handleRetakeCurrent = () => {
         actions.startRetake();
@@ -31,10 +31,18 @@ export const useResultsActions = (futureQuestionnaire: FutureQuestionnaire | und
         }
     };
 
+    const handleWeeklyCheckin = (habitIndex: number, completionCount: number) => {
+        const updatedFq = updateHabitStreak(futureQuestionnaire, habitIndex, completionCount);
+        if (updatedFq) {
+            actions.setFutureQuestionnaire(updatedFq);
+        }
+    };
+
     return {
         handleRetakeCurrent,
         handleSetFutureTargets,
         handleStartArchitectQuestionnaire,
         handleMarkHabitAsDone,
+        handleWeeklyCheckin,
     };
 };

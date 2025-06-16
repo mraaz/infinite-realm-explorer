@@ -1,135 +1,98 @@
 
-import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import { CheckCircle2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Edit2, Calendar, Target, Award } from 'lucide-react';
 import { FutureSelfArchitect } from '@/types/results';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import WeeklyCheckinDialog from './WeeklyCheckinDialog';
 
 interface HabitCardProps {
   habit: FutureSelfArchitect;
-  currentPage: number;
-  totalPages: number;
-  onPreviousHabit: (e: React.MouseEvent) => void;
-  onNextHabit: (e: React.MouseEvent) => void;
+  habitIndex: number;
+  onEdit: () => void;
+  onWeeklyCheckin: (completionCount: number) => void;
 }
 
-const HabitCard = ({ habit, currentPage, totalPages, onPreviousHabit, onNextHabit }: HabitCardProps) => {
-  const [currentSystemPage, setCurrentSystemPage] = useState(1);
+const HabitCard = ({ habit, habitIndex, onEdit, onWeeklyCheckin }: HabitCardProps) => {
+  const [showCheckin, setShowCheckin] = useState(false);
 
-  useEffect(() => {
-    setCurrentSystemPage(1);
-  }, [habit]);
+  // Mock streak data - in real app this would come from the habit data
+  const streakWeeks = habit.streakWeeks || [];
+  const currentStreak = habit.currentStreak || 0;
+  const isEstablished = currentStreak >= 4;
 
-  const systems = habit.system?.split('\n').filter(s => s.trim() !== '') || [];
-  const systemsPerPage = 2;
-  const totalSystemPages = Math.ceil(systems.length / systemsPerPage);
-  const currentSystems = systems.slice((currentSystemPage - 1) * systemsPerPage, currentSystemPage * systemsPerPage);
-
-  const handleSystemPrevious = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setCurrentSystemPage((prev) => Math.max(prev - 1, 1));
-  };
-
-  const handleSystemNext = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setCurrentSystemPage((prev) => Math.min(prev + 1, totalSystemPages));
+  const getStreakIcon = (weekType: 'gold' | 'silver' | 'grey') => {
+    switch (weekType) {
+      case 'gold':
+        return '🏆';
+      case 'silver':
+        return '🥈';
+      case 'grey':
+        return '⚫';
+      default:
+        return '⚫';
+    }
   };
 
   return (
-    <div className="space-y-6">
-      {habit.isCompleted && (
-        <div className="mb-4 flex items-center gap-2 rounded-md border border-green-300 bg-green-100 p-3 text-green-800">
-          <CheckCircle2 className="h-5 w-5" />
-          <p className="font-semibold">
-            Completed on {habit.completionDate ? format(new Date(habit.completionDate), 'PPP') : ''}
-          </p>
-        </div>
-      )}
-      {totalPages > 1 && (
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-gray-700">Habit {currentPage} of {totalPages}</h3>
-          <Pagination className="mt-0">
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious href="#" onClick={onPreviousHabit} className={cn(currentPage === 1 && "pointer-events-none opacity-50")} />
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationNext href="#" onClick={onNextHabit} className={cn(currentPage === totalPages && "pointer-events-none opacity-50")} />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-700">Your Future Identity</h3>
-        <p className="text-gray-600 mt-1">
-          You've chosen to become:
-        </p>
-        <div className="mt-2 p-4 bg-blue-50/50 rounded-lg border border-blue-200">
-          <p className="text-lg font-semibold text-blue-800 italic">"{habit.identity}"</p>
-        </div>
-      </div>
-
-      <div>
-        <h3 className="text-lg font-semibold text-gray-700">Your Core Systems</h3>
-        {systems.length > systemsPerPage ? (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-              {currentSystems.map((system, index) => (
-                <div key={index} className="p-4 bg-gray-50/50 rounded-lg border border-gray-200 h-full flex items-center">
-                  <p className="text-gray-700 italic">"{system}"</p>
-                </div>
-              ))}
-            </div>
-            <Pagination className="mt-4">
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious href="#" onClick={handleSystemPrevious} className={cn(currentSystemPage === 1 && "pointer-events-none opacity-50")} />
-                </PaginationItem>
-                {Array.from({ length: totalSystemPages }, (_, i) => (
-                  <PaginationItem key={i}>
-                    <PaginationLink href="#" onClick={(e) => { e.preventDefault(); setCurrentSystemPage(i + 1); }} isActive={currentSystemPage === i + 1}>
-                      {i + 1}
-                    </PaginationLink>
-                  </PaginationItem>
-                ))}
-                <PaginationItem>
-                  <PaginationNext href="#" onClick={handleSystemNext} className={cn(currentSystemPage === totalSystemPages && "pointer-events-none opacity-50")} />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </>
-        ) : (
-          <div className="mt-2 space-y-2">
-            {systems.length > 0 ? (
-              systems.map((system, index) => (
-                <div key={index} className="p-4 bg-gray-50/50 rounded-lg border border-gray-200">
-                  <p className="text-gray-700 italic">"{system}"</p>
-                </div>
-              ))
-            ) : (
-              <div className="mt-2 p-4 bg-gray-50/50 rounded-lg border border-gray-200">
-                <p className="text-gray-600">No core systems defined yet.</p>
-              </div>
+    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/30">
+      <div className="flex justify-between items-start mb-3">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <h4 className="font-semibold text-gray-800">{habit.identity}</h4>
+            {isEstablished && (
+              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                <Award className="h-3 w-3 mr-1" />
+                Established
+              </Badge>
             )}
           </div>
-        )}
+          <p className="text-sm text-gray-600 mb-2">{habit.system}</p>
+          <p className="text-xs text-gray-500 italic">"{habit.proof}"</p>
+        </div>
+        <Button variant="ghost" size="sm" onClick={onEdit}>
+          <Edit2 className="h-4 w-4" />
+        </Button>
       </div>
 
-      <div>
-        <h3 className="text-lg font-semibold text-gray-700">Your Proof of Identity</h3>
-        <div className="mt-2 p-4 bg-green-50/50 rounded-lg border border-green-200">
-          <p className="text-gray-700 italic">"{habit.proof}"</p>
+      {/* Streak Display */}
+      <div className="mb-3">
+        <div className="flex items-center gap-2 mb-2">
+          <Target className="h-4 w-4 text-gray-600" />
+          <span className="text-sm font-medium text-gray-700">
+            Weekly Streak: {currentStreak} weeks
+          </span>
+        </div>
+        <div className="flex gap-1">
+          {streakWeeks.slice(-8).map((weekType, index) => (
+            <span key={index} className="text-lg">
+              {getStreakIcon(weekType)}
+            </span>
+          ))}
+          {/* Show empty slots for upcoming weeks */}
+          {Array.from({ length: Math.max(0, 8 - streakWeeks.length) }).map((_, index) => (
+            <span key={`empty-${index}`} className="text-lg opacity-30">⚪</span>
+          ))}
         </div>
       </div>
+
+      {/* Weekly Check-in Button */}
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={() => setShowCheckin(true)}
+        className="w-full"
+      >
+        <Calendar className="h-4 w-4 mr-2" />
+        Weekly Check-in
+      </Button>
+
+      <WeeklyCheckinDialog
+        isOpen={showCheckin}
+        onOpenChange={setShowCheckin}
+        habit={habit}
+        onSubmit={onWeeklyCheckin}
+      />
     </div>
   );
 };

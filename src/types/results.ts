@@ -6,6 +6,8 @@ export interface Architect {
   isCompleted?: boolean;
   completionDate?: string | Date;
   completionNotes?: string;
+  streakWeeks?: ('gold' | 'silver' | 'grey')[];
+  currentStreak?: number;
 }
 
 export interface FutureSelfArchitect extends Architect {

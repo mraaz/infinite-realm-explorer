@@ -34,7 +34,71 @@ export const useHabitActions = () => {
     return updatedFq;
   };
 
+  const updateHabitStreak = (
+    futureQuestionnaire: FutureQuestionnaire | undefined,
+    habitIndex: number,
+    completionCount: number
+  ) => {
+    if (!futureQuestionnaire?.architect) return null;
+
+    const habit = futureQuestionnaire.architect[habitIndex];
+    
+    // Extract target frequency from habit system
+    const extractTargetFrequency = (system: string): number => {
+      const match = system.match(/(\d+)\s*times?\s*a?\s*week/i);
+      return match ? parseInt(match[1]) : 3;
+    };
+
+    const targetFrequency = extractTargetFrequency(habit.system);
+    
+    // Determine streak type
+    let streakType: 'gold' | 'silver' | 'grey';
+    if (completionCount >= targetFrequency) {
+      streakType = 'gold';
+    } else if (completionCount > 0) {
+      streakType = 'silver';
+    } else {
+      streakType = 'grey';
+    }
+
+    // Update streak
+    const updatedStreakWeeks = [...(habit.streakWeeks || []), streakType];
+    let newStreak = habit.currentStreak || 0;
+    
+    if (streakType === 'gold') {
+      newStreak += 1;
+    } else if (streakType === 'grey') {
+      newStreak = 0;
+    }
+    // Silver maintains the streak
+
+    // Check if habit is established (4 consecutive gold weeks)
+    const recentGoldWeeks = updatedStreakWeeks.slice(-4).filter(week => week === 'gold').length;
+    const isEstablished = recentGoldWeeks === 4 && newStreak >= 4;
+
+    const updatedArchitect = [...futureQuestionnaire.architect];
+    updatedArchitect[habitIndex] = {
+      ...habit,
+      streakWeeks: updatedStreakWeeks,
+      currentStreak: newStreak,
+      isCompleted: isEstablished,
+      completionDate: isEstablished ? new Date().toISOString() : habit.completionDate,
+    };
+
+    if (isEstablished) {
+      fire();
+    }
+
+    const updatedFq = {
+      ...futureQuestionnaire,
+      architect: updatedArchitect,
+    };
+
+    return updatedFq;
+  };
+
   return {
     markHabitAsDone,
+    updateHabitStreak,
   };
 };

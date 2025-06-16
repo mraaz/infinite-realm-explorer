@@ -1,10 +1,11 @@
+
 import { useState, useRef } from 'react';
 import Header from '@/components/Header';
 import { Insight } from '@/types/insights';
 import ResultsHeader from '@/components/results/ResultsHeader';
 import ChartsSection from '@/components/results/ChartsSection';
 import InsightSynthesis from '@/components/results/InsightSynthesis';
-import FutureSelfArchitectSection from '@/components/results/FutureSelfArchitectSection';
+import HabitArchitectSection from '@/components/results/HabitArchitectSection';
 import HabitsTimeline from '@/components/results/HabitsTimeline';
 import ResultsActions from '@/components/results/ResultsActions';
 import ResultsFooter from '@/components/results/ResultsFooter';
@@ -31,6 +32,7 @@ const Results = () => {
     handleSetFutureTargets,
     handleStartArchitectQuestionnaire,
     handleMarkHabitAsDone,
+    handleWeeklyCheckin,
   } = useResultsActions(futureQuestionnaire, progress);
 
   const { handlePrintReport } = usePrintReport();
@@ -66,11 +68,12 @@ const Results = () => {
         </div>
 
         <div className="pdf-page">
-          <FutureSelfArchitectSection
+          <HabitArchitectSection
             architect={futureSelfArchitect}
             onStart={handleStartArchitectQuestionnaire}
             isQuestionnaireComplete={isFutureQuestionnaireComplete}
             onMarkAsDone={handleMarkHabitAsDone}
+            onWeeklyCheckin={handleWeeklyCheckin}
           />
           <PdfFooter />
         </div>
