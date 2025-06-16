@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { RotateCcw } from 'lucide-react';
 import { Insight } from '@/types/insights';
 import { getInsightColor } from '@/utils/colorTheme';
 import { getIcon } from '@/utils/iconMapper';
@@ -9,10 +8,10 @@ interface InsightCardProps {
   insight: Insight;
   isFlipped: boolean;
   onClick: () => void;
-  isFirstCard?: boolean;
+  showPeekAnimation?: boolean;
 }
 
-const InsightCard = ({ insight, isFlipped, onClick, isFirstCard = false }: InsightCardProps) => {
+const InsightCard = ({ insight, isFlipped, onClick, showPeekAnimation = false }: InsightCardProps) => {
   const Icon = getIcon(insight.icon);
   const colorTheme = getInsightColor(insight.color);
 
@@ -21,7 +20,7 @@ const InsightCard = ({ insight, isFlipped, onClick, isFirstCard = false }: Insig
       className="flip-card cursor-pointer h-48"
       onClick={onClick}
     >
-      <div className={`flip-card-inner ${isFlipped ? 'flipped' : ''}`}>
+      <div className={`flip-card-inner ${isFlipped ? 'flipped' : ''} ${showPeekAnimation ? 'animate-peek' : ''}`}>
         {/* Front of card */}
         <div className="flip-card-front bg-white/60 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-gray-200/80">
           <h3 className="font-bold text-gray-800 mb-2 text-lg flex items-center">
@@ -29,12 +28,6 @@ const InsightCard = ({ insight, isFlipped, onClick, isFirstCard = false }: Insig
             <span>Observation: {insight.title}</span>
           </h3>
           <p className="text-gray-600 mb-4">{insight.description}</p>
-          {isFirstCard && (
-            <div className="flex items-center justify-end text-sm text-gray-400">
-              <RotateCcw className="h-4 w-4 mr-1" />
-              <span>Click to flip</span>
-            </div>
-          )}
         </div>
         
         {/* Back of card */}
@@ -44,12 +37,6 @@ const InsightCard = ({ insight, isFlipped, onClick, isFirstCard = false }: Insig
             <span>{insight.backContent.title}</span>
           </h3>
           <p className="text-purple-700 text-sm leading-relaxed mb-4">{insight.backContent.content}</p>
-          {isFirstCard && (
-            <div className="flex items-center justify-end text-sm text-purple-400">
-              <RotateCcw className="h-4 w-4 mr-1" />
-              <span>Click to flip back</span>
-            </div>
-          )}
         </div>
       </div>
     </div>

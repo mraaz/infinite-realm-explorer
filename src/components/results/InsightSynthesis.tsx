@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Insight } from '@/types/insights';
 import { useInsightCards } from '@/hooks/useInsightCards';
 import InsightCard from './insights/InsightCard';
@@ -10,6 +10,15 @@ interface InsightSynthesisProps {
 
 const InsightSynthesis = ({ insights }: InsightSynthesisProps) => {
   const { flippedCards, handleCardClick } = useInsightCards(insights.length);
+  const [peekAnimationIndex, setPeekAnimationIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPeekAnimationIndex(-1);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <section className="mb-16">
@@ -22,7 +31,7 @@ const InsightSynthesis = ({ insights }: InsightSynthesisProps) => {
             insight={insight}
             isFlipped={flippedCards[index]}
             onClick={() => handleCardClick(index)}
-            isFirstCard={index === 0}
+            showPeekAnimation={index === peekAnimationIndex}
           />
         ))}
       </div>

@@ -106,3 +106,15 @@
 .flip-card:hover .flip-card-inner:not(.flipped) {
   transform: rotateY(5deg);
 }
+
+/* Animated hint for first card */
+@keyframes subtle-peek {
+  0% { transform: rotateY(0deg); }
+  50% { transform: rotateY(-25deg); }
+  100% { transform: rotateY(0deg); }
+}
+
+.animate-peek {
+  animation: subtle-peek 1.2s ease-in-out;
+  animation-delay: 0.5s;
+}
