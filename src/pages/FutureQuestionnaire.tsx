@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -22,7 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, ArrowLeft } from 'lucide-react';
+import { CheckCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 import { futureQuestions } from '@/data/futureQuestions';
 import { Pillar } from '@/components/priority-ranking/types';
 
@@ -181,11 +180,62 @@ const FutureQuestionnaire = () => {
             }
             switch (step) {
                 case 1:
-                    return <IdentityArchetypeSelection mainFocus={priorities.mainFocus.toLowerCase()} onComplete={handleIdentityComplete} value={architectAnswers.identity} />;
+                    return (
+                        <div>
+                            <IdentityArchetypeSelection mainFocus={priorities.mainFocus.toLowerCase()} onComplete={handleIdentityComplete} value={architectAnswers.identity} />
+                            <div className="flex justify-between items-center mt-8">
+                                <div className="w-24"></div> {/* Spacer for alignment */}
+                                <Button 
+                                    size="lg" 
+                                    onClick={() => handleIdentityComplete(architectAnswers.identity)}
+                                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90"
+                                >
+                                    Next
+                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    );
                 case 2:
-                    return <CoreSystemDesign mainFocus={priorities.mainFocus.toLowerCase()} chosenIdentity={architectAnswers.identity} onComplete={handleSystemComplete} value={architectAnswers.system} />;
+                    return (
+                        <div>
+                            <CoreSystemDesign mainFocus={priorities.mainFocus.toLowerCase()} chosenIdentity={architectAnswers.identity} onComplete={handleSystemComplete} value={architectAnswers.system} />
+                            <div className="flex justify-between items-center mt-8">
+                                <Button variant="outline" size="lg" onClick={handlePrevious}>
+                                    <ArrowLeft className="mr-2 h-4 w-4" />
+                                    Previous
+                                </Button>
+                                <Button 
+                                    size="lg" 
+                                    onClick={() => handleSystemComplete(architectAnswers.system)}
+                                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90"
+                                >
+                                    Next
+                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    );
                 case 3:
-                    return <ProofOfIdentity chosenIdentity={architectAnswers.identity} onComplete={handleProofComplete} value={architectAnswers.proof} />;
+                    return (
+                        <div>
+                            <ProofOfIdentity chosenIdentity={architectAnswers.identity} onComplete={handleProofComplete} value={architectAnswers.proof} />
+                            <div className="flex justify-between items-center mt-8">
+                                <Button variant="outline" size="lg" onClick={handlePrevious}>
+                                    <ArrowLeft className="mr-2 h-4 w-4" />
+                                    Previous
+                                </Button>
+                                <Button 
+                                    size="lg" 
+                                    onClick={() => handleProofComplete(architectAnswers.proof)}
+                                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90"
+                                >
+                                    Next
+                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    );
                 case 4:
                     return (
                         <div>
@@ -223,14 +273,20 @@ const FutureQuestionnaire = () => {
                                 </Card>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row justify-between gap-4 mt-8">
+                            <div className="flex justify-between items-center mt-8">
                                 <Button variant="outline" size="lg" onClick={handlePrevious}>
                                     <ArrowLeft className="mr-2 h-4 w-4" />
                                     Previous
                                 </Button>
                                 <div className="flex gap-4">
                                     <Button variant="outline" size="lg" onClick={handleRetake}>Retake Questionnaire</Button>
-                                    <Button size="lg" onClick={handleConfirm}>Show Me My Future Self, mate</Button>
+                                    <Button 
+                                        size="lg" 
+                                        onClick={handleConfirm}
+                                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90"
+                                    >
+                                        Show Me My Future Self, mate
+                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -243,16 +299,84 @@ const FutureQuestionnaire = () => {
         // Non-architect flow
         switch (step) {
             case 1:
-                return <PriorityRanking progress={progress} onComplete={handlePrioritiesComplete} value={priorities} />;
+                return (
+                    <div>
+                        <PriorityRanking progress={progress} onComplete={handlePrioritiesComplete} value={priorities} />
+                        <div className="flex justify-end items-center mt-8">
+                            <Button 
+                                size="lg" 
+                                onClick={() => priorities && handlePrioritiesComplete(priorities)}
+                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90"
+                            >
+                                Next
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                );
             case 2:
                 if (!priorities) return null;
-                return <DeepDive pillar={priorities.mainFocus as any} onComplete={handleDeepDiveComplete} value={answers} />;
+                return (
+                    <div>
+                        <DeepDive pillar={priorities.mainFocus as any} onComplete={handleDeepDiveComplete} value={answers} />
+                        <div className="flex justify-between items-center mt-8">
+                            <Button variant="outline" size="lg" onClick={handlePrevious}>
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Previous
+                            </Button>
+                            <Button 
+                                size="lg" 
+                                onClick={() => handleDeepDiveComplete(answers)}
+                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90"
+                            >
+                                Next
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                );
             case 3:
                 if (!priorities) return null;
-                return <DeepDive pillar={priorities.secondaryFocus as any} onComplete={handleDeepDiveComplete} value={answers} />;
+                return (
+                    <div>
+                        <DeepDive pillar={priorities.secondaryFocus as any} onComplete={handleDeepDiveComplete} value={answers} />
+                        <div className="flex justify-between items-center mt-8">
+                            <Button variant="outline" size="lg" onClick={handlePrevious}>
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Previous
+                            </Button>
+                            <Button 
+                                size="lg" 
+                                onClick={() => handleDeepDiveComplete(answers)}
+                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90"
+                            >
+                                Next
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                );
             case 4:
                 if (!priorities) return null;
-                return <MaintenanceBaseline maintenancePillars={priorities.maintenance as any} onComplete={handleMaintenanceComplete} value={answers} />;
+                return (
+                    <div>
+                        <MaintenanceBaseline maintenancePillars={priorities.maintenance as any} onComplete={handleMaintenanceComplete} value={answers} />
+                        <div className="flex justify-between items-center mt-8">
+                            <Button variant="outline" size="lg" onClick={handlePrevious}>
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Previous
+                            </Button>
+                            <Button 
+                                size="lg" 
+                                onClick={() => handleMaintenanceComplete(answers)}
+                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90"
+                            >
+                                Next
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                );
             case 5:
                 return (
                      <div>
@@ -285,14 +409,20 @@ const FutureQuestionnaire = () => {
                             </div>
                         )}
 
-                        <div className="flex flex-col sm:flex-row justify-between gap-4 mt-8">
+                        <div className="flex justify-between items-center mt-8">
                             <Button variant="outline" size="lg" onClick={handlePrevious}>
                                 <ArrowLeft className="mr-2 h-4 w-4" />
                                 Previous
                             </Button>
                             <div className="flex gap-4">
                                 <Button variant="outline" size="lg" onClick={handleRetake}>Retake Questionnaire</Button>
-                                <Button size="lg" onClick={handleConfirm}>Show Me My Future Self, mate</Button>
+                                <Button 
+                                    size="lg" 
+                                    onClick={handleConfirm}
+                                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90"
+                                >
+                                    Show Me My Future Self, mate
+                                </Button>
                             </div>
                         </div>
                     </div>
