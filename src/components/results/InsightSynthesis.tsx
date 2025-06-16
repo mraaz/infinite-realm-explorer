@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { AlertTriangle, Lightbulb, SquareCode, Users, RotateCcw } from 'lucide-react';
+// Step 1: Import the 'LucideIcon' type from the library
+import { AlertTriangle, Lightbulb, SquareCode, Users, RotateCcw, type LucideIcon } from 'lucide-react';
 
 export interface Insight {
   title: string;
@@ -13,7 +14,8 @@ interface InsightSynthesisProps {
   insights: Insight[];
 }
 
-const iconComponents = {
+// Step 2: Explicitly type the object as a Record mapping strings to LucideIcon components.
+const iconComponents: Record<string, LucideIcon> = {
   AlertTriangle,
   Lightbulb,
   SquareCode,
@@ -52,6 +54,7 @@ const InsightSynthesis = ({ insights }: InsightSynthesisProps) => {
       <p className="text-lg text-gray-600 text-center mb-8">Patterns spotted from your responses</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {insights.map((insight, index) => {
+          // With the fix above, TypeScript now correctly infers 'Icon' as a renderable component.
           const Icon = iconComponents[insight.icon];
           const isFlipped = flippedCards[index];
           const back = backContent[index];
@@ -66,6 +69,7 @@ const InsightSynthesis = ({ insights }: InsightSynthesisProps) => {
                 {/* Front of card */}
                 <div className="flip-card-front bg-white/60 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-gray-200/80">
                   <h3 className="font-bold text-gray-800 mb-2 text-lg flex items-center">
+                    {/* This JSX will now pass type checking without errors. */}
                     {Icon && <Icon className={`mr-2 h-5 w-5 ${insight.color}`} aria-hidden="true" />}
                     <span>Observation: {insight.title}</span>
                   </h3>
