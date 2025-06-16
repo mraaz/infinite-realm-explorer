@@ -59,6 +59,8 @@ const InsightSynthesis = ({ insights }: InsightSynthesisProps) => {
           const isFlipped = flippedCards[index];
           const back = backContent[index];
           
+          console.log(`Insight ${index}: icon=${insight.icon}, color=${insight.color}`);
+          
           return (
             <div 
               key={index} 
