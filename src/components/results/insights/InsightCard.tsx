@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { RotateCcw } from 'lucide-react';
 import { Insight } from '@/types/insights';
 import { getInsightColor } from '@/utils/colorTheme';
 import { getIcon } from '@/utils/iconMapper';
@@ -9,9 +10,10 @@ interface InsightCardProps {
   isFlipped: boolean;
   onClick: () => void;
   showPeekAnimation?: boolean;
+  isFirstCard?: boolean;
 }
 
-const InsightCard = ({ insight, isFlipped, onClick, showPeekAnimation = false }: InsightCardProps) => {
+const InsightCard = ({ insight, isFlipped, onClick, showPeekAnimation = false, isFirstCard = false }: InsightCardProps) => {
   const Icon = getIcon(insight.icon);
   const colorTheme = getInsightColor(insight.color);
 
@@ -28,6 +30,12 @@ const InsightCard = ({ insight, isFlipped, onClick, showPeekAnimation = false }:
             <span>Observation: {insight.title}</span>
           </h3>
           <p className="text-gray-600 mb-4">{insight.description}</p>
+          {isFirstCard && (
+            <div className="flex items-center justify-end text-sm text-gray-400">
+              <RotateCcw className="h-4 w-4 mr-1" />
+              <span>Click to flip</span>
+            </div>
+          )}
         </div>
         
         {/* Back of card */}
@@ -37,6 +45,12 @@ const InsightCard = ({ insight, isFlipped, onClick, showPeekAnimation = false }:
             <span>{insight.backContent.title}</span>
           </h3>
           <p className="text-purple-700 text-sm leading-relaxed mb-4">{insight.backContent.content}</p>
+          {isFirstCard && (
+            <div className="flex items-center justify-end text-sm text-purple-400">
+              <RotateCcw className="h-4 w-4 mr-1" />
+              <span>Click to flip back</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
