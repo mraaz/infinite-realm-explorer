@@ -19,12 +19,35 @@ export const usePdfReport = (
     const contentWidth = pdfWidth - (margin * 2);
     const pageContentHeight = pdfPageHeight - (margin * 2);
 
+    // Function to temporarily show PDF-only elements
+    const showPdfElements = () => {
+      const pdfOnlyElements = document.querySelectorAll('.pdf-only');
+      pdfOnlyElements.forEach(element => {
+        (element as HTMLElement).style.display = 'block';
+      });
+    };
+
+    // Function to hide PDF-only elements again
+    const hidePdfElements = () => {
+      const pdfOnlyElements = document.querySelectorAll('.pdf-only');
+      pdfOnlyElements.forEach(element => {
+        (element as HTMLElement).style.display = 'none';
+      });
+    };
+
     const appendContentAsImage = async (element: HTMLElement, isFirstPage = false) => {
+      // Show PDF elements before capturing
+      showPdfElements();
+      
       const canvas = await html2canvas(element, {
         scale: 2,
         backgroundColor: '#ffffff',
         useCORS: true,
       });
+      
+      // Hide PDF elements after capturing
+      hidePdfElements();
+      
       const imgData = canvas.toDataURL('image/png');
       const imgProps = pdf.getImageProperties(imgData);
       const imgHeight = (imgProps.height * contentWidth) / imgProps.width;
