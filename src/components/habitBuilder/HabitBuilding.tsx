@@ -46,6 +46,13 @@ const HabitBuilding = ({ pillar, archetype, onNext, onPrevious, isEditing, initi
     setFrequency(habit.frequency);
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent, habit: any) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleStarterSelect(habit);
+    }
+  };
+
   const handleNext = () => {
     const habitStatement = `I will ${action} for ${duration}, ${frequency} times a week.`;
     onNext({ habitStatement, action, duration, frequency });
@@ -62,31 +69,41 @@ const HabitBuilding = ({ pillar, archetype, onNext, onPrevious, isEditing, initi
   const isValid = action && duration && frequency;
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6">
+      <div className="text-center mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3 sm:mb-4">
           Build Your Habit
         </h1>
-        <p className="text-lg text-gray-600 mb-8">
+        <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8">
           You've chosen the path of <strong>"{archetype}"</strong>. Let's build the small, consistent habit for this identity.
         </p>
       </div>
 
       {!customMode && suggestions.length > 0 && (
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4 text-center">Choose a Starter Habit</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="mb-6 sm:mb-8">
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4 text-center">Choose a Starter Habit</h3>
+          <div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6"
+            role="radiogroup"
+            aria-label="Choose a starter habit for your archetype"
+          >
             {suggestions.map((habit, index) => (
               <Card
                 key={index}
-                className={`cursor-pointer transition-all duration-200 hover:scale-105 ${
+                className={`cursor-pointer transition-all duration-200 hover:scale-105 focus-within:ring-2 focus-within:ring-blue-500 ${
                   selectedHabit?.title === habit.title ? 'ring-2 ring-blue-500' : ''
                 }`}
                 onClick={() => handleStarterSelect(habit)}
+                onKeyDown={(e) => handleKeyDown(e, habit)}
+                tabIndex={0}
+                role="radio"
+                aria-checked={selectedHabit?.title === habit.title}
+                aria-labelledby={`habit-title-${index}`}
+                aria-describedby={`habit-description-${index}`}
               >
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-gray-800 mb-2">{habit.title}</h4>
-                  <p className="text-sm text-gray-600">
+                <CardContent className="p-3 sm:p-4">
+                  <h4 id={`habit-title-${index}`} className="font-semibold text-gray-800 mb-2 text-sm sm:text-base">{habit.title}</h4>
+                  <p id={`habit-description-${index}`} className="text-xs sm:text-sm text-gray-600">
                     I will {habit.action} for {habit.duration}, {habit.frequency} times a week.
                   </p>
                 </CardContent>
@@ -95,7 +112,11 @@ const HabitBuilding = ({ pillar, archetype, onNext, onPrevious, isEditing, initi
           </div>
           
           <div className="text-center">
-            <Button variant="outline" onClick={() => setCustomMode(true)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setCustomMode(true)}
+              aria-label="Switch to custom habit creation mode"
+            >
               Customise Your Own
             </Button>
           </div>
@@ -104,32 +125,42 @@ const HabitBuilding = ({ pillar, archetype, onNext, onPrevious, isEditing, initi
 
       {(customMode || selectedHabit || isEditing) && (
         <Card className="text-left max-w-2xl mx-auto">
-          <CardContent className="p-6">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Customise Your Habit</h3>
+          <CardContent className="p-4 sm:p-6">
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4">Customise Your Habit</h3>
             
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4" role="group" aria-labelledby="habit-form">
               <div>
-                <Label htmlFor="action">I will</Label>
+                <Label htmlFor="action" className="text-sm sm:text-base">I will</Label>
                 <Input
                   id="action"
                   value={action}
                   onChange={(e) => setAction(e.target.value)}
                   placeholder="go for a walk"
+                  aria-describedby="action-help"
+                  className="mt-1"
                 />
+                <div id="action-help" className="sr-only">
+                  Enter the action you want to perform as part of your habit
+                </div>
               </div>
               
               <div>
-                <Label htmlFor="duration">for</Label>
+                <Label htmlFor="duration" className="text-sm sm:text-base">for</Label>
                 <Input
                   id="duration"
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
                   placeholder="15 minutes"
+                  aria-describedby="duration-help"
+                  className="mt-1"
                 />
+                <div id="duration-help" className="sr-only">
+                  Enter how long you want to perform this action
+                </div>
               </div>
               
               <div>
-                <Label htmlFor="frequency">times a week</Label>
+                <Label htmlFor="frequency" className="text-sm sm:text-base">times a week</Label>
                 <Input
                   id="frequency"
                   type="number"
@@ -138,19 +169,24 @@ const HabitBuilding = ({ pillar, archetype, onNext, onPrevious, isEditing, initi
                   placeholder="3"
                   min="1"
                   max="7"
+                  aria-describedby="frequency-help"
+                  className="mt-1"
                 />
+                <div id="frequency-help" className="sr-only">
+                  Enter how many times per week you want to perform this habit (1-7)
+                </div>
               </div>
             </div>
 
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <h4 className="font-semibold text-gray-700 mb-2">Your Habit Preview:</h4>
-              <p className="text-gray-800 italic">
+            <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gray-50 rounded-lg">
+              <h4 className="font-semibold text-gray-700 mb-2 text-sm sm:text-base">Your Habit Preview:</h4>
+              <p className="text-gray-800 italic text-sm sm:text-base" aria-live="polite">
                 "I will {action || '[ACTION]'} for {duration || '[DURATION]'}, {frequency || '[NUMBER]'} times a week."
               </p>
             </div>
 
             {customMode && (
-              <div className="mt-6">
+              <div className="mt-4 sm:mt-6">
                 <Button variant="outline" onClick={handleGoBack}>
                   Go Back
                 </Button>
@@ -161,21 +197,22 @@ const HabitBuilding = ({ pillar, archetype, onNext, onPrevious, isEditing, initi
       )}
 
       {/* Navigation buttons at the bottom */}
-      <div className="flex justify-between items-center mt-8">
+      <div className="flex flex-col sm:flex-row justify-between items-center mt-6 sm:mt-8 gap-4 sm:gap-0">
         {onPrevious ? (
-          <Button variant="outline" size="lg" onClick={onPrevious}>
+          <Button variant="outline" size="lg" onClick={onPrevious} className="w-full sm:w-auto">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Previous
           </Button>
         ) : (
-          <div className="w-24"></div>
+          <div className="hidden sm:block sm:w-24"></div>
         )}
         
         <Button 
           size="lg" 
           onClick={handleNext}
           disabled={!isValid}
-          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90"
+          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 w-full sm:w-auto"
+          aria-label={isValid ? (isEditing ? 'Update your habit' : 'Confirm and lock in this habit') : 'Complete all fields to continue'}
         >
           {isEditing ? 'Update Habit' : 'Lock In This Habit'}
           <ArrowRight className="ml-2 h-4 w-4" />

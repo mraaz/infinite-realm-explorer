@@ -22,7 +22,7 @@ const ChartsSection = ({
   onStartFutureQuestionnaire,
 }: ChartsSectionProps) => {
   return (
-    <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+    <section className="grid grid-cols-1 xl:grid-cols-2 gap-6 sm:gap-8 mb-12 sm:mb-16">
       <ChartCard
         title="Your Current Self"
         progress={currentProgress}

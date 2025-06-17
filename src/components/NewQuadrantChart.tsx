@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useRef, memo } from "react"
 import type React from "react"
 
@@ -57,9 +58,10 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
   const chartRef = useRef<SVGSVGElement>(null)
   const isMobile = useIsMobile()
 
-  // Calculate size based on viewport
+  // Calculate size based on viewport with better mobile scaling
   const baseSize = 400
-  const size = isMobile ? 320 : baseSize
+  const mobileSize = Math.min(280, window.innerWidth - 80) // Ensure it fits on small screens
+  const size = isMobile ? mobileSize : baseSize
   const center = size / 2
   const radius = size * 0.4
   const innerRadius = radius * 0.375
@@ -112,9 +114,11 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
     return () => clearInterval(interval)
   }, [progress, overallScore])
 
-  // Define quadrants with all necessary data
+  // Define quadrants with all necessary data - adjust positioning for mobile
   const getQuadrants = (): QuadrantData[] => {
-    const scores = animatedProgress // Use animated progress for both charts for smooth transitions
+    const scores = animatedProgress
+    const textOffset = isMobile ? 0.35 : 0.45 // Closer text on mobile
+    const iconOffset = isMobile ? 0.6 : 0.7 // Closer icons on mobile
 
     return [
       {
@@ -123,11 +127,11 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
         score: Math.round(scores.career),
         color: "#9333ea", // Purple
         hoverColor: "#a855f7", // Lighter purple
-        icon: <Target className="w-6 h-6" />,
+        icon: <Target className={cn("w-4 h-4", !isMobile && "w-6 h-6")} />,
         startAngle: 270,
         endAngle: 360,
-        textPosition: { x: center + center * 0.45, y: center - center * 0.45 },
-        iconPosition: { x: center + center * 0.7, y: center - center * 0.7 },
+        textPosition: { x: center + center * textOffset, y: center - center * textOffset },
+        iconPosition: { x: center + center * iconOffset, y: center - center * iconOffset },
         description: "Your professional growth and goals",
       },
       {
@@ -136,11 +140,11 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
         score: Math.round(scores.finances),
         color: "#2563eb", // Blue
         hoverColor: "#3b82f6", // Lighter blue
-        icon: <PiggyBank className="w-6 h-6" />,
+        icon: <PiggyBank className={cn("w-4 h-4", !isMobile && "w-6 h-6")} />,
         startAngle: 0,
         endAngle: 90,
-        textPosition: { x: center + center * 0.45, y: center + center * 0.45 },
-        iconPosition: { x: center + center * 0.7, y: center + center * 0.7 },
+        textPosition: { x: center + center * textOffset, y: center + center * textOffset },
+        iconPosition: { x: center + center * iconOffset, y: center + center * iconOffset },
         description: "Your financial security and wealth",
       },
       {
@@ -149,11 +153,11 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
         score: Math.round(scores.health),
         color: "#16a34a", // Green
         hoverColor: "#22c55e", // Lighter green
-        icon: <Heart className="w-6 h-6" />,
+        icon: <Heart className={cn("w-4 h-4", !isMobile && "w-6 h-6")} />,
         startAngle: 90,
         endAngle: 180,
-        textPosition: { x: center - center * 0.45, y: center + center * 0.45 },
-        iconPosition: { x: center - center * 0.7, y: center + center * 0.7 },
+        textPosition: { x: center - center * textOffset, y: center + center * textOffset },
+        iconPosition: { x: center - center * iconOffset, y: center + center * iconOffset },
         description: "Your physical and mental wellbeing",
       },
       {
@@ -162,11 +166,11 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
         score: Math.round(scores.connections),
         color: "#ea580c", // Orange
         hoverColor: "#f97316", // Lighter orange
-        icon: <Users className="w-6 h-6" />,
+        icon: <Users className={cn("w-4 h-4", !isMobile && "w-6 h-6")} />,
         startAngle: 180,
         endAngle: 270,
-        textPosition: { x: center - center * 0.45, y: center - center * 0.45 },
-        iconPosition: { x: center - center * 0.7, y: center - center * 0.7 },
+        textPosition: { x: center - center * textOffset, y: center - center * textOffset },
+        iconPosition: { x: center - center * iconOffset, y: center - center * iconOffset },
         description: "Your relationships and community",
       },
     ]
@@ -251,7 +255,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
                   strokeWidth="1"
                   strokeDasharray="4 4"
                 />
-                <text x={center} y={center - guideRadius - 5} textAnchor="middle" className="text-xs fill-gray-400">
+                <text x={center} y={center - guideRadius - 5} textAnchor="middle" className={cn("text-xs fill-gray-400", isMobile && "text-[10px]")}>
                   {percent}
                 </text>
               </g>
@@ -284,7 +288,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
                 y={quadrant.textPosition.y}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                className="text-2xl font-bold fill-gray-900"
+                className={cn("font-bold fill-gray-900", isMobile ? "text-lg" : "text-2xl")}
               >
                 {quadrant.score}
               </text>
@@ -292,10 +296,10 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
               {/* Pillar name */}
               <text
                 x={quadrant.textPosition.x}
-                y={quadrant.textPosition.y + 25}
+                y={quadrant.textPosition.y + (isMobile ? 18 : 25)}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                className={`text-sm font-medium fill-gray-700`}
+                className={cn("font-medium fill-gray-700", isMobile ? "text-xs" : "text-sm")}
               >
                 {quadrant.name}
               </text>
@@ -316,19 +320,19 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
           {/* Overall score text */}
           <text
             x={center}
-            y={center - 10}
+            y={center - (isMobile ? 8 : 10)}
             textAnchor="middle"
             dominantBaseline="middle"
-            className={`text-4xl font-bold fill-gray-900`}
+            className={cn("font-bold fill-gray-900", isMobile ? "text-2xl" : "text-4xl")}
           >
             {Math.round(animatedOverallScore)}
           </text>
           <text
             x={center}
-            y={center + 15}
+            y={center + (isMobile ? 12 : 15)}
             textAnchor="middle"
             dominantBaseline="middle"
-            className={`text-sm font-medium fill-gray-600`}
+            className={cn("font-medium fill-gray-600", isMobile ? "text-xs" : "text-sm")}
           >
             Overall Score
           </text>
@@ -339,12 +343,13 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
           <div
             key={quadrant.key}
             className={cn(
-              "absolute w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all duration-300",
+              "absolute bg-white rounded-full flex items-center justify-center shadow-md cursor-pointer transition-all duration-300",
+              isMobile ? "w-6 h-6" : "w-8 h-8",
               (hoveredPillar === quadrant.key || activePillar === quadrant.key) && "scale-125 shadow-lg",
             )}
             style={{
-              left: quadrant.iconPosition.x - 15,
-              top: quadrant.iconPosition.y - 15,
+              left: quadrant.iconPosition.x - (isMobile ? 12 : 15),
+              top: quadrant.iconPosition.y - (isMobile ? 12 : 15),
             }}
             onClick={() => onPillarClick?.(quadrant.key)}
             onMouseEnter={() => setHoveredPillar(quadrant.key)}

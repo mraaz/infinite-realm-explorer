@@ -22,16 +22,18 @@ const HabitBuilder = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <Header />
-      <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+      <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12 md:py-16">
         <div className="w-full max-w-5xl mx-auto relative">
-          <div className="bg-white/60 p-6 md:p-10 rounded-2xl shadow-lg border border-gray-200/80">
+          <div className="bg-white/60 p-4 sm:p-6 md:p-10 rounded-2xl shadow-lg border border-gray-200/80">
             <BuilderHeader 
               isEditing={isEditing}
               onCancel={handleCancel}
               onDelete={handleDelete}
             />
             
-            <QuestionnaireSteps step={getStepNumber()} />
+            <div className="mb-6 sm:mb-8">
+              <QuestionnaireSteps step={getStepNumber()} />
+            </div>
             
             <StepRenderer
               currentStep={currentStep}
