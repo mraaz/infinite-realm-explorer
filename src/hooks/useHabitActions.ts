@@ -45,7 +45,14 @@ export const useHabitActions = () => {
     if (!futureQuestionnaire?.architect) return null;
 
     const habit = futureQuestionnaire.architect[habitIndex];
-    const updatedHabit = updateHabitWithStreak(habit, completionCount);
+    
+    // Ensure the habit has the mainFocus property required by FutureSelfArchitect
+    const habitWithMainFocus = {
+      ...habit,
+      mainFocus: (habit as any).mainFocus || futureQuestionnaire.priorities?.mainFocus || 'unknown',
+    };
+    
+    const updatedHabit = updateHabitWithStreak(habitWithMainFocus, completionCount);
 
     // Check if habit was just established
     const wasEstablished = habit.isCompleted;
