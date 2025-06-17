@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings, PlusCircle, Calendar } from 'lucide-react';
+import { Axe, PlusCircle, Calendar } from 'lucide-react';
 import { FutureSelfArchitect } from '@/types/results';
 import ArchitectEmptyState from './architect/ArchitectEmptyState';
 import HabitDashboard from './architect/HabitDashboard';
@@ -68,7 +68,7 @@ const HabitArchitectSection = ({
         <CardContent className="p-6 md:p-8">
           <div className="flex items-center gap-3 text-2xl font-bold text-gray-800 mb-6">
             <div className="bg-blue-100 p-2 rounded-lg">
-              <Settings className="h-6 w-6 text-blue-600" />
+              <Axe className="h-6 w-6 text-blue-600" />
             </div>
             <h2>The Habit Architect</h2>
           </div>
