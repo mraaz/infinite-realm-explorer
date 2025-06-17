@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { FutureSelfArchitect } from '@/types/results';
 import { MarkAsDoneData } from '@/components/results/MarkAsDoneDialog';
+import { useArchitectModal } from './useArchitectModal';
 
 interface UseArchitectSectionProps {
   architect?: FutureSelfArchitect[];
@@ -19,8 +20,7 @@ export const useArchitectSection = ({
 }: UseArchitectSectionProps) => {
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
-  const [isDoneModalOpen, setIsDoneModalOpen] = useState(false);
-  const [habitToMark, setHabitToMark] = useState<number | null>(null);
+  const modal = useArchitectModal();
 
   const allHabits = architect || [];
   const activeHabits = allHabits.filter(h => !h.isCompleted);
@@ -76,18 +76,13 @@ export const useArchitectSection = ({
         !h.isCompleted
       );
       if (originalIndex !== -1) {
-        setHabitToMark(originalIndex);
-        setIsDoneModalOpen(true);
+        modal.openMarkAsDoneModal(originalIndex);
       }
     }
   };
 
   const handleDoneSubmit = (data: MarkAsDoneData) => {
-    if (habitToMark !== null) {
-      onMarkAsDone(habitToMark, data);
-    }
-    setIsDoneModalOpen(false);
-    setHabitToMark(null);
+    modal.handleDoneSubmit(data, onMarkAsDone);
   };
 
   const handlePreviousHabit = (e: React.MouseEvent) => {
@@ -106,8 +101,8 @@ export const useArchitectSection = ({
     currentHabit,
     habits,
     canAddHabit,
-    isDoneModalOpen,
-    setIsDoneModalOpen,
+    isDoneModalOpen: modal.isDoneModalOpen,
+    setIsDoneModalOpen: modal.setIsDoneModalOpen,
     handleAddClick,
     handleEditClick,
     handleMarkAsDoneClick,

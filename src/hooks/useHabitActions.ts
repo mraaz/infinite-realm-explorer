@@ -4,6 +4,7 @@ import { useFireworks } from '@/hooks/useFireworks';
 import { useToast } from '@/hooks/use-toast';
 import { MarkAsDoneData } from '@/components/results/MarkAsDoneDialog';
 import { FutureQuestionnaire } from '@/types/results';
+import { updateHabitWithStreak } from '@/utils/habitUtils';
 
 export const useHabitActions = () => {
   const { actions } = useQuestionnaireStore();
@@ -44,56 +45,22 @@ export const useHabitActions = () => {
     if (!futureQuestionnaire?.architect) return null;
 
     const habit = futureQuestionnaire.architect[habitIndex];
-    
-    // Extract target frequency from habit system
-    const extractTargetFrequency = (system: string): number => {
-      const match = system.match(/(\d+)\s*times?\s*a?\s*week/i);
-      return match ? parseInt(match[1]) : 3;
-    };
+    const updatedHabit = updateHabitWithStreak(habit, completionCount);
 
-    const targetFrequency = extractTargetFrequency(habit.system);
-    
-    // Determine streak type
-    let streakType: 'gold' | 'silver' | 'grey';
-    if (completionCount >= targetFrequency) {
-      streakType = 'gold';
-    } else if (completionCount > 0) {
-      streakType = 'silver';
-    } else {
-      streakType = 'grey';
-    }
+    // Check if habit was just established
+    const wasEstablished = habit.isCompleted;
+    const isNowEstablished = updatedHabit.isCompleted;
 
-    // Update streak
-    const updatedStreakWeeks = [...(habit.streakWeeks || []), streakType];
-    let newStreak = habit.currentStreak || 0;
-    
-    if (streakType === 'gold') {
-      newStreak += 1;
-    } else if (streakType === 'grey') {
-      newStreak = 0;
-    }
-    // Silver maintains the streak
-
-    // Check if habit is established (4 consecutive gold weeks)
-    const recentGoldWeeks = updatedStreakWeeks.slice(-4).filter(week => week === 'gold').length;
-    const isEstablished = recentGoldWeeks === 4 && newStreak >= 4;
-
-    const updatedArchitect = [...futureQuestionnaire.architect];
-    updatedArchitect[habitIndex] = {
-      ...habit,
-      streakWeeks: updatedStreakWeeks,
-      currentStreak: newStreak,
-      isCompleted: isEstablished,
-      completionDate: isEstablished ? new Date().toISOString() : habit.completionDate,
-    };
-
-    if (isEstablished) {
+    if (!wasEstablished && isNowEstablished) {
       fire();
       toast({
         title: "Congrats!!! 🎉",
         description: "Well done you can now unlock another habit!",
       });
     }
+
+    const updatedArchitect = [...futureQuestionnaire.architect];
+    updatedArchitect[habitIndex] = updatedHabit;
 
     const updatedFq = {
       ...futureQuestionnaire,
