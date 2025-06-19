@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { DatePicker } from "@/components/ui/date-picker";
+import { YearPicker } from "@/components/ui/year-picker";
 
 
 const QuestionInput = ({ question, value, onChange }: { question: Question, value: any, onChange: (value: any) => void }) => {
@@ -68,13 +69,13 @@ const QuestionInput = ({ question, value, onChange }: { question: Question, valu
         </div>
       );
     case 'date':
-      // Use custom DatePicker for DOB question, regular calendar for others
+      // Use YearPicker for DOB question, regular date picker for others
       if (question.id === 'dob') {
         return (
-          <DatePicker
-            date={value}
-            setDate={onChange}
-            placeholder="Select your date of birth"
+          <YearPicker
+            year={value}
+            setYear={onChange}
+            placeholder="Select your birth year"
             yearRange={80}
           />
         );

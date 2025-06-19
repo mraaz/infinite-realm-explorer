@@ -25,7 +25,7 @@ export const questions: Question[] = [
   {
     id: 'dob',
     pillar: 'Basics',
-    question: "What's your date of birth?",
+    question: "What year were you born?",
     type: 'date',
   },
   // Part 2: Career
