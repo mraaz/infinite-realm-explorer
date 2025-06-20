@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { produce } from 'immer';
 import { questions, Question, Pillar } from '@/data/questions';
@@ -12,6 +13,7 @@ type QuestionnaireState = {
   actions: {
     startRetake: () => void;
     answerQuestion: (questionId: string, answer: any) => void;
+    setAnswer: (questionId: string, answer: any) => void;
     nextQuestion: () => void;
     previousQuestion: () => void;
     getCurrentQuestion: () => Question | undefined;
@@ -61,6 +63,11 @@ export const useQuestionnaireStore = create<QuestionnaireState>((set, get) => ({
         }
 
         state.questionFlow = newFlow;
+      }));
+    },
+    setAnswer: (questionId, answer) => {
+      set(produce((state: QuestionnaireState) => {
+        state.answers[questionId] = answer;
       }));
     },
     nextQuestion: () => {
