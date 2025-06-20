@@ -23,8 +23,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<Auth />} />
-          <Route path="/" element={<SecureAuthGuard><Index /></SecureAuthGuard>} />
-          <Route path="/questionnaire" element={<SecureAuthGuard><Questionnaire /></SecureAuthGuard>} />
+          <Route path="/" element={<Index />} />
+          <Route path="/questionnaire" element={<Questionnaire />} />
           <Route path="/results" element={<SecureAuthGuard><Results /></SecureAuthGuard>} />
           <Route path="/future-questionnaire" element={<SecureAuthGuard><FutureQuestionnaire /></SecureAuthGuard>} />
           <Route path="/habit-builder" element={<SecureAuthGuard><HabitBuilder /></SecureAuthGuard>} />
