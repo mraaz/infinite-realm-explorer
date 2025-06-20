@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSecureAuth } from './useSecureAuth';
 import { surveyAnswerSchema, checkRateLimit } from '@/utils/securityValidation';
-import { useToast } = '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 export const useSecureSurvey = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);

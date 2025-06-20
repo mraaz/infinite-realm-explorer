@@ -9,10 +9,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { User, LogOut, Settings } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useSecureAuth } from '@/hooks/useSecureAuth';
 
 export const UserMenu = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useSecureAuth();
 
   if (!user) return null;
 
