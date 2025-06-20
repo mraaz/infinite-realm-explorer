@@ -35,12 +35,19 @@ export const SaveProgressModal: React.FC<SaveProgressModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-center text-xl font-bold text-gray-800">
+      <DialogContent className="sm:max-w-md mx-4">
+        <DialogHeader className="text-center pb-2">
+          <div className="flex justify-center mb-4">
+            <img 
+              src="/lovable-uploads/c07423f4-cecb-441f-b13c-cfa9ccd53394.png" 
+              alt="Infinite Game Logo" 
+              className="h-12 w-12 md:h-16 md:w-16"
+            />
+          </div>
+          <DialogTitle className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
             Save Your Progress?
           </DialogTitle>
-          <DialogDescription className="text-center text-gray-600 mt-2">
+          <DialogDescription className="text-gray-600 mt-2 text-sm md:text-base">
             You're making great progress! Would you like to save your results so far? 
             This way you can come back anytime and pick up where you left off.
           </DialogDescription>
@@ -50,16 +57,16 @@ export const SaveProgressModal: React.FC<SaveProgressModalProps> = ({
           <div className="space-y-3">
             <Button
               onClick={() => handleSocialLogin('google')}
-              className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors py-3 text-sm md:text-base"
             >
-              <Chrome className="mr-2 h-4 w-4" />
+              <Chrome className="mr-2 h-4 w-4 md:h-5 md:w-5" />
               Continue with Google
             </Button>
             <Button
               onClick={() => handleSocialLogin('facebook')}
-              className="w-full bg-[#1877F2] text-white hover:bg-[#166FE5]"
+              className="w-full bg-[#1877F2] text-white hover:bg-[#166FE5] transition-colors py-3 text-sm md:text-base"
             >
-              <Facebook className="mr-2 h-4 w-4" />
+              <Facebook className="mr-2 h-4 w-4 md:h-5 md:w-5" />
               Continue with Facebook
             </Button>
           </div>
@@ -76,7 +83,7 @@ export const SaveProgressModal: React.FC<SaveProgressModalProps> = ({
           <Button
             variant="ghost"
             onClick={onContinueWithoutSaving}
-            className="w-full text-gray-600 hover:text-gray-800"
+            className="w-full text-gray-600 hover:text-gray-800 text-sm md:text-base"
           >
             Continue without saving
           </Button>
