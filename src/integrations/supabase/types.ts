@@ -9,7 +9,176 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      checkins: {
+        Row: {
+          created_at: string | null
+          habit_id: string | null
+          id: string
+          result: string | null
+          week: string
+        }
+        Insert: {
+          created_at?: string | null
+          habit_id?: string | null
+          id?: string
+          result?: string | null
+          week: string
+        }
+        Update: {
+          created_at?: string | null
+          habit_id?: string | null
+          id?: string
+          result?: string | null
+          week?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkins_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          created_at: string | null
+          id: string
+          pillar: string
+          status: string | null
+          title: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          pillar: string
+          status?: string | null
+          title: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          pillar?: string
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          actions: Json | null
+          created_at: string | null
+          id: string
+          insights: Json | null
+          scores: Json | null
+          survey_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actions?: Json | null
+          created_at?: string | null
+          id?: string
+          insights?: Json | null
+          scores?: Json | null
+          survey_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actions?: Json | null
+          created_at?: string | null
+          id?: string
+          insights?: Json | null
+          scores?: Json | null
+          survey_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "surveys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      surveys: {
+        Row: {
+          answers: Json | null
+          created_at: string | null
+          id: string
+          is_public: boolean | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          answers?: Json | null
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          answers?: Json | null
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surveys_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          is_public: boolean | null
+          public_slug: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id: string
+          is_public?: boolean | null
+          public_slug?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          is_public?: boolean | null
+          public_slug?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
