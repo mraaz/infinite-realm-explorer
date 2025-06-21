@@ -44,10 +44,10 @@ export const useSurveySession = () => {
       setIsLoading(true);
       logDebug("Loading survey session for user:", user.id);
 
-      // Check for existing in_progress survey
+      // Check for existing in_progress survey - include updated_at in select
       const { data: openSurveys, error: fetchError } = await supabase
         .from('surveys')
-        .select('*')
+        .select('id, user_id, status, answers, created_at, updated_at, is_public')
         .eq('user_id', user.id)
         .eq('status', 'in_progress')
         .order('created_at', { ascending: false })
@@ -99,7 +99,7 @@ export const useSurveySession = () => {
               status: 'in_progress',
               answers: parsedAnswers
             })
-            .select()
+            .select('id, user_id, status, answers, created_at, updated_at, is_public')
             .single();
 
           if (insertError) {
@@ -156,7 +156,7 @@ export const useSurveySession = () => {
             status: 'in_progress',
             answers: {}
           })
-          .select()
+          .select('id, user_id, status, answers, created_at, updated_at, is_public')
           .single();
 
         if (insertError) {
@@ -195,7 +195,10 @@ export const useSurveySession = () => {
     try {
       const { error } = await supabase
         .from('surveys')
-        .update({ answers })
+        .update({ 
+          answers,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', surveyId);
 
       if (error) {
@@ -236,7 +239,8 @@ export const useSurveySession = () => {
       // Update local session
       setSurveySession(prev => prev ? {
         ...prev,
-        answers: updatedAnswers
+        answers: updatedAnswers,
+        updated_at: new Date().toISOString()
       } : null);
 
       logDebug("Saved answer:", { questionId, answer, surveyId: surveySession.id });
@@ -270,7 +274,10 @@ export const useSurveySession = () => {
       // Mark survey as completed
       const { error: updateError } = await supabase
         .from('surveys')
-        .update({ status: 'completed' })
+        .update({ 
+          status: 'completed',
+          updated_at: new Date().toISOString()
+        })
         .eq('id', surveySession.id);
 
       if (updateError) {
@@ -297,7 +304,11 @@ export const useSurveySession = () => {
         logDebug("Profile created successfully");
       }
 
-      setSurveySession(prev => prev ? { ...prev, status: 'completed' } : null);
+      setSurveySession(prev => prev ? { 
+        ...prev, 
+        status: 'completed',
+        updated_at: new Date().toISOString()
+      } : null);
 
       toast({
         title: "Survey Completed!",
@@ -328,7 +339,10 @@ export const useSurveySession = () => {
       // Update survey to public
       const { error: surveyError } = await supabase
         .from('surveys')
-        .update({ is_public: true })
+        .update({ 
+          is_public: true,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', surveySession.id);
 
       if (surveyError) {
