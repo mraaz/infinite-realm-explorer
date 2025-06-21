@@ -13,17 +13,40 @@ const AuthCallback = () => {
         const isPopup = window.opener && window.opener !== window;
         
         if (isPopup) {
-          // For popup flow, just send success message and close
-          if (window.opener) {
-            window.opener.postMessage({ 
-              type: 'OAUTH_SUCCESS'
-            }, window.location.origin);
+          console.log('Detected popup window, processing OAuth callback...');
+          
+          // For popup flow, get the session and send success message
+          const { data, error } = await supabase.auth.getSession();
+          
+          if (error) {
+            console.error('Error getting session in popup:', error);
+            if (window.opener) {
+              window.opener.postMessage({ 
+                type: 'OAUTH_ERROR', 
+                error: error.message 
+              }, window.location.origin);
+            }
+          } else if (data.session) {
+            console.log('OAuth session successfully established in popup:', data.session.user.email);
+            if (window.opener) {
+              window.opener.postMessage({ 
+                type: 'OAUTH_SUCCESS'
+              }, window.location.origin);
+            }
+          } else {
+            console.log('No session found in popup');
+            if (window.opener) {
+              window.opener.postMessage({ 
+                type: 'OAUTH_ERROR', 
+                error: 'No session found' 
+              }, window.location.origin);
+            }
           }
           
           // Close popup after a short delay
           setTimeout(() => {
             window.close();
-          }, 500);
+          }, 1000);
           
           return;
         }
@@ -55,7 +78,7 @@ const AuthCallback = () => {
           
           setTimeout(() => {
             window.close();
-          }, 500);
+          }, 1000);
         } else {
           window.location.href = '/auth';
         }

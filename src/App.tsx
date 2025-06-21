@@ -32,7 +32,7 @@ const App = () => (
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/" element={<Index />} />
           <Route path="/questionnaire" element={<Questionnaire />} />
-          <Route path="/results" element={<SecureAuthGuard><Results /></SecureAuthGuard>} />
+          <Route path="/results" element={<Results />} />
           <Route path="/profile" element={<SecureAuthGuard><Profile /></SecureAuthGuard>} />
           <Route path="/settings" element={<SecureAuthGuard><Settings /></SecureAuthGuard>} />
           <Route path="/results/:slug" element={<PublicProfile />} />
