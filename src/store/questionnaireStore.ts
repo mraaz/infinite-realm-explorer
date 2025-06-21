@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import { produce } from 'immer';
 import { questions, Question, Pillar } from '@/data/questions';
+import { logDebug } from '@/utils/logger';
 
 type Answers = Record<string, any>;
 
@@ -37,7 +38,9 @@ export const useQuestionnaireStore = create<QuestionnaireState>((set, get) => ({
     startRetake: () => {
       set({ currentQuestionIndex: 0 });
     },
-    answerQuestion: (questionId, answer, saveToBackend) => {
+    answerQuestion: async (questionId, answer, saveToBackend) => {
+      logDebug("Answering question:", { questionId, answer });
+      
       set(produce((state: QuestionnaireState) => {
         state.answers[questionId] = answer;
         
@@ -71,7 +74,12 @@ export const useQuestionnaireStore = create<QuestionnaireState>((set, get) => ({
 
       // Save to backend if function provided
       if (saveToBackend) {
-        saveToBackend(questionId, answer);
+        try {
+          const result = await saveToBackend(questionId, answer);
+          logDebug("Backend save result:", result);
+        } catch (error) {
+          logDebug("Backend save error:", error);
+        }
       }
     },
     setAnswer: (questionId, answer) => {
@@ -127,6 +135,7 @@ export const useQuestionnaireStore = create<QuestionnaireState>((set, get) => ({
       set({ futureQuestionnaire: data });
     },
     loadSavedAnswers: (savedAnswers: Answers, surveyId: string) => {
+      logDebug("Loading saved answers:", savedAnswers);
       set(produce((state: QuestionnaireState) => {
         state.answers = { ...savedAnswers };
         state.surveySessionId = surveyId;
@@ -138,6 +147,7 @@ export const useQuestionnaireStore = create<QuestionnaireState>((set, get) => ({
         );
         
         state.currentQuestionIndex = lastAnsweredIndex === -1 ? state.questionFlow.length : lastAnsweredIndex;
+        logDebug("Set current question index to:", state.currentQuestionIndex);
       }));
     },
     setSurveySessionId: (id: string) => {

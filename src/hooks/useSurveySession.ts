@@ -8,9 +8,10 @@ import { logDebug, logError, logInfo } from '@/utils/logger';
 interface SurveySession {
   id: string;
   user_id: string;
-  status: 'open' | 'completed';
+  status: 'in_progress' | 'completed';
   answers: Record<string, any>;
   created_at: string;
+  updated_at?: string;
   is_public?: boolean;
 }
 
@@ -43,12 +44,12 @@ export const useSurveySession = () => {
       setIsLoading(true);
       logDebug("Loading survey session for user:", user.id);
 
-      // Check for existing open survey
+      // Check for existing in_progress survey
       const { data: openSurveys, error: fetchError } = await supabase
         .from('surveys')
         .select('*')
         .eq('user_id', user.id)
-        .eq('status', 'open')
+        .eq('status', 'in_progress')
         .order('created_at', { ascending: false })
         .limit(1);
 
@@ -76,13 +77,26 @@ export const useSurveySession = () => {
           const mergedAnswers = { ...existingSurvey.answers as Record<string, any>, ...parsedAnswers };
           await updateSurveyAnswers(existingSurvey.id, mergedAnswers);
           logDebug("Merged pending answers with existing survey");
+          
+          const sessionData: SurveySession = {
+            id: existingSurvey.id,
+            user_id: existingSurvey.user_id || '',
+            status: (existingSurvey.status as 'in_progress' | 'completed') || 'in_progress',
+            answers: mergedAnswers,
+            created_at: existingSurvey.created_at || new Date().toISOString(),
+            updated_at: existingSurvey.updated_at || new Date().toISOString(),
+            is_public: existingSurvey.is_public || false
+          };
+          
+          setSurveySession(sessionData);
+          setIsResuming(true);
         } else {
           // Create new survey with pending answers
           const { data: newSurvey, error: insertError } = await supabase
             .from('surveys')
             .insert({
               user_id: user.id,
-              status: 'open',
+              status: 'in_progress',
               answers: parsedAnswers
             })
             .select()
@@ -98,9 +112,10 @@ export const useSurveySession = () => {
           const sessionData: SurveySession = {
             id: newSurvey.id,
             user_id: newSurvey.user_id || '',
-            status: (newSurvey.status as 'open' | 'completed') || 'open',
+            status: (newSurvey.status as 'in_progress' | 'completed') || 'in_progress',
             answers: parsedAnswers,
             created_at: newSurvey.created_at || new Date().toISOString(),
+            updated_at: newSurvey.updated_at || new Date().toISOString(),
             is_public: newSurvey.is_public || false
           };
           
@@ -114,14 +129,15 @@ export const useSurveySession = () => {
         logDebug("Cleared pending answers from localStorage");
       }
 
-      if (existingSurvey) {
+      if (existingSurvey && !pendingAnswers) {
         // Found existing survey - resume
         const sessionData: SurveySession = {
           id: existingSurvey.id,
           user_id: existingSurvey.user_id || '',
-          status: (existingSurvey.status as 'open' | 'completed') || 'open',
+          status: (existingSurvey.status as 'in_progress' | 'completed') || 'in_progress',
           answers: (existingSurvey.answers as Record<string, any>) || {},
           created_at: existingSurvey.created_at || new Date().toISOString(),
+          updated_at: existingSurvey.updated_at || new Date().toISOString(),
           is_public: existingSurvey.is_public || false
         };
         setSurveySession(sessionData);
@@ -131,13 +147,13 @@ export const useSurveySession = () => {
           title: "Welcome back!",
           description: "Resuming your 5-Year Snapshot from where you left off.",
         });
-      } else if (!pendingAnswers) {
-        // Create new survey session only if no pending answers were processed
+      } else if (!pendingAnswers && !existingSurvey) {
+        // Create new survey session only if no pending answers were processed and no existing survey
         const { data: newSurvey, error: insertError } = await supabase
           .from('surveys')
           .insert({
             user_id: user.id,
-            status: 'open',
+            status: 'in_progress',
             answers: {}
           })
           .select()
@@ -153,9 +169,10 @@ export const useSurveySession = () => {
         const sessionData: SurveySession = {
           id: newSurvey.id,
           user_id: newSurvey.user_id || '',
-          status: (newSurvey.status as 'open' | 'completed') || 'open',
+          status: (newSurvey.status as 'in_progress' | 'completed') || 'in_progress',
           answers: {},
           created_at: newSurvey.created_at || new Date().toISOString(),
+          updated_at: newSurvey.updated_at || new Date().toISOString(),
           is_public: newSurvey.is_public || false
         };
         setSurveySession(sessionData);
@@ -175,17 +192,22 @@ export const useSurveySession = () => {
   };
 
   const updateSurveyAnswers = async (surveyId: string, answers: Record<string, any>) => {
-    const { error } = await supabase
-      .from('surveys')
-      .update({ answers })
-      .eq('id', surveyId);
+    try {
+      const { error } = await supabase
+        .from('surveys')
+        .update({ answers })
+        .eq('id', surveyId);
 
-    if (error) {
-      logError('Error updating survey answers:', error);
+      if (error) {
+        logError('Error updating survey answers:', error);
+        throw error;
+      }
+      
+      logDebug("Updated survey answers in database:", answers);
+    } catch (error) {
+      logError('Failed to update survey answers:', error);
       throw error;
     }
-    
-    logDebug("Updated survey answers in database:", answers);
   };
 
   const saveAnswer = async (questionId: string, answer: any) => {
