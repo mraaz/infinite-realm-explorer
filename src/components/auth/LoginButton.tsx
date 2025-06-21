@@ -38,7 +38,7 @@ export const LoginButton: React.FC<LoginButtonProps> = ({
 
   const handleClick = async () => {
     try {
-      const redirectUrl = `${window.location.origin}/auth/callback`;
+      const redirectUrl = `https://app.infinitegame.live/auth/v1/callback`;
       
       const popupWidth = 500;
       const popupHeight = 700;

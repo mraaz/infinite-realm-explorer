@@ -29,7 +29,7 @@ export const useAuth = () => {
   }, []);
 
   const signUp = async (email: string, password: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `https://app.infinitegame.live/`;
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -50,7 +50,7 @@ export const useAuth = () => {
   };
 
   const signInWithProvider = async (provider: 'google' | 'facebook' | 'discord') => {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `https://app.infinitegame.live/auth/v1/callback`;
     
     const { error } = await supabase.auth.signInWithOAuth({
       provider,

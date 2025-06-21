@@ -27,7 +27,7 @@ const AuthCallback = () => {
               window.opener.postMessage({ 
                 type: 'OAUTH_ERROR', 
                 error: error.message 
-              }, window.location.origin);
+              }, 'https://app.infinitegame.live');
             }
           } else if (data.session) {
             console.log('OAuth session successfully established in popup:', data.session.user.email);
@@ -36,7 +36,7 @@ const AuthCallback = () => {
                 type: 'OAUTH_SUCCESS',
                 user: data.session.user,
                 session: data.session
-              }, window.location.origin);
+              }, 'https://app.infinitegame.live');
             }
           } else {
             console.log('No session found in popup, checking auth state...');
@@ -49,14 +49,14 @@ const AuthCallback = () => {
                   type: 'OAUTH_SUCCESS',
                   user: session.user,
                   session: session
-                }, window.location.origin);
+                }, 'https://app.infinitegame.live');
                 subscription.unsubscribe();
                 window.close();
               } else if (event === 'SIGNED_OUT' && window.opener) {
                 window.opener.postMessage({ 
                   type: 'OAUTH_ERROR', 
                   error: 'Authentication failed' 
-                }, window.location.origin);
+                }, 'https://app.infinitegame.live');
                 subscription.unsubscribe();
                 window.close();
               }
@@ -69,7 +69,7 @@ const AuthCallback = () => {
                 window.opener.postMessage({ 
                   type: 'OAUTH_ERROR', 
                   error: 'Authentication timeout' 
-                }, window.location.origin);
+                }, 'https://app.infinitegame.live');
               }
               window.close();
             }, 10000);
@@ -90,13 +90,13 @@ const AuthCallback = () => {
         
         if (error) {
           console.error('Error processing OAuth callback:', error);
-          window.location.href = '/auth';
+          window.location.href = 'https://app.infinitegame.live/auth';
         } else if (data.session) {
           console.log('OAuth session successfully established:', data.session.user.email);
-          window.location.href = '/';
+          window.location.href = 'https://app.infinitegame.live/';
         } else {
           console.log('No session found, redirecting to auth');
-          window.location.href = '/auth';
+          window.location.href = 'https://app.infinitegame.live/auth';
         }
       } catch (error) {
         console.error('Error in auth callback:', error);
@@ -105,13 +105,13 @@ const AuthCallback = () => {
           window.opener.postMessage({ 
             type: 'OAUTH_ERROR', 
             error: error.message || 'Unknown error occurred' 
-          }, window.location.origin);
+          }, 'https://app.infinitegame.live');
           
           setTimeout(() => {
             window.close();
           }, 500);
         } else {
-          window.location.href = '/auth';
+          window.location.href = 'https://app.infinitegame.live/auth';
         }
       }
     };

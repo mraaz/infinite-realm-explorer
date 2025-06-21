@@ -134,7 +134,7 @@ export const useSecureAuth = () => {
 
   const signUp = async (email: string, password: string) => {
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      const redirectUrl = `https://app.infinitegame.live/`;
       
       const { data, error } = await supabase.auth.signUp({
         email: email.toLowerCase().trim(),
@@ -192,7 +192,7 @@ export const useSecureAuth = () => {
 
   const signInWithProvider = async (provider: 'google' | 'facebook' | 'discord'): Promise<{ error: any }> => {
     try {
-      const redirectUrl = `${window.location.origin}/auth/callback`;
+      const redirectUrl = `https://app.infinitegame.live/auth/v1/callback`;
       
       // Create popup window with specific dimensions
       const popupWidth = 500;

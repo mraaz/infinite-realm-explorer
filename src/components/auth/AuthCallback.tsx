@@ -22,7 +22,7 @@ export const AuthCallback = () => {
               window.opener.postMessage({ 
                 type: 'OAUTH_ERROR', 
                 error: error.message 
-              }, window.location.origin);
+              }, 'https://app.infinitegame.live');
             }
           } else if (data.session) {
             console.log('OAuth session successfully established in popup:', data.session.user.email);
@@ -31,7 +31,7 @@ export const AuthCallback = () => {
                 type: 'OAUTH_SUCCESS',
                 user: data.session.user,
                 session: data.session
-              }, window.location.origin);
+              }, 'https://app.infinitegame.live');
             }
           } else {
             console.log('No session found in popup');
@@ -39,7 +39,7 @@ export const AuthCallback = () => {
               window.opener.postMessage({ 
                 type: 'OAUTH_ERROR', 
                 error: 'No session found' 
-              }, window.location.origin);
+              }, 'https://app.infinitegame.live');
             }
           }
           
@@ -55,7 +55,7 @@ export const AuthCallback = () => {
           window.opener.postMessage({ 
             type: 'OAUTH_ERROR', 
             error: error.message || 'Unknown error occurred' 
-          }, window.location.origin);
+          }, 'https://app.infinitegame.live');
           
           setTimeout(() => {
             window.close();
