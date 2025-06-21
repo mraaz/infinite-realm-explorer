@@ -8,9 +8,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Share2, Copy, Facebook, MessageCircle, Twitter } from "lucide-react";
-import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { CheckCircle, Share2, Eye } from "lucide-react";
+import { SocialShareButtons } from './SocialShareButtons';
+import { logDebug } from '@/utils/logger';
 
 interface SurveyCompletionDialogProps {
   isOpen: boolean;
@@ -25,71 +25,29 @@ export const SurveyCompletionDialog: React.FC<SurveyCompletionDialogProps> = ({
 }) => {
   const [isSharing, setIsSharing] = useState(false);
   const [publicSlug, setPublicSlug] = useState<string | null>(null);
-  const { toast } = useToast();
-  const navigate = useNavigate();
+  const [showShareButtons, setShowShareButtons] = useState(false);
 
   const handleMakePublic = async () => {
     setIsSharing(true);
-    const result = await onMakePublic();
-    if (result.success && result.publicSlug) {
-      setPublicSlug(result.publicSlug);
-      toast({
-        title: "Shareable Link Created!",
-        description: "Your results are now ready to share.",
-      });
+    logDebug("Making survey public...");
+    
+    try {
+      const result = await onMakePublic();
+      if (result.success && result.publicSlug) {
+        setPublicSlug(result.publicSlug);
+        setShowShareButtons(true);
+        logDebug("Survey made public with slug:", result.publicSlug);
+      }
+    } catch (error) {
+      logDebug("Error making survey public:", error);
+    } finally {
+      setIsSharing(false);
     }
-    setIsSharing(false);
   };
 
   const handleViewResults = () => {
-    navigate('/results');
+    logDebug("Navigating to results page");
     onClose();
-  };
-
-  const handleCopyLink = async () => {
-    if (!publicSlug) return;
-    
-    const shareUrl = `${window.location.origin}/results/${publicSlug}`;
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      toast({
-        title: "Link Copied!",
-        description: "Share link has been copied to your clipboard.",
-      });
-    } catch (error) {
-      toast({
-        title: "Copy Failed",
-        description: "Please copy the link manually.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleSocialShare = (platform: string) => {
-    if (!publicSlug) return;
-    
-    const shareUrl = `${window.location.origin}/results/${publicSlug}`;
-    const shareText = "Check out my Life View assessment results!";
-    
-    let url = '';
-    switch (platform) {
-      case 'facebook':
-        url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
-        break;
-      case 'twitter':
-        url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
-        break;
-      case 'whatsapp':
-        url = `https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`;
-        break;
-      case 'sms':
-        url = `sms:?body=${encodeURIComponent(`${shareText} ${shareUrl}`)}`;
-        break;
-    }
-    
-    if (url) {
-      window.open(url, '_blank', 'width=600,height=400');
-    }
   };
 
   return (
@@ -97,92 +55,67 @@ export const SurveyCompletionDialog: React.FC<SurveyCompletionDialogProps> = ({
       <DialogContent className="sm:max-w-md mx-4">
         <DialogHeader className="text-center pb-2">
           <div className="flex justify-center mb-4">
-            <img 
-              src="/lovable-uploads/c07423f4-cecb-441f-b13c-cfa9ccd53394.png" 
-              alt="Infinite Game Logo" 
-              className="h-12 w-12 md:h-16 md:w-16"
-            />
+            <CheckCircle className="h-16 w-16 text-green-500" />
           </div>
           <DialogTitle className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            🎉 Survey Complete!
+            Survey Complete! 🎉
           </DialogTitle>
           <DialogDescription className="text-gray-600 mt-2 text-sm md:text-base">
-            Your 5-Year Snapshot is ready! View your personalized results and insights.
+            Your 5-Year Snapshot is ready! View your personalized insights and start building your future self.
           </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 mt-6">
-          <Button
-            onClick={handleViewResults}
-            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 py-3 text-sm md:text-base"
-          >
-            View Your Results
-          </Button>
-          
-          {!publicSlug ? (
-            <Button
-              onClick={handleMakePublic}
-              disabled={isSharing}
-              variant="outline"
-              className="w-full py-3 text-sm md:text-base"
-            >
-              <Share2 className="mr-2 h-4 w-4" />
-              {isSharing ? 'Creating Share Link...' : 'Share Your Results'}
-            </Button>
-          ) : (
+          {!showShareButtons ? (
             <>
+              <Button
+                onClick={handleViewResults}
+                className="w-full py-3 text-sm md:text-base"
+              >
+                <Eye className="mr-2 h-4 w-4 md:h-5 md:w-5" />
+                View Your Results
+              </Button>
+              
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t border-gray-300" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-gray-500">Share Options</span>
+                  <span className="bg-white px-2 text-gray-500">Want to share?</span>
                 </div>
               </div>
               
               <Button
-                onClick={handleCopyLink}
+                onClick={handleMakePublic}
+                disabled={isSharing}
                 variant="outline"
                 className="w-full py-3 text-sm md:text-base"
               >
-                <Copy className="mr-2 h-4 w-4" />
-                Copy Link to Results
+                <Share2 className="mr-2 h-4 w-4 md:h-5 md:w-5" />
+                {isSharing ? 'Creating Share Link...' : 'Share My Results'}
               </Button>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  onClick={() => handleSocialShare('facebook')}
-                  variant="outline"
-                  className="py-3 text-sm"
-                >
-                  <Facebook className="mr-2 h-4 w-4" />
-                  Facebook
-                </Button>
-                <Button
-                  onClick={() => handleSocialShare('twitter')}
-                  variant="outline"
-                  className="py-3 text-sm"
-                >
-                  <Twitter className="mr-2 h-4 w-4" />
-                  Twitter
-                </Button>
-                <Button
-                  onClick={() => handleSocialShare('whatsapp')}
-                  variant="outline"
-                  className="py-3 text-sm"
-                >
-                  <MessageCircle className="mr-2 h-4 w-4" />
-                  WhatsApp
-                </Button>
-                <Button
-                  onClick={() => handleSocialShare('sms')}
-                  variant="outline"
-                  className="py-3 text-sm"
-                >
-                  <MessageCircle className="mr-2 h-4 w-4" />
-                  SMS
-                </Button>
+            </>
+          ) : (
+            <>
+              <div className="text-center mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">Share Your Results</h3>
+                <p className="text-sm text-gray-600">
+                  Your results are now public! Share your journey with others:
+                </p>
               </div>
+              
+              <div className="flex justify-center">
+                <SocialShareButtons publicSlug={publicSlug!} />
+              </div>
+              
+              <Button
+                onClick={handleViewResults}
+                variant="ghost"
+                className="w-full text-gray-600 hover:text-gray-800 text-sm md:text-base"
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                View My Results
+              </Button>
             </>
           )}
         </div>

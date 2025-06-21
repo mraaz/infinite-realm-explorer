@@ -23,12 +23,22 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { logDebug, logInfo } from '@/utils/logger';
 
 const Questionnaire = () => {
   const { actions, answers, currentQuestionIndex, questionFlow } = useQuestionnaireStore();
   const { getCurrentQuestion, getProgress, loadSavedAnswers, setSurveySessionId } = actions;
   const { user } = useSecureAuth();
-  const { surveySession, isLoading, isResuming, saveAnswer, completeSurvey, makePublic, isAuthenticated } = useSurveySession();
+  const { 
+    surveySession, 
+    isLoading, 
+    isResuming, 
+    saveAnswer, 
+    completeSurvey, 
+    makePublic, 
+    storePendingProgress,
+    isAuthenticated 
+  } = useSurveySession();
   const navigate = useNavigate();
   const location = useLocation();
   const isRetake = location.state?.retake === true;
@@ -43,7 +53,7 @@ const Questionnaire = () => {
   // Load saved survey session when available
   useEffect(() => {
     if (surveySession && !isRetake) {
-      console.log('Loading saved survey session:', surveySession);
+      logDebug('Loading saved survey session:', surveySession);
       loadSavedAnswers(surveySession.answers, surveySession.id);
       setSurveySessionId(surveySession.id);
     }
@@ -52,6 +62,7 @@ const Questionnaire = () => {
   // Show save modal after question 8 (index 7) if user is not logged in
   useEffect(() => {
     if (currentQuestionIndex >= 7 && !user && !hasShownSaveModal && Object.keys(answers).length > 0) {
+      logInfo("Showing save progress modal at question", currentQuestionIndex + 1);
       setShowSaveModal(true);
       setHasShownSaveModal(true);
     }
@@ -60,7 +71,7 @@ const Questionnaire = () => {
   // Handle questionnaire completion
   useEffect(() => {
     if (questionFlow.length > 0 && currentQuestionIndex >= questionFlow.length) {
-      console.log("Questionnaire completed, showing completion dialog");
+      logInfo("Questionnaire completed, showing completion dialog");
       if (isAuthenticated) {
         // Complete the survey in the backend
         completeSurvey().then((result) => {
@@ -76,6 +87,7 @@ const Questionnaire = () => {
   }, [currentQuestionIndex, questionFlow.length, navigate, answers, isAuthenticated, completeSurvey]);
 
   const handleSaveProgress = async () => {
+    logDebug("Save progress requested");
     if (user && surveySession) {
       // Save all current answers to the backend
       for (const [questionId, answer] of Object.entries(answers)) {
@@ -86,14 +98,21 @@ const Questionnaire = () => {
   };
 
   const handleContinueWithoutSaving = () => {
+    logDebug("User chose to continue without saving");
+    // Store pending progress before continuing
+    if (!user) {
+      storePendingProgress(answers, currentQuestionIndex);
+    }
     setShowSaveModal(false);
   };
 
   const handleConfirmCancel = () => {
+    logDebug("User cancelled questionnaire");
     navigate('/results');
   };
 
   const handleCompletionAction = async () => {
+    logDebug("Survey completion action triggered");
     setShowCompletionDialog(false);
     // Navigate to results page
     navigate('/results');
@@ -101,6 +120,7 @@ const Questionnaire = () => {
 
   // Enhanced answer handling with backend save
   const handleAnswerQuestion = (questionId: string, answer: any) => {
+    logDebug("Answer submitted:", { questionId, answer, isAuthenticated });
     actions.answerQuestion(
       questionId, 
       answer, 
@@ -196,6 +216,8 @@ const Questionnaire = () => {
         onClose={() => setShowSaveModal(false)}
         onSaveProgress={handleSaveProgress}
         onContinueWithoutSaving={handleContinueWithoutSaving}
+        currentAnswers={answers}
+        currentStep={currentQuestionIndex}
       />
 
       <SurveyCompletionDialog

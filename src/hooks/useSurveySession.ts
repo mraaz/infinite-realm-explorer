@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSecureAuth } from './useSecureAuth';
 import { useToast } from '@/hooks/use-toast';
+import { logDebug, logError, logInfo } from '@/utils/logger';
 
 interface SurveySession {
   id: string;
@@ -12,6 +13,9 @@ interface SurveySession {
   created_at: string;
   is_public?: boolean;
 }
+
+const PENDING_ANSWERS_KEY = 'pendingAnswers';
+const PENDING_STEP_KEY = 'pendingStep';
 
 export const useSurveySession = () => {
   const [surveySession, setSurveySession] = useState<SurveySession | null>(null);
@@ -30,24 +34,84 @@ export const useSurveySession = () => {
   }, [user, isVerified]);
 
   const loadOrCreateSession = async () => {
-    if (!user) return;
+    if (!user) {
+      logError("No user found when loading survey session");
+      return;
+    }
 
     try {
       setIsLoading(true);
+      logDebug("Loading survey session for user:", user.id);
 
       // Check for existing open survey
-      const { data: existingSurvey, error: fetchError } = await supabase
+      const { data: openSurveys, error: fetchError } = await supabase
         .from('surveys')
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'open')
         .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
 
       if (fetchError) {
-        console.error('Error fetching survey:', fetchError);
+        logError('Error fetching surveys:', fetchError);
         throw new Error('Failed to load survey');
+      }
+
+      logDebug("Open surveys found:", openSurveys);
+
+      const existingSurvey = openSurveys?.[0];
+
+      // Check for pending answers from pre-login state
+      const pendingAnswers = localStorage.getItem(PENDING_ANSWERS_KEY);
+      const pendingStep = localStorage.getItem(PENDING_STEP_KEY);
+      
+      if (pendingAnswers && pendingStep) {
+        logDebug("Found pending pre-login answers:", JSON.parse(pendingAnswers));
+        logDebug("Found pending step:", pendingStep);
+        
+        const parsedAnswers = JSON.parse(pendingAnswers);
+        
+        if (existingSurvey) {
+          // Merge pending answers with existing survey
+          const mergedAnswers = { ...existingSurvey.answers as Record<string, any>, ...parsedAnswers };
+          await updateSurveyAnswers(existingSurvey.id, mergedAnswers);
+          logDebug("Merged pending answers with existing survey");
+        } else {
+          // Create new survey with pending answers
+          const { data: newSurvey, error: insertError } = await supabase
+            .from('surveys')
+            .insert({
+              user_id: user.id,
+              status: 'open',
+              answers: parsedAnswers
+            })
+            .select()
+            .single();
+
+          if (insertError) {
+            logError('Error creating survey with pending answers:', insertError);
+            throw new Error('Failed to create survey');
+          }
+
+          logDebug("Created new survey with pending answers:", newSurvey);
+          
+          const sessionData: SurveySession = {
+            id: newSurvey.id,
+            user_id: newSurvey.user_id || '',
+            status: (newSurvey.status as 'open' | 'completed') || 'open',
+            answers: parsedAnswers,
+            created_at: newSurvey.created_at || new Date().toISOString(),
+            is_public: newSurvey.is_public || false
+          };
+          
+          setSurveySession(sessionData);
+          setIsResuming(true);
+        }
+        
+        // Clear pending data
+        localStorage.removeItem(PENDING_ANSWERS_KEY);
+        localStorage.removeItem(PENDING_STEP_KEY);
+        logDebug("Cleared pending answers from localStorage");
       }
 
       if (existingSurvey) {
@@ -62,12 +126,13 @@ export const useSurveySession = () => {
         };
         setSurveySession(sessionData);
         setIsResuming(true);
+        logInfo("Resuming existing survey session:", sessionData.id);
         toast({
           title: "Welcome back!",
           description: "Resuming your 5-Year Snapshot from where you left off.",
         });
-      } else {
-        // Create new survey session
+      } else if (!pendingAnswers) {
+        // Create new survey session only if no pending answers were processed
         const { data: newSurvey, error: insertError } = await supabase
           .from('surveys')
           .insert({
@@ -79,23 +144,26 @@ export const useSurveySession = () => {
           .single();
 
         if (insertError) {
-          console.error('Error creating survey:', insertError);
+          logError('Error creating new survey:', insertError);
           throw new Error('Failed to create survey');
         }
+
+        logDebug("Created new survey:", newSurvey);
 
         const sessionData: SurveySession = {
           id: newSurvey.id,
           user_id: newSurvey.user_id || '',
           status: (newSurvey.status as 'open' | 'completed') || 'open',
-          answers: (newSurvey.answers as Record<string, any>) || {},
+          answers: {},
           created_at: newSurvey.created_at || new Date().toISOString(),
           is_public: newSurvey.is_public || false
         };
         setSurveySession(sessionData);
         setIsResuming(false);
+        logInfo("Created new survey session:", sessionData.id);
       }
     } catch (error) {
-      console.error('Survey session error:', error);
+      logError('Survey session error:', error);
       toast({
         title: "Survey Error",
         description: "Unable to load your survey. Please try refreshing the page.",
@@ -106,8 +174,34 @@ export const useSurveySession = () => {
     }
   };
 
+  const updateSurveyAnswers = async (surveyId: string, answers: Record<string, any>) => {
+    const { error } = await supabase
+      .from('surveys')
+      .update({ answers })
+      .eq('id', surveyId);
+
+    if (error) {
+      logError('Error updating survey answers:', error);
+      throw error;
+    }
+    
+    logDebug("Updated survey answers in database:", answers);
+  };
+
   const saveAnswer = async (questionId: string, answer: any) => {
-    if (!surveySession || !user) return { success: false };
+    if (!user) {
+      // Store in localStorage for pre-login state
+      const existingAnswers = JSON.parse(localStorage.getItem(PENDING_ANSWERS_KEY) || '{}');
+      const updatedAnswers = { ...existingAnswers, [questionId]: answer };
+      localStorage.setItem(PENDING_ANSWERS_KEY, JSON.stringify(updatedAnswers));
+      logDebug("Stored answer in localStorage (pre-login):", { questionId, answer });
+      return { success: true };
+    }
+
+    if (!surveySession) {
+      logError("No survey session available to save answer");
+      return { success: false };
+    }
 
     try {
       const updatedAnswers = {
@@ -115,17 +209,7 @@ export const useSurveySession = () => {
         [questionId]: answer
       };
 
-      const { error } = await supabase
-        .from('surveys')
-        .update({
-          answers: updatedAnswers
-        })
-        .eq('id', surveySession.id);
-
-      if (error) {
-        console.error('Error saving answer:', error);
-        throw new Error('Failed to save answer');
-      }
+      await updateSurveyAnswers(surveySession.id, updatedAnswers);
 
       // Update local session
       setSurveySession(prev => prev ? {
@@ -133,9 +217,10 @@ export const useSurveySession = () => {
         answers: updatedAnswers
       } : null);
 
+      logDebug("Saved answer:", { questionId, answer, surveyId: surveySession.id });
       return { success: true };
     } catch (error) {
-      console.error('Save answer error:', error);
+      logError('Save answer error:', error);
       toast({
         title: "Save Failed",
         description: "Unable to save your answer. Please try again.",
@@ -145,10 +230,21 @@ export const useSurveySession = () => {
     }
   };
 
+  const storePendingProgress = (answers: Record<string, any>, currentStep: number) => {
+    localStorage.setItem(PENDING_ANSWERS_KEY, JSON.stringify(answers));
+    localStorage.setItem(PENDING_STEP_KEY, currentStep.toString());
+    logDebug("Stored pending progress:", { answers, currentStep });
+  };
+
   const completeSurvey = async () => {
-    if (!surveySession || !user) return { success: false };
+    if (!surveySession || !user) {
+      logError("Cannot complete survey - missing session or user");
+      return { success: false };
+    }
 
     try {
+      logInfo("Completing survey:", surveySession.id);
+
       // Mark survey as completed
       const { error: updateError } = await supabase
         .from('surveys')
@@ -156,11 +252,13 @@ export const useSurveySession = () => {
         .eq('id', surveySession.id);
 
       if (updateError) {
-        console.error('Error completing survey:', updateError);
+        logError('Error completing survey:', updateError);
         throw new Error('Failed to complete survey');
       }
 
-      // Create profile entry (basic implementation - you can enhance with AI-generated insights)
+      logDebug("Survey marked as completed");
+
+      // Create profile entry
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -171,8 +269,10 @@ export const useSurveySession = () => {
         });
 
       if (profileError) {
-        console.error('Error creating profile:', profileError);
+        logError('Error creating profile:', profileError);
         // Don't throw here - survey completion is more important
+      } else {
+        logDebug("Profile created successfully");
       }
 
       setSurveySession(prev => prev ? { ...prev, status: 'completed' } : null);
@@ -184,7 +284,7 @@ export const useSurveySession = () => {
 
       return { success: true };
     } catch (error) {
-      console.error('Complete survey error:', error);
+      logError('Complete survey error:', error);
       toast({
         title: "Completion Failed",
         description: "Unable to complete your survey. Please try again.",
@@ -195,9 +295,14 @@ export const useSurveySession = () => {
   };
 
   const makePublic = async () => {
-    if (!surveySession || !user) return { success: false, publicSlug: null };
+    if (!surveySession || !user) {
+      logError("Cannot make survey public - missing session or user");
+      return { success: false, publicSlug: null };
+    }
 
     try {
+      logInfo("Making survey public:", surveySession.id);
+
       // Update survey to public
       const { error: surveyError } = await supabase
         .from('surveys')
@@ -205,7 +310,7 @@ export const useSurveySession = () => {
         .eq('id', surveySession.id);
 
       if (surveyError) {
-        console.error('Error making survey public:', surveyError);
+        logError('Error making survey public:', surveyError);
         throw new Error('Failed to make survey public');
       }
 
@@ -217,7 +322,7 @@ export const useSurveySession = () => {
         .single();
 
       if (userError) {
-        console.error('Error fetching user slug:', userError);
+        logError('Error fetching user slug:', userError);
         throw new Error('Failed to get public link');
       }
 
@@ -228,13 +333,14 @@ export const useSurveySession = () => {
         .eq('id', user.id);
 
       if (updateUserError) {
-        console.error('Error updating user public status:', updateUserError);
+        logError('Error updating user public status:', updateUserError);
         // Don't throw - we still have the slug
       }
 
+      logDebug("Survey made public with slug:", userData.public_slug);
       return { success: true, publicSlug: userData.public_slug };
     } catch (error) {
-      console.error('Make public error:', error);
+      logError('Make public error:', error);
       toast({
         title: "Share Failed",
         description: "Unable to create shareable link. Please try again.",
@@ -251,16 +357,15 @@ export const useSurveySession = () => {
     saveAnswer,
     completeSurvey,
     makePublic,
+    storePendingProgress,
     isAuthenticated: !!user && isVerified
   };
 };
 
 // Helper functions for basic score/insight generation
 const generateBasicScores = (answers: Record<string, any>) => {
-  // Basic scoring logic - you can enhance this with AI
   const pillars = { Career: 0, Finances: 0, Health: 0, Connections: 0 };
   
-  // Simple scoring based on slider values and multiple choice answers
   Object.entries(answers).forEach(([key, value]) => {
     if (key.includes('career')) {
       pillars.Career += typeof value === 'number' ? value : 5;

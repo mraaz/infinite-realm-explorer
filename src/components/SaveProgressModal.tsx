@@ -10,12 +10,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Chrome, Facebook } from "lucide-react";
 import { useSecureAuth } from '@/hooks/useSecureAuth';
+import { logDebug } from '@/utils/logger';
 
 interface SaveProgressModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSaveProgress: () => void;
   onContinueWithoutSaving: () => void;
+  currentAnswers?: Record<string, any>;
+  currentStep?: number;
 }
 
 export const SaveProgressModal: React.FC<SaveProgressModalProps> = ({
@@ -23,10 +26,18 @@ export const SaveProgressModal: React.FC<SaveProgressModalProps> = ({
   onClose,
   onSaveProgress,
   onContinueWithoutSaving,
+  currentAnswers = {},
+  currentStep = 1,
 }) => {
   const { signInWithProvider } = useSecureAuth();
 
   const handleSocialLogin = async (provider: 'google' | 'facebook') => {
+    // Store progress before redirecting to auth
+    localStorage.setItem('pendingAnswers', JSON.stringify(currentAnswers));
+    localStorage.setItem('pendingStep', currentStep.toString());
+    
+    logDebug("Storing progress before social login:", { currentAnswers, currentStep, provider });
+    
     const { error } = await signInWithProvider(provider);
     if (!error) {
       onSaveProgress();
