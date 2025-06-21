@@ -15,7 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const Settings = () => {
-  const { user, signOut } = useSecureAuth();
+  const { user, signOut, loading } = useSecureAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -24,16 +24,21 @@ const Settings = () => {
   const [publicName, setPublicName] = useState('');
   const [publicSlug, setPublicSlug] = useState('');
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
 
+  // Wait for auth loading to complete before making redirect decisions
   useEffect(() => {
-    if (!user?.id) {
+    if (!loading && !user?.id) {
       navigate('/auth');
-      return;
     }
-    
-    fetchUserProfile();
-  }, [user?.id, navigate]);
+  }, [user?.id, loading, navigate]);
+
+  // Fetch user profile only when user is confirmed to exist
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserProfile();
+    }
+  }, [user?.id]);
 
   const fetchUserProfile = async () => {
     if (!user?.id) return;
@@ -53,7 +58,7 @@ const Settings = () => {
   };
 
   const updateIsPublic = async (checked: boolean) => {
-    setLoading(true);
+    setProfileLoading(true);
     const { error } = await supabase
       .from('users')
       .update({ is_public: checked })
@@ -72,11 +77,11 @@ const Settings = () => {
         description: `Profile is now ${checked ? 'public' : 'private'}.`,
       });
     }
-    setLoading(false);
+    setProfileLoading(false);
   };
 
   const updatePublicName = async () => {
-    setLoading(true);
+    setProfileLoading(true);
     const { error } = await supabase
       .from('users')
       .update({ public_name: publicName })
@@ -95,7 +100,7 @@ const Settings = () => {
       });
       fetchUserProfile();
     }
-    setLoading(false);
+    setProfileLoading(false);
   };
 
   const updatePublicSlug = async () => {
@@ -108,7 +113,7 @@ const Settings = () => {
       return;
     }
 
-    setLoading(true);
+    setProfileLoading(true);
     const { error } = await supabase
       .from('users')
       .update({ public_slug: publicSlug.toLowerCase() })
@@ -135,7 +140,7 @@ const Settings = () => {
       });
       fetchUserProfile();
     }
-    setLoading(false);
+    setProfileLoading(false);
   };
 
   const copyShareableLink = async () => {
@@ -165,7 +170,7 @@ const Settings = () => {
       return;
     }
 
-    setLoading(true);
+    setProfileLoading(true);
     const { error } = await supabase
       .from('users')
       .update({ is_deleted: true })
@@ -177,7 +182,7 @@ const Settings = () => {
         description: "Failed to delete account.",
         variant: "destructive",
       });
-      setLoading(false);
+      setProfileLoading(false);
     } else {
       await signOut();
       navigate('/');
@@ -188,6 +193,22 @@ const Settings = () => {
     window.open(`https://infinitegame.life/results/${userProfile?.public_slug}`, '_blank');
   };
 
+  // Show loading state while authentication is being checked
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <Header />
+        <main className="flex-grow flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-lg text-gray-600">Loading your settings...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // If not loading but no user, the redirect useEffect will handle navigation
   if (!user?.id) {
     return null;
   }
@@ -243,7 +264,7 @@ const Settings = () => {
               <Switch
                 checked={isPublic}
                 onCheckedChange={updateIsPublic}
-                disabled={loading}
+                disabled={profileLoading}
               />
             </div>
 
@@ -270,7 +291,7 @@ const Settings = () => {
                   onChange={(e) => setPublicSlug(e.target.value)}
                   placeholder="yourname"
                 />
-                <Button onClick={updatePublicSlug} disabled={loading}>
+                <Button onClick={updatePublicSlug} disabled={profileLoading}>
                   Save
                 </Button>
               </div>
@@ -288,7 +309,7 @@ const Settings = () => {
                   onChange={(e) => setPublicName(e.target.value)}
                   placeholder="Your display name"
                 />
-                <Button onClick={updatePublicName} disabled={loading}>
+                <Button onClick={updatePublicName} disabled={profileLoading}>
                   Save
                 </Button>
               </div>
@@ -331,10 +352,10 @@ const Settings = () => {
                   <Button
                     onClick={handleDeleteAccount}
                     variant="destructive"
-                    disabled={deleteConfirmText !== 'DELETE' || loading}
+                    disabled={deleteConfirmText !== 'DELETE' || profileLoading}
                     className="w-full"
                   >
-                    {loading ? 'Deleting...' : 'Confirm Deletion'}
+                    {profileLoading ? 'Deleting...' : 'Confirm Deletion'}
                   </Button>
                 </div>
               </DialogContent>
