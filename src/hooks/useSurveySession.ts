@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSecureAuth } from './useSecureAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -22,8 +22,10 @@ export const useSurveySession = () => {
   const [surveySession, setSurveySession] = useState<SurveySession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isResuming, setIsResuming] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
   const { user, isVerified } = useSecureAuth();
   const { toast } = useToast();
+  const completionInProgress = useRef(false);
 
   // Load or create survey session on mount
   useEffect(() => {
@@ -44,7 +46,7 @@ export const useSurveySession = () => {
       setIsLoading(true);
       logDebug("Loading survey session for user:", user.id);
 
-      // Check for existing in_progress survey - include updated_at in select
+      // Check for existing in_progress survey
       const { data: openSurveys, error: fetchError } = await supabase
         .from('surveys')
         .select('id, user_id, status, answers, created_at, updated_at, is_public')
@@ -68,7 +70,6 @@ export const useSurveySession = () => {
       
       if (pendingAnswers && pendingStep) {
         logDebug("Found pending pre-login answers:", JSON.parse(pendingAnswers));
-        logDebug("Found pending step:", pendingStep);
         
         const parsedAnswers = JSON.parse(pendingAnswers);
         
@@ -76,7 +77,6 @@ export const useSurveySession = () => {
           // Merge pending answers with existing survey
           const mergedAnswers = { ...existingSurvey.answers as Record<string, any>, ...parsedAnswers };
           await updateSurveyAnswers(existingSurvey.id, mergedAnswers);
-          logDebug("Merged pending answers with existing survey");
           
           const sessionData: SurveySession = {
             id: existingSurvey.id,
@@ -107,8 +107,6 @@ export const useSurveySession = () => {
             throw new Error('Failed to create survey');
           }
 
-          logDebug("Created new survey with pending answers:", newSurvey);
-          
           const sessionData: SurveySession = {
             id: newSurvey.id,
             user_id: newSurvey.user_id || '',
@@ -126,7 +124,6 @@ export const useSurveySession = () => {
         // Clear pending data
         localStorage.removeItem(PENDING_ANSWERS_KEY);
         localStorage.removeItem(PENDING_STEP_KEY);
-        logDebug("Cleared pending answers from localStorage");
       }
 
       if (existingSurvey && !pendingAnswers) {
@@ -148,7 +145,7 @@ export const useSurveySession = () => {
           description: "Resuming your 5-Year Snapshot from where you left off.",
         });
       } else if (!pendingAnswers && !existingSurvey) {
-        // Create new survey session only if no pending answers were processed and no existing survey
+        // Create new survey session
         const { data: newSurvey, error: insertError } = await supabase
           .from('surveys')
           .insert({
@@ -163,8 +160,6 @@ export const useSurveySession = () => {
           logError('Error creating new survey:', insertError);
           throw new Error('Failed to create survey');
         }
-
-        logDebug("Created new survey:", newSurvey);
 
         const sessionData: SurveySession = {
           id: newSurvey.id,
@@ -263,15 +258,74 @@ export const useSurveySession = () => {
   };
 
   const completeSurvey = async () => {
-    if (!surveySession || !user) {
-      logError("Cannot complete survey - missing session or user");
+    if (!surveySession || !user || completionInProgress.current) {
+      logError("Cannot complete survey - missing session, user, or completion in progress");
       return { success: false };
     }
+
+    // Prevent multiple completion attempts
+    completionInProgress.current = true;
+    setIsCompleting(true);
 
     try {
       logInfo("Completing survey:", surveySession.id);
 
-      // Mark survey as completed
+      // Check if survey is already completed
+      const { data: currentSurvey, error: checkError } = await supabase
+        .from('surveys')
+        .select('status')
+        .eq('id', surveySession.id)
+        .single();
+
+      if (checkError) {
+        logError('Error checking survey status:', checkError);
+        throw new Error('Failed to check survey status');
+      }
+
+      if (currentSurvey.status === 'completed') {
+        logInfo("Survey already completed, skipping completion");
+        return { success: true };
+      }
+
+      // Check if profile already exists for this survey
+      const { data: existingProfile, error: profileCheckError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('survey_id', surveySession.id)
+        .single();
+
+      if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+        logError('Error checking existing profile:', profileCheckError);
+        throw new Error('Failed to check existing profile');
+      }
+
+      if (existingProfile) {
+        logInfo("Profile already exists for survey, skipping creation");
+        
+        // Just mark survey as completed
+        const { error: updateError } = await supabase
+          .from('surveys')
+          .update({ 
+            status: 'completed',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', surveySession.id);
+
+        if (updateError) {
+          logError('Error completing survey:', updateError);
+          throw new Error('Failed to complete survey');
+        }
+
+        setSurveySession(prev => prev ? { 
+          ...prev, 
+          status: 'completed',
+          updated_at: new Date().toISOString()
+        } : null);
+
+        return { success: true };
+      }
+
+      // Mark survey as completed first
       const { error: updateError } = await supabase
         .from('surveys')
         .update({ 
@@ -285,9 +339,7 @@ export const useSurveySession = () => {
         throw new Error('Failed to complete survey');
       }
 
-      logDebug("Survey marked as completed");
-
-      // Create profile entry
+      // Create profile entry - ONLY if it doesn't exist
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -324,6 +376,9 @@ export const useSurveySession = () => {
         variant: "destructive",
       });
       return { success: false };
+    } finally {
+      completionInProgress.current = false;
+      setIsCompleting(false);
     }
   };
 
@@ -390,6 +445,7 @@ export const useSurveySession = () => {
     surveySession,
     isLoading,
     isResuming,
+    isCompleting,
     saveAnswer,
     completeSurvey,
     makePublic,

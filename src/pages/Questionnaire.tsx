@@ -33,6 +33,7 @@ const Questionnaire = () => {
     surveySession, 
     isLoading, 
     isResuming, 
+    isCompleting,
     saveAnswer, 
     completeSurvey, 
     makePublic, 
@@ -46,6 +47,7 @@ const Questionnaire = () => {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [hasShownSaveModal, setHasShownSaveModal] = useState(false);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+  const [hasCompletedSurvey, setHasCompletedSurvey] = useState(false);
   
   const currentQuestion = getCurrentQuestion();
   const { overallPercentage, pillarPercentages } = getProgress();
@@ -68,15 +70,24 @@ const Questionnaire = () => {
     }
   }, [currentQuestionIndex, user, hasShownSaveModal, answers]);
 
-  // Handle questionnaire completion
+  // Handle questionnaire completion - ONLY ONCE
   useEffect(() => {
-    if (questionFlow.length > 0 && currentQuestionIndex >= questionFlow.length) {
-      logInfo("Questionnaire completed, showing completion dialog");
+    if (questionFlow.length > 0 && 
+        currentQuestionIndex >= questionFlow.length && 
+        !hasCompletedSurvey && 
+        !isCompleting) {
+      
+      logInfo("Questionnaire completed, processing completion");
+      setHasCompletedSurvey(true);
+      
       if (isAuthenticated) {
         // Complete the survey in the backend
         completeSurvey().then((result) => {
           if (result.success) {
             setShowCompletionDialog(true);
+          } else {
+            // Reset flag on failure so user can retry
+            setHasCompletedSurvey(false);
           }
         });
       } else {
@@ -84,7 +95,7 @@ const Questionnaire = () => {
         navigate('/results');
       }
     }
-  }, [currentQuestionIndex, questionFlow.length, navigate, answers, isAuthenticated, completeSurvey]);
+  }, [currentQuestionIndex, questionFlow.length, hasCompletedSurvey, isCompleting, isAuthenticated, completeSurvey, navigate]);
 
   const handleSaveProgress = async () => {
     logDebug("Save progress requested");
@@ -155,6 +166,11 @@ const Questionnaire = () => {
               {isAuthenticated ? 'Completing your survey...' : 'Calculating your results...'}
             </h1>
             <p className="text-lg text-gray-600">Please wait a moment.</p>
+            {isCompleting && (
+              <div className="mt-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+              </div>
+            )}
           </div>
         </main>
       </div>

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +11,7 @@ import FutureQuestionnaire from "./pages/FutureQuestionnaire";
 import HabitBuilder from "./pages/HabitBuilder";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import PublicProfile from "./pages/PublicProfile";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +26,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/questionnaire" element={<Questionnaire />} />
           <Route path="/results" element={<SecureAuthGuard><Results /></SecureAuthGuard>} />
+          <Route path="/results/:slug" element={<PublicProfile />} />
           <Route path="/future-questionnaire" element={<SecureAuthGuard><FutureQuestionnaire /></SecureAuthGuard>} />
           <Route path="/habit-builder" element={<SecureAuthGuard><HabitBuilder /></SecureAuthGuard>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
