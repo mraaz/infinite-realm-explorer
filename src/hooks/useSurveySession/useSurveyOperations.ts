@@ -144,11 +144,16 @@ export const useSurveyOperations = () => {
       // Step 4: Create profile only if it doesn't exist
       if (!existingProfile) {
         logInfo("Creating new profile for survey");
+        
+        // Safely handle the answers data and ensure it's a proper object
+        const answersData = currentSurvey.answers || surveySession.answers || {};
+        const safeAnswers = typeof answersData === 'object' && answersData !== null ? answersData as Record<string, any> : {};
+        
         const profileData = {
           survey_id: surveySession.id,
-          scores: generateBasicScores(currentSurvey.answers || surveySession.answers),
-          insights: generateBasicInsights(currentSurvey.answers || surveySession.answers),
-          actions: generateBasicActions(currentSurvey.answers || surveySession.answers)
+          scores: generateBasicScores(safeAnswers),
+          insights: generateBasicInsights(safeAnswers),
+          actions: generateBasicActions(safeAnswers)
         };
 
         logDebug("Profile data to insert:", profileData);
