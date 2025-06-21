@@ -58,6 +58,9 @@ const Results = () => {
   const isAuthenticated = user?.id && isVerified;
   const hasResults = results && Object.keys(answers).length > 0;
 
+  // Extract user name from question 1 (assuming it's stored in answers with key 'name' or similar)
+  const userName = answers?.name || answers?.firstName || answers?.question1 || answers?.['1'];
+
   // For unauthorized users, check if we have data in memory
   if (!isAuthenticated && !hasResults) {
     return (
@@ -129,22 +132,12 @@ const Results = () => {
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <Header />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-        <ResultsHeader />
+        <ResultsHeader userName={userName} />
         
         {/* AI-Generated Life Dashboard - show for all users with results */}
         {results && (
           <div className="pdf-page">
             <section className="mb-16">
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-800 mb-4 flex items-center justify-center gap-2">
-                  <BarChart3 className="h-8 w-8 text-purple-600" />
-                  Your Life Dashboard
-                </h2>
-                <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                  AI-generated insights based on your responses showing your creative vs reactive patterns across life pillars.
-                </p>
-              </div>
-              
               <Card className="bg-white/60 p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200/80">
                 <CardHeader className="text-center">
                   <CardTitle className="flex items-center justify-center gap-2 text-2xl">
