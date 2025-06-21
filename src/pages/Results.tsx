@@ -17,12 +17,16 @@ import { useResultsData } from '@/hooks/useResultsData';
 import { useResultsActions } from '@/hooks/useResultsActions';
 import { usePrintReport } from '@/hooks/usePrintReport';
 import { useGenerateResults } from '@/hooks/useGenerateResults';
+import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { BarChart3, Loader2, AlertCircle, RefreshCw, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 const Results = () => {
   const [activePillar, setActivePillar] = useState<string | undefined>(undefined);
+  const navigate = useNavigate();
+  const { user, isVerified } = useSecureAuth();
 
   const {
     answers,
@@ -50,6 +54,30 @@ const Results = () => {
   };
 
   const completedHabits = futureSelfArchitect?.filter(h => h.isCompleted) || [];
+
+  // Authentication check
+  if (!user || !isVerified) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <Header />
+        <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+          <div className="flex flex-col items-center justify-center min-h-[400px]">
+            <LogIn className="h-12 w-12 text-purple-600 mb-4" />
+            <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+              Sign in to view your results
+            </h2>
+            <p className="text-gray-600 text-center max-w-md mb-6">
+              Please sign in to access your personalized life dashboard and insights.
+            </p>
+            <Button onClick={() => navigate('/auth')} className="flex items-center gap-2">
+              <LogIn className="h-4 w-4" />
+              Sign In
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   // Loading state
   if (isLoading) {
