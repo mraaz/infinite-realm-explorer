@@ -196,12 +196,12 @@ export const useSecureAuth = () => {
       
       // Create popup window with specific dimensions
       const popupWidth = 500;
-      const popupHeight = 600;
+      const popupHeight = 700;
       const left = (window.screen.width - popupWidth) / 2;
       const top = (window.screen.height - popupHeight) / 2;
       
       const popup = window.open(
-        '', 
+        'about:blank', 
         'oauthPopup', 
         `width=${popupWidth},height=${popupHeight},left=${left},top=${top},scrollbars=yes,resizable=yes`
       );

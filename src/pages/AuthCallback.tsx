@@ -15,7 +15,10 @@ const AuthCallback = () => {
         if (isPopup) {
           console.log('Detected popup window, processing OAuth callback...');
           
-          // For popup flow, handle the auth callback and get the session
+          // Wait a moment for Supabase to process the auth state from URL
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Get the session after Supabase processes the callback
           const { data, error } = await supabase.auth.getSession();
           
           if (error) {
@@ -31,23 +34,53 @@ const AuthCallback = () => {
             if (window.opener) {
               window.opener.postMessage({ 
                 type: 'OAUTH_SUCCESS',
-                user: data.session.user
+                user: data.session.user,
+                session: data.session
               }, window.location.origin);
             }
           } else {
-            console.log('No session found in popup');
-            if (window.opener) {
-              window.opener.postMessage({ 
-                type: 'OAUTH_ERROR', 
-                error: 'No session found' 
-              }, window.location.origin);
-            }
+            console.log('No session found in popup, checking auth state...');
+            
+            // Listen for auth state changes in case session is still being processed
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+              console.log('Auth state change in popup:', event, session);
+              if (session && window.opener) {
+                window.opener.postMessage({ 
+                  type: 'OAUTH_SUCCESS',
+                  user: session.user,
+                  session: session
+                }, window.location.origin);
+                subscription.unsubscribe();
+                window.close();
+              } else if (event === 'SIGNED_OUT' && window.opener) {
+                window.opener.postMessage({ 
+                  type: 'OAUTH_ERROR', 
+                  error: 'Authentication failed' 
+                }, window.location.origin);
+                subscription.unsubscribe();
+                window.close();
+              }
+            });
+            
+            // Timeout fallback
+            setTimeout(() => {
+              subscription.unsubscribe();
+              if (window.opener) {
+                window.opener.postMessage({ 
+                  type: 'OAUTH_ERROR', 
+                  error: 'Authentication timeout' 
+                }, window.location.origin);
+              }
+              window.close();
+            }, 10000);
+            
+            return; // Don't close immediately, wait for auth state change
           }
           
-          // Close popup after a short delay
+          // Close popup after a short delay to ensure message is sent
           setTimeout(() => {
             window.close();
-          }, 1000);
+          }, 500);
           
           return;
         }
@@ -57,11 +90,9 @@ const AuthCallback = () => {
         
         if (error) {
           console.error('Error processing OAuth callback:', error);
-          // Redirect to auth page on error
           window.location.href = '/auth';
         } else if (data.session) {
           console.log('OAuth session successfully established:', data.session.user.email);
-          // Redirect to main page on success
           window.location.href = '/';
         } else {
           console.log('No session found, redirecting to auth');
@@ -70,7 +101,6 @@ const AuthCallback = () => {
       } catch (error) {
         console.error('Error in auth callback:', error);
         
-        // Check if we're in a popup
         if (window.opener) {
           window.opener.postMessage({ 
             type: 'OAUTH_ERROR', 
@@ -79,7 +109,7 @@ const AuthCallback = () => {
           
           setTimeout(() => {
             window.close();
-          }, 1000);
+          }, 500);
         } else {
           window.location.href = '/auth';
         }
