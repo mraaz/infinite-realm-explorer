@@ -11,6 +11,7 @@ interface SurveySession {
   answers: Record<string, any>;
   created_at: string;
   updated_at: string;
+  is_public?: boolean;
 }
 
 export const useSurveySession = () => {
@@ -52,7 +53,12 @@ export const useSurveySession = () => {
 
       if (existingSurvey) {
         // Found existing survey - resume
-        setSurveySession(existingSurvey);
+        const sessionData: SurveySession = {
+          ...existingSurvey,
+          answers: existingSurvey.answers as Record<string, any> || {},
+          updated_at: existingSurvey.updated_at || existingSurvey.created_at
+        };
+        setSurveySession(sessionData);
         setIsResuming(true);
         toast({
           title: "Welcome back!",
@@ -75,7 +81,12 @@ export const useSurveySession = () => {
           throw new Error('Failed to create survey');
         }
 
-        setSurveySession(newSurvey);
+        const sessionData: SurveySession = {
+          ...newSurvey,
+          answers: newSurvey.answers as Record<string, any> || {},
+          updated_at: newSurvey.updated_at || newSurvey.created_at
+        };
+        setSurveySession(sessionData);
         setIsResuming(false);
       }
     } catch (error) {
