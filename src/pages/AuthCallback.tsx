@@ -15,7 +15,7 @@ const AuthCallback = () => {
         if (isPopup) {
           console.log('Detected popup window, processing OAuth callback...');
           
-          // For popup flow, get the session and send success message
+          // For popup flow, handle the auth callback and get the session
           const { data, error } = await supabase.auth.getSession();
           
           if (error) {
@@ -30,7 +30,8 @@ const AuthCallback = () => {
             console.log('OAuth session successfully established in popup:', data.session.user.email);
             if (window.opener) {
               window.opener.postMessage({ 
-                type: 'OAUTH_SUCCESS'
+                type: 'OAUTH_SUCCESS',
+                user: data.session.user
               }, window.location.origin);
             }
           } else {

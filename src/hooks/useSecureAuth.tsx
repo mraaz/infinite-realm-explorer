@@ -194,8 +194,17 @@ export const useSecureAuth = () => {
     try {
       const redirectUrl = `${window.location.origin}/auth/callback`;
       
-      // Create popup window
-      const popup = window.open('', '_blank', 'width=500,height=600,scrollbars=yes,resizable=yes');
+      // Create popup window with specific dimensions
+      const popupWidth = 500;
+      const popupHeight = 600;
+      const left = (window.screen.width - popupWidth) / 2;
+      const top = (window.screen.height - popupHeight) / 2;
+      
+      const popup = window.open(
+        '', 
+        'oauthPopup', 
+        `width=${popupWidth},height=${popupHeight},left=${left},top=${top},scrollbars=yes,resizable=yes`
+      );
       
       if (!popup) {
         toast({
@@ -238,16 +247,15 @@ export const useSecureAuth = () => {
           if (popup.closed) {
             clearInterval(popupCloseChecker);
             window.removeEventListener('message', messageListener);
-            resolve({ error: { message: 'Popup was closed' } });
+            resolve({ error: { message: 'Popup was closed before authentication completed' } });
           }
         }, 1000);
 
-        // Initiate OAuth flow
+        // Initiate OAuth flow and navigate popup to auth URL
         supabase.auth.signInWithOAuth({
           provider,
           options: {
             redirectTo: redirectUrl,
-            skipBrowserRedirect: true, // Don't redirect the main window
           }
         }).then(({ data, error }) => {
           if (error) {
@@ -261,7 +269,7 @@ export const useSecureAuth = () => {
             });
             resolve({ error });
           } else if (data?.url) {
-            // Redirect the popup to the OAuth URL
+            // Navigate the popup to the OAuth URL
             popup.location.href = data.url;
           }
         });
