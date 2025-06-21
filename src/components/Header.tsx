@@ -30,6 +30,9 @@ const Header = () => {
           <DropdownMenuItem asChild>
             <Link to="/results">View Results (Test)</Link>
           </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link to="/test-edge-function">Test Edge Function</Link>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </header>
