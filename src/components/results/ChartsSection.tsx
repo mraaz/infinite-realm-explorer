@@ -3,8 +3,7 @@ import { useState } from 'react';
 import { BarChart3, TrendingUp, Repeat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import NewQuadrantChart, { PillarProgress } from '@/components/NewQuadrantChart';
-import ChartCard from './ChartCard';
+import { NewQuadrantChart, PillarProgress } from '@/components/NewQuadrantChart';
 
 interface ChartsSectionProps {
   currentProgress: PillarProgress;
@@ -45,60 +44,74 @@ const ChartsSection = ({
 
       <div className="grid gap-8 lg:gap-12">
         {/* Current Results Chart */}
-        <ChartCard
-          title="Current Life Balance"
-          description="Your baseline assessment across the four pillars"
-          icon={<BarChart3 className="h-5 w-5" />}
-        >
-          <NewQuadrantChart
-            data={currentProgress}
-            onPillarClick={onPillarClick}
-            activePillar={activePillar}
-            title="Current Balance"
-            highlightColor="text-blue-600"
-          />
-          {!isPublicView && (
-            <div className="mt-6 text-center">
-              <Button
-                onClick={onRetakeCurrent}
-                variant="outline"
-                className="inline-flex items-center gap-2"
-              >
-                <Repeat className="h-4 w-4" />
-                Retake Assessment
-              </Button>
-            </div>
-          )}
-        </ChartCard>
+        <Card className="bg-white/60 p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200/80">
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center justify-center gap-2 text-2xl">
+              <BarChart3 className="h-5 w-5" />
+              Current Life Balance
+            </CardTitle>
+            <CardDescription>
+              Your baseline assessment across the four pillars
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <NewQuadrantChart
+              data={currentProgress}
+              onPillarClick={onPillarClick}
+              activePillar={activePillar}
+              title="Current Balance"
+              highlightColor="text-blue-600"
+            />
+            {!isPublicView && (
+              <div className="mt-6 text-center">
+                <Button
+                  onClick={onRetakeCurrent}
+                  variant="outline"
+                  className="inline-flex items-center gap-2"
+                >
+                  <Repeat className="h-4 w-4" />
+                  Retake Assessment
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Future Targets or Call to Action */}
         {hasFutureTargets && !isPublicView ? (
-          <ChartCard
-            title="Future Self Targets"
-            description="Your aspirational goals for each pillar"
-            icon={<TrendingUp className="h-5 w-5" />}
-          >
-            <NewQuadrantChart
-              data={futureProgress}
-              title="Target Balance"
-              highlightColor="text-green-600"
-            />
-            <div className="mt-6 text-center">
-              <Button
-                onClick={() => setShowComparison(!showComparison)}
-                variant="outline"
-                className="mr-3"
-              >
-                {showComparison ? 'Hide' : 'Show'} Comparison
-              </Button>
-              <Button
-                onClick={onStartFutureQuestionnaire}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                Update Targets
-              </Button>
-            </div>
-          </ChartCard>
+          <Card className="bg-white/60 p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200/80">
+            <CardHeader className="text-center">
+              <CardTitle className="flex items-center justify-center gap-2 text-2xl">
+                <TrendingUp className="h-5 w-5" />
+                Future Self Targets
+              </CardTitle>
+              <CardDescription>
+                Your aspirational goals for each pillar
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <NewQuadrantChart
+                data={futureProgress}
+                title="Target Balance"
+                highlightColor="text-green-600"
+              />
+              <div className="mt-6 text-center">
+                <Button
+                  onClick={() => setShowComparison(!showComparison)}
+                  variant="outline"
+                  className="mr-3"
+                >
+                  {showComparison ? 'Hide' : 'Show'} Comparison
+                </Button>
+                <Button
+                  onClick={onStartFutureQuestionnaire}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Update Targets
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         ) : !isPublicView ? (
           <Card className="border-dashed border-2 border-gray-300">
             <CardHeader className="text-center">
@@ -124,30 +137,37 @@ const ChartsSection = ({
 
         {/* Comparison Chart */}
         {showComparison && hasFutureTargets && !isPublicView && (
-          <ChartCard
-            title="Progress Comparison"
-            description="Current state vs future aspirations"
-            icon={<TrendingUp className="h-5 w-5" />}
-          >
-            <div className="grid md:grid-cols-2 gap-8">
-              <div>
-                <NewQuadrantChart
-                  data={currentProgress}
-                  title="Current"
-                  highlightColor="text-blue-600"
-                  size="small"
-                />
+          <Card className="bg-white/60 p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200/80">
+            <CardHeader className="text-center">
+              <CardTitle className="flex items-center justify-center gap-2 text-2xl">
+                <TrendingUp className="h-5 w-5" />
+                Progress Comparison
+              </CardTitle>
+              <CardDescription>
+                Current state vs future aspirations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-8">
+                <div>
+                  <NewQuadrantChart
+                    data={currentProgress}
+                    title="Current"
+                    highlightColor="text-blue-600"
+                    size="small"
+                  />
+                </div>
+                <div>
+                  <NewQuadrantChart
+                    data={futureProgress}
+                    title="Target"
+                    highlightColor="text-green-600"
+                    size="small"
+                  />
+                </div>
               </div>
-              <div>
-                <NewQuadrantChart
-                  data={futureProgress}
-                  title="Target"
-                  highlightColor="text-green-600"
-                  size="small"
-                />
-              </div>
-            </div>
-          </ChartCard>
+            </CardContent>
+          </Card>
         )}
       </div>
     </section>

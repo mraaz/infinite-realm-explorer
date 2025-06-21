@@ -1,29 +1,15 @@
 
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import QuestionnaireHeader from "@/components/QuestionnaireHeader";
-import PillarStatus from "@/components/PillarStatus";
-import QuestionBox from "@/components/QuestionBox";
-import OverallProgressBar from "@/components/OverallProgressBar";
-import Header from "@/components/Header";
 import { SaveProgressModal } from "@/components/SaveProgressModal";
 import { SurveyCompletionDialog } from "@/components/SurveyCompletionDialog";
 import { useQuestionnaireStore } from "@/store/questionnaireStore";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { useSurveySession } from "@/hooks/useSurveySession";
-import { Button, buttonVariants } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { logDebug, logInfo } from '@/utils/logger';
+import QuestionnaireLayout from '@/components/questionnaire/QuestionnaireLayout';
+import QuestionnaireContent from '@/components/questionnaire/QuestionnaireContent';
+import LoadingState from '@/components/questionnaire/LoadingState';
 
 const Questionnaire = () => {
   const { actions, answers, currentQuestionIndex, questionFlow } = useQuestionnaireStore();
@@ -81,17 +67,14 @@ const Questionnaire = () => {
       setHasCompletedSurvey(true);
       
       if (isAuthenticated) {
-        // Complete the survey in the backend
         completeSurvey().then((result) => {
           if (result.success) {
             setShowCompletionDialog(true);
           } else {
-            // Reset flag on failure so user can retry
             setHasCompletedSurvey(false);
           }
         });
       } else {
-        // For non-authenticated users, redirect to results
         navigate('/results');
       }
     }
@@ -100,7 +83,6 @@ const Questionnaire = () => {
   const handleSaveProgress = async () => {
     logDebug("Save progress requested");
     if (user && surveySession) {
-      // Save all current answers to the backend
       for (const [questionId, answer] of Object.entries(answers)) {
         await saveAnswer(questionId, answer);
       }
@@ -110,7 +92,6 @@ const Questionnaire = () => {
 
   const handleContinueWithoutSaving = () => {
     logDebug("User chose to continue without saving");
-    // Store pending progress before continuing
     if (!user) {
       storePendingProgress(answers, currentQuestionIndex);
     }
@@ -125,11 +106,9 @@ const Questionnaire = () => {
   const handleCompletionAction = async () => {
     logDebug("Survey completion action triggered");
     setShowCompletionDialog(false);
-    // Navigate to results page
     navigate('/results');
   };
 
-  // Enhanced answer handling with backend save
   const handleAnswerQuestion = (questionId: string, answer: any) => {
     logDebug("Answer submitted:", { questionId, answer, isAuthenticated });
     actions.answerQuestion(
@@ -141,91 +120,38 @@ const Questionnaire = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
-        <Header />
-        <main className="flex-grow flex flex-col items-center justify-center px-4 py-8 md:py-12">
-          <div className="w-full max-w-5xl text-center">
-            <h1 className="text-3xl font-bold text-gray-800 my-8">
-              Loading your survey...
-            </h1>
-            <p className="text-lg text-gray-600">Please wait a moment.</p>
-          </div>
-        </main>
-      </div>
+      <QuestionnaireLayout>
+        <div className="w-full max-w-5xl text-center">
+          <h1 className="text-3xl font-bold text-gray-800 my-8">
+            Loading your survey...
+          </h1>
+          <p className="text-lg text-gray-600">Please wait a moment.</p>
+        </div>
+      </QuestionnaireLayout>
     );
   }
 
   if (!currentQuestion) {
-    // Handle completion state
     return (
-      <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
-        <Header />
-        <main className="flex-grow flex flex-col items-center justify-center px-4 py-8 md:py-12">
-          <div className="w-full max-w-5xl text-center">
-            <h1 className="text-3xl font-bold text-gray-800 my-8">
-              {isAuthenticated ? 'Completing your survey...' : 'Calculating your results...'}
-            </h1>
-            <p className="text-lg text-gray-600">Please wait a moment.</p>
-            {isCompleting && (
-              <div className="mt-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-              </div>
-            )}
-          </div>
-        </main>
-      </div>
+      <QuestionnaireLayout>
+        <LoadingState isAuthenticated={isAuthenticated} isCompleting={isCompleting} />
+      </QuestionnaireLayout>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
-      <Header />
-      <main className="flex-grow flex flex-col items-center px-4 py-8 md:py-12">
-        <div className="w-full max-w-5xl">
-          <div className="flex justify-between items-center mb-8">
-            <QuestionnaireHeader currentQuestion={currentQuestionIndex + 1} totalQuestions={questionFlow.length} />
-            {isRetake && user && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="ghost">Cancel and Return to Results</Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure you want to cancel?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Your progress on this retake will be lost. You can always start again from the results page.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Continue Retake</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleConfirmCancel} className={buttonVariants({ variant: "destructive" })}>Yes, Cancel</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-          </div>
-          
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-800">
-              Building Your 5-Year Snapshot
-            </h1>
-            {isResuming && (
-              <p className="text-lg text-purple-600 mt-2">
-                Welcome back! Continuing from question {currentQuestionIndex + 1}
-              </p>
-            )}
-          </div>
-          
-          <PillarStatus pillarPercentages={pillarPercentages} />
-          <QuestionBox 
-            key={currentQuestion.id}
-            question={currentQuestion}
-            value={answers[currentQuestion.id]}
-            onAnswer={handleAnswerQuestion}
-          />
-          <OverallProgressBar value={overallPercentage} />
-        </div>
-      </main>
+    <QuestionnaireLayout>
+      <QuestionnaireContent
+        currentQuestion={currentQuestion}
+        currentQuestionIndex={currentQuestionIndex}
+        questionFlowLength={questionFlow.length}
+        answers={answers}
+        pillarPercentages={pillarPercentages}
+        overallPercentage={overallPercentage}
+        isResuming={isResuming}
+        onAnswer={handleAnswerQuestion}
+        onConfirmCancel={handleConfirmCancel}
+      />
 
       <SaveProgressModal
         isOpen={showSaveModal}
@@ -241,7 +167,7 @@ const Questionnaire = () => {
         onClose={handleCompletionAction}
         onMakePublic={makePublic}
       />
-    </div>
+    </QuestionnaireLayout>
   );
 };
 
