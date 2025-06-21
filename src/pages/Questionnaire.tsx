@@ -6,7 +6,7 @@ import { SurveyCompletionDialog } from "@/components/SurveyCompletionDialog";
 import { useQuestionnaireStore } from "@/store/questionnaireStore";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
 import { useSurveySession } from "@/hooks/useSurveySession";
-import { logDebug, logInfo } from '@/utils/logger';
+import { logDebug, logInfo, logError } from '@/utils/logger';
 import QuestionnaireLayout from '@/components/questionnaire/QuestionnaireLayout';
 import QuestionnaireContent from '@/components/questionnaire/QuestionnaireContent';
 import LoadingState from '@/components/questionnaire/LoadingState';
@@ -53,7 +53,6 @@ const Questionnaire = () => {
     if (user && isAuthenticated && !isLoading) {
       const shouldReturnToQuestionnaire = localStorage.getItem('shouldReturnToQuestionnaire');
       if (shouldReturnToQuestionnaire === 'true') {
-        // Modal was closed, user is authenticated, don't show modal again
         setShowSaveModal(false);
         setHasShownSaveModal(true);
         localStorage.removeItem('shouldReturnToQuestionnaire');
@@ -71,23 +70,41 @@ const Questionnaire = () => {
     }
   }, [currentQuestionIndex, user, hasShownSaveModal, answers]);
 
-  // Handle questionnaire completion - ONLY ONCE
+  // Handle questionnaire completion with better error handling
   useEffect(() => {
     if (isQuestionnaireComplete && !isCompletionProcessed && !isCompleting && !isLoading) {
       logInfo("Questionnaire completed, processing completion");
       setIsCompletionProcessed(true);
       
       if (isAuthenticated && surveySession) {
-        completeSurvey().then((result) => {
-          if (result.success) {
-            setShowCompletionDialog(true);
-          } else {
-            // Reset if completion failed
+        logInfo("Authenticated user - attempting survey completion");
+        completeSurvey()
+          .then((result) => {
+            logInfo("Survey completion result:", result);
+            if (result.success) {
+              logInfo("Survey completed successfully, showing completion dialog");
+              setShowCompletionDialog(true);
+            } else {
+              logError("Survey completion failed, resetting completion state");
+              setIsCompletionProcessed(false);
+              // Navigate to results anyway to prevent getting stuck
+              setTimeout(() => {
+                logInfo("Navigating to results after failed completion");
+                navigate('/results');
+              }, 2000);
+            }
+          })
+          .catch((error) => {
+            logError("Survey completion error:", error);
             setIsCompletionProcessed(false);
-          }
-        });
+            // Navigate to results anyway to prevent getting stuck
+            setTimeout(() => {
+              logInfo("Navigating to results after completion error");
+              navigate('/results');
+            }, 2000);
+          });
       } else {
-        // For unauthenticated users, go directly to results
+        logInfo("Unauthenticated user - navigating directly to results");
         navigate('/results');
       }
     }
@@ -164,7 +181,17 @@ const Questionnaire = () => {
   if (isQuestionnaireComplete && (isCompleting || !isCompletionProcessed)) {
     return (
       <QuestionnaireLayout>
-        <LoadingState isAuthenticated={isAuthenticated} isCompleting={true} />
+        <div className="w-full max-w-5xl text-center">
+          <h1 className="text-3xl font-bold text-gray-800 my-8">
+            Completing your survey...
+          </h1>
+          <p className="text-lg text-gray-600">
+            {isAuthenticated ? 'Processing your results and creating your profile...' : 'Finalizing your assessment...'}
+          </p>
+          <div className="mt-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          </div>
+        </div>
       </QuestionnaireLayout>
     );
   }

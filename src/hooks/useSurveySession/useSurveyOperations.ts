@@ -80,12 +80,12 @@ export const useSurveyOperations = () => {
   const completeSurvey = async (surveySession: SurveySession | null, user: any, setSurveySession: any, completionInProgress: React.MutableRefObject<boolean>) => {
     if (!surveySession || !user) {
       logError("Cannot complete survey - missing session or user");
-      return { success: false };
+      return { success: false, error: "Missing session or user" };
     }
 
     if (completionInProgress.current) {
       logInfo("Survey completion already in progress, skipping");
-      return { success: false };
+      return { success: false, error: "Completion already in progress" };
     }
 
     completionInProgress.current = true;
@@ -93,37 +93,38 @@ export const useSurveyOperations = () => {
     try {
       logInfo("Starting survey completion process:", surveySession.id);
 
-      // Check current survey status
+      // Step 1: Check current survey status
       const { data: currentSurvey, error: checkError } = await supabase
         .from('surveys')
-        .select('status')
+        .select('status, answers')
         .eq('id', surveySession.id)
         .eq('user_id', user.id)
         .single();
 
       if (checkError) {
         logError('Error checking survey status:', checkError);
-        throw new Error('Failed to verify survey status');
+        throw new Error('Failed to verify survey status: ' + checkError.message);
       }
 
       if (currentSurvey.status === 'completed') {
-        logInfo("Survey already completed, skipping");
+        logInfo("Survey already completed, proceeding to success");
         return { success: true };
       }
 
-      // Check if profile already exists
+      // Step 2: Check if profile already exists
       const { data: existingProfile, error: profileCheckError } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, scores, insights, actions')
         .eq('survey_id', surveySession.id)
         .maybeSingle();
 
       if (profileCheckError && profileCheckError.code !== 'PGRST116') {
         logError('Error checking existing profile:', profileCheckError);
-        throw new Error('Failed to check existing profile');
+        throw new Error('Failed to check existing profile: ' + profileCheckError.message);
       }
 
-      // Update survey status to completed
+      // Step 3: Update survey status to completed
+      logInfo("Updating survey status to completed");
       const { error: updateError } = await supabase
         .from('surveys')
         .update({ 
@@ -135,17 +136,22 @@ export const useSurveyOperations = () => {
 
       if (updateError) {
         logError('Error updating survey status:', updateError);
-        throw new Error('Failed to complete survey');
+        throw new Error('Failed to complete survey: ' + updateError.message);
       }
 
-      // Create profile only if it doesn't exist
+      logInfo("Survey status updated successfully");
+
+      // Step 4: Create profile only if it doesn't exist
       if (!existingProfile) {
+        logInfo("Creating new profile for survey");
         const profileData = {
           survey_id: surveySession.id,
-          scores: generateBasicScores(surveySession.answers),
-          insights: generateBasicInsights(surveySession.answers),
-          actions: generateBasicActions(surveySession.answers)
+          scores: generateBasicScores(currentSurvey.answers || surveySession.answers),
+          insights: generateBasicInsights(currentSurvey.answers || surveySession.answers),
+          actions: generateBasicActions(currentSurvey.answers || surveySession.answers)
         };
+
+        logDebug("Profile data to insert:", profileData);
 
         const { error: profileError } = await supabase
           .from('profiles')
@@ -153,15 +159,16 @@ export const useSurveyOperations = () => {
 
         if (profileError) {
           logError('Error creating profile:', profileError);
-          // Don't throw here - survey is still completed
+          // Don't throw here - survey is still completed, but log the issue
+          logError("Profile creation failed but survey is completed");
         } else {
-          logDebug("Profile created successfully");
+          logInfo("Profile created successfully");
         }
       } else {
         logInfo("Profile already exists, skipping creation");
       }
 
-      // Update local state
+      // Step 5: Update local state
       setSurveySession((prev: SurveySession | null) => prev ? { 
         ...prev, 
         status: 'completed' as const,
@@ -175,14 +182,19 @@ export const useSurveyOperations = () => {
 
       logInfo("Survey completion successful");
       return { success: true };
+
     } catch (error) {
       logError('Complete survey error:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
       toast({
         title: "Completion Failed", 
-        description: "Unable to complete your survey. Please try again.",
+        description: `Unable to complete your survey: ${errorMessage}`,
         variant: "destructive",
       });
-      return { success: false };
+      
+      return { success: false, error: errorMessage };
     } finally {
       completionInProgress.current = false;
     }
