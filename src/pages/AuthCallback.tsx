@@ -9,99 +9,55 @@ const AuthCallback = () => {
         console.log('Processing OAuth callback...');
         console.log('Current URL:', window.location.href);
         
-        // Handle the auth callback by letting Supabase process the URL fragments
+        // Check if we're in a popup window
+        const isPopup = window.opener && window.opener !== window;
+        
+        if (isPopup) {
+          // For popup flow, just send success message and close
+          if (window.opener) {
+            window.opener.postMessage({ 
+              type: 'OAUTH_SUCCESS'
+            }, window.location.origin);
+          }
+          
+          // Close popup after a short delay
+          setTimeout(() => {
+            window.close();
+          }, 500);
+          
+          return;
+        }
+        
+        // For non-popup flow (direct navigation), handle normally
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('Error processing OAuth callback:', error);
-          
-          // Send error message to parent window
-          if (window.opener) {
-            window.opener.postMessage({ 
-              type: 'OAUTH_ERROR', 
-              error: error.message || 'Authentication failed' 
-            }, window.location.origin);
-          }
+          // Redirect to auth page on error
+          window.location.href = '/auth';
         } else if (data.session) {
           console.log('OAuth session successfully established:', data.session.user.email);
-          
-          // Send success message to parent window
-          if (window.opener) {
-            window.opener.postMessage({ 
-              type: 'OAUTH_SUCCESS', 
-              session: data.session 
-            }, window.location.origin);
-          }
+          // Redirect to main page on success
+          window.location.href = '/';
         } else {
-          console.log('No session found, checking if tokens are in URL...');
-          
-          // If no session but we have URL fragments, wait a moment for Supabase to process them
-          if (window.location.hash.includes('access_token')) {
-            console.log('Access token found in URL, waiting for Supabase to process...');
-            
-            // Wait a moment for Supabase to process the tokens
-            setTimeout(async () => {
-              const { data: retryData, error: retryError } = await supabase.auth.getSession();
-              
-              if (retryError) {
-                console.error('Retry error:', retryError);
-                if (window.opener) {
-                  window.opener.postMessage({ 
-                    type: 'OAUTH_ERROR', 
-                    error: retryError.message 
-                  }, window.location.origin);
-                }
-              } else if (retryData.session) {
-                console.log('Session found on retry:', retryData.session.user.email);
-                if (window.opener) {
-                  window.opener.postMessage({ 
-                    type: 'OAUTH_SUCCESS', 
-                    session: retryData.session 
-                  }, window.location.origin);
-                }
-              } else {
-                console.log('Still no session after retry');
-                if (window.opener) {
-                  window.opener.postMessage({ 
-                    type: 'OAUTH_ERROR', 
-                    error: 'No session could be established' 
-                  }, window.location.origin);
-                }
-              }
-              
-              // Close popup after retry
-              setTimeout(() => {
-                window.close();
-              }, 500);
-            }, 1000);
-            
-            return; // Don't close immediately, wait for the retry
-          } else {
-            // No tokens in URL and no session
-            if (window.opener) {
-              window.opener.postMessage({ 
-                type: 'OAUTH_ERROR', 
-                error: 'No authentication data found' 
-              }, window.location.origin);
-            }
-          }
+          console.log('No session found, redirecting to auth');
+          window.location.href = '/auth';
         }
       } catch (error) {
         console.error('Error in auth callback:', error);
         
-        // Send error message to parent window
+        // Check if we're in a popup
         if (window.opener) {
           window.opener.postMessage({ 
             type: 'OAUTH_ERROR', 
             error: error.message || 'Unknown error occurred' 
           }, window.location.origin);
-        }
-      } finally {
-        // Close the popup window after a short delay (unless we're waiting for retry)
-        if (!window.location.hash.includes('access_token')) {
+          
           setTimeout(() => {
             window.close();
-          }, 1000);
+          }, 500);
+        } else {
+          window.location.href = '/auth';
         }
       }
     };
