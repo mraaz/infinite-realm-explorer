@@ -1,10 +1,9 @@
 
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { SaveProgressModal } from "@/components/SaveProgressModal";
 import { SurveyCompletionDialog } from "@/components/SurveyCompletionDialog";
 import { useQuestionnaireStore } from "@/store/questionnaireStore";
-import { useSecureAuth } from "@/hooks/useSecureAuth";
+import { useAuth } from "@/context/AuthContext";
 import { useSurveySession } from "@/hooks/useSurveySession";
 import { logDebug, logInfo, logError } from '@/utils/logger';
 import QuestionnaireLayout from '@/components/questionnaire/QuestionnaireLayout';
@@ -14,7 +13,7 @@ import LoadingState from '@/components/questionnaire/LoadingState';
 const Questionnaire = () => {
   const { actions, answers, currentQuestionIndex, questionFlow } = useQuestionnaireStore();
   const { getCurrentQuestion, getProgress, loadSavedAnswers, setSurveySessionId } = actions;
-  const { user } = useSecureAuth();
+  const { isAuthenticated, openLoginModal } = useAuth();
   const { 
     surveySession, 
     isLoading, 
@@ -23,14 +22,12 @@ const Questionnaire = () => {
     saveAnswer, 
     completeSurvey, 
     makePublic, 
-    storePendingProgress,
-    isAuthenticated 
+    storePendingProgress
   } = useSurveySession();
   const navigate = useNavigate();
   const location = useLocation();
   const isRetake = location.state?.retake === true;
   
-  const [showSaveModal, setShowSaveModal] = useState(false);
   const [hasShownSaveModal, setHasShownSaveModal] = useState(false);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [isCompletionProcessed, setIsCompletionProcessed] = useState(false);
@@ -48,27 +45,14 @@ const Questionnaire = () => {
     }
   }, [surveySession, isRetake, loadSavedAnswers, setSurveySessionId]);
 
-  // Handle post-authentication resume
-  useEffect(() => {
-    if (user && isAuthenticated && !isLoading) {
-      const shouldReturnToQuestionnaire = localStorage.getItem('shouldReturnToQuestionnaire');
-      if (shouldReturnToQuestionnaire === 'true') {
-        setShowSaveModal(false);
-        setHasShownSaveModal(true);
-        localStorage.removeItem('shouldReturnToQuestionnaire');
-        logInfo("User returned after authentication, continuing questionnaire");
-      }
-    }
-  }, [user, isAuthenticated, isLoading]);
-
   // Show save modal after question 8 (index 7) if user is not logged in
   useEffect(() => {
-    if (currentQuestionIndex >= 7 && !user && !hasShownSaveModal && Object.keys(answers).length > 0) {
+    if (currentQuestionIndex >= 7 && !isAuthenticated && !hasShownSaveModal && Object.keys(answers).length > 0) {
       logInfo("Showing save progress modal at question", currentQuestionIndex + 1);
-      setShowSaveModal(true);
+      openLoginModal();
       setHasShownSaveModal(true);
     }
-  }, [currentQuestionIndex, user, hasShownSaveModal, answers]);
+  }, [currentQuestionIndex, isAuthenticated, hasShownSaveModal, answers, openLoginModal]);
 
   // Handle questionnaire completion with better error handling
   useEffect(() => {
@@ -127,19 +111,9 @@ const Questionnaire = () => {
     answers
   ]);
 
-  const handleSaveProgress = async () => {
-    logDebug("Save progress requested");
-    if (user && surveySession) {
-      for (const [questionId, answer] of Object.entries(answers)) {
-        await saveAnswer(questionId, answer);
-      }
-      setShowSaveModal(false);
-    }
-  };
-
   const handleContinueWithoutSaving = () => {
     logDebug("User chose to continue without saving");
-    if (!user) {
+    if (!isAuthenticated) {
       // Store answers in memory for potential results generation
       storePendingProgress(answers, currentQuestionIndex);
       
@@ -152,7 +126,6 @@ const Questionnaire = () => {
       };
       localStorage.setItem('temporaryQuestionnaireProgress', JSON.stringify(progressData));
     }
-    setShowSaveModal(false);
   };
 
   const handleConfirmCancel = () => {
@@ -226,15 +199,6 @@ const Questionnaire = () => {
         isResuming={isResuming}
         onAnswer={handleAnswerQuestion}
         onConfirmCancel={handleConfirmCancel}
-      />
-
-      <SaveProgressModal
-        isOpen={showSaveModal}
-        onClose={() => setShowSaveModal(false)}
-        onSaveProgress={handleSaveProgress}
-        onContinueWithoutSaving={handleContinueWithoutSaving}
-        currentAnswers={answers}
-        currentStep={currentQuestionIndex}
       />
 
       <SurveyCompletionDialog
