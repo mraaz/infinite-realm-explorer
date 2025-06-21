@@ -49,7 +49,7 @@ export const useAuth = () => {
     return { error };
   };
 
-  const signInWithProvider = async (provider: 'google' | 'facebook') => {
+  const signInWithProvider = async (provider: 'google' | 'facebook' | 'discord') => {
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signInWithOAuth({
