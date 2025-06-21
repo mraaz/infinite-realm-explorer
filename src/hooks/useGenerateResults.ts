@@ -42,8 +42,9 @@ export const useGenerateResults = () => {
 
   useEffect(() => {
     const fetchResults = async () => {
-      if (!user || !isVerified) {
-        console.log('User not authenticated, waiting...');
+      // Early return if user is not authenticated
+      if (!user?.id || !isVerified) {
+        console.log('User not authenticated or missing ID, waiting...', { user: user?.id, isVerified });
         setIsLoading(false);
         return;
       }
@@ -55,10 +56,22 @@ export const useGenerateResults = () => {
         console.log('Fetching results for user:', user.id);
 
         // Get the current session to ensure we have a valid token
-        const { data: session, error: sessionError } = await supabase.auth.getSession();
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         
-        if (sessionError || !session?.session?.access_token) {
-          console.error('No valid session found:', sessionError);
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          setIsError(true);
+          toast({
+            title: "Authentication Error",
+            description: "Please sign in again to view your results.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const session = sessionData?.session;
+        if (!session?.access_token) {
+          console.error('No valid session or access token found');
           setIsError(true);
           toast({
             title: "Authentication Error",
@@ -74,7 +87,7 @@ export const useGenerateResults = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.session.access_token}`,
+            'Authorization': `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
             user_id: user.id
@@ -94,7 +107,7 @@ export const useGenerateResults = () => {
 
         console.log('Results received:', data);
 
-        if (data && data.life_dashboard_chart && data.smart_takeaways) {
+        if (data?.life_dashboard_chart && data?.smart_takeaways) {
           setResults(data);
         } else {
           console.error('Invalid data structure received:', data);
@@ -119,17 +132,19 @@ export const useGenerateResults = () => {
     };
 
     fetchResults();
-  }, [user, isVerified, toast]);
+  }, [user?.id, isVerified, toast]);
 
   return {
     results,
     isLoading,
     isError,
     refetch: () => {
-      setIsLoading(true);
-      setIsError(false);
-      // Re-trigger the effect by refreshing the page or manually calling fetchResults
-      window.location.reload();
+      if (user?.id && isVerified) {
+        setIsLoading(true);
+        setIsError(false);
+        // Re-trigger the effect by refreshing the page or manually calling fetchResults
+        window.location.reload();
+      }
     }
   };
 };
