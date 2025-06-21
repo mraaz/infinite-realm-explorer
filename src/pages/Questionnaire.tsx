@@ -48,6 +48,20 @@ const Questionnaire = () => {
     }
   }, [surveySession, isRetake, loadSavedAnswers, setSurveySessionId]);
 
+  // Handle post-authentication resume
+  useEffect(() => {
+    if (user && isAuthenticated && !isLoading) {
+      const shouldReturnToQuestionnaire = localStorage.getItem('shouldReturnToQuestionnaire');
+      if (shouldReturnToQuestionnaire === 'true') {
+        // Modal was closed, user is authenticated, don't show modal again
+        setShowSaveModal(false);
+        setHasShownSaveModal(true);
+        localStorage.removeItem('shouldReturnToQuestionnaire');
+        logInfo("User returned after authentication, continuing questionnaire");
+      }
+    }
+  }, [user, isAuthenticated, isLoading]);
+
   // Show save modal after question 8 (index 7) if user is not logged in
   useEffect(() => {
     if (currentQuestionIndex >= 7 && !user && !hasShownSaveModal && Object.keys(answers).length > 0) {

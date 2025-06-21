@@ -35,12 +35,13 @@ export const SaveProgressModal: React.FC<SaveProgressModalProps> = ({
     // Store progress before redirecting to auth
     localStorage.setItem('pendingAnswers', JSON.stringify(currentAnswers));
     localStorage.setItem('pendingStep', currentStep.toString());
+    localStorage.setItem('shouldReturnToQuestionnaire', 'true');
     
     logDebug("Storing progress before social login:", { currentAnswers, currentStep, provider });
     
     const { error } = await signInWithProvider(provider);
-    if (!error) {
-      onSaveProgress();
+    if (error) {
+      logDebug("Social login error:", error);
     }
   };
 

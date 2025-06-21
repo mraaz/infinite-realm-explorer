@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 export const useSecureAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -10,6 +11,7 @@ export const useSecureAuth = () => {
   const [loading, setLoading] = useState(true);
   const [isVerified, setIsVerified] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     let mounted = true;
@@ -49,6 +51,18 @@ export const useSecureAuth = () => {
               });
             } else {
               setIsVerified(true);
+              
+              // Handle post-authentication redirect
+              if (event === 'SIGNED_IN') {
+                const shouldReturnToQuestionnaire = localStorage.getItem('shouldReturnToQuestionnaire');
+                if (shouldReturnToQuestionnaire === 'true') {
+                  localStorage.removeItem('shouldReturnToQuestionnaire');
+                  // Small delay to ensure the questionnaire page loads properly
+                  setTimeout(() => {
+                    navigate('/questionnaire');
+                  }, 100);
+                }
+              }
             }
           } else {
             setIsVerified(false);
@@ -78,7 +92,6 @@ export const useSecureAuth = () => {
       
       if (!mounted) return;
       
-      // The onAuthStateChange will handle the rest
       if (!session) {
         setLoading(false);
       }
@@ -88,7 +101,7 @@ export const useSecureAuth = () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [toast]);
+  }, [toast, navigate]);
 
   const signUp = async (email: string, password: string) => {
     try {
