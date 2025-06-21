@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar as CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
+import { DatePicker } from "@/components/ui/date-picker";
 import { YearPicker } from "@/components/ui/year-picker";
 
 
@@ -121,23 +123,14 @@ const QuestionInput = ({ question, value, onChange }: { question: Question, valu
   }
 };
 
-const QuestionBox = ({ 
-  question, 
-  value, 
-  onAnswer 
-}: { 
-  question: Question; 
-  value: any; 
-  onAnswer?: (questionId: string, answer: any) => void;
-}) => {
-  const { nextQuestion, previousQuestion } = useQuestionnaireStore(state => state.actions);
+
+const QuestionBox = ({ question, value }: { question: Question, value: any }) => {
+  const { answerQuestion, nextQuestion, previousQuestion } = useQuestionnaireStore(state => state.actions);
   const [internalValue, setInternalValue] = useState(value);
   const currentQuestionIndex = useQuestionnaireStore(state => state.currentQuestionIndex);
 
   const handleNext = () => {
-    if (onAnswer) {
-      onAnswer(question.id, internalValue);
-    }
+    answerQuestion(question.id, internalValue);
     nextQuestion();
   };
 

@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Sparkles, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -5,7 +6,7 @@ import { Link } from 'react-router-dom';
 const CallToActionSection = () => {
   return (
     <div className="bg-white p-8 rounded-lg shadow-xl border border-purple-200 max-w-2xl mx-auto text-center">
-      <h2 className="text-2xl font-semibold text-gray-800 mb-2">Ready to See Your Future?</h2>
+      <h2 className="text-2xl font-semibold text-gray-800 mb-2">Ready to See Your Future, Mate?</h2>
       <p className="text-gray-600 mb-6">
         Answer a few personalised questions and get your 5-Year Snapshot in under 7 minutes.
       </p>
