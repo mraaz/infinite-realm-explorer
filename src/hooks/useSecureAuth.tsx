@@ -198,6 +198,7 @@ export const useSecureAuth = () => {
         provider,
         options: {
           redirectTo: redirectUrl,
+          skipBrowserRedirect: false, // Ensure full page redirect
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -214,6 +215,8 @@ export const useSecureAuth = () => {
         return { error };
       }
 
+      // Note: After successful OAuth initiation, the browser will redirect
+      // to the provider's page, so we don't return here in normal flow
       return { error: null };
     } catch (error) {
       console.error('OAuth sign in error:', error);
