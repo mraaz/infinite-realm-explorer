@@ -251,7 +251,7 @@ export const useSecureAuth = () => {
           }
         }, 1000);
 
-        // Initiate OAuth flow and navigate popup to auth URL
+        // Initiate OAuth flow in the popup window only
         supabase.auth.signInWithOAuth({
           provider,
           options: {
@@ -269,7 +269,7 @@ export const useSecureAuth = () => {
             });
             resolve({ error });
           } else if (data?.url) {
-            // Navigate the popup to the OAuth URL
+            // Navigate the popup to the OAuth URL - this is key!
             popup.location.href = data.url;
           }
         });
