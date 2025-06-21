@@ -10,15 +10,18 @@ type QuestionnaireState = {
   currentQuestionIndex: number;
   answers: Answers;
   futureQuestionnaire?: any;
+  surveySessionId?: string;
   actions: {
     startRetake: () => void;
-    answerQuestion: (questionId: string, answer: any) => void;
+    answerQuestion: (questionId: string, answer: any, saveToBackend?: (questionId: string, answer: any) => Promise<{ success: boolean }>) => void;
     setAnswer: (questionId: string, answer: any) => void;
     nextQuestion: () => void;
     previousQuestion: () => void;
     getCurrentQuestion: () => Question | undefined;
     getProgress: () => { total: number, answered: number, overallPercentage: number, pillarPercentages: Record<Pillar, number> };
     setFutureQuestionnaire: (data: any) => void;
+    loadSavedAnswers: (savedAnswers: Answers, surveyId: string) => void;
+    setSurveySessionId: (id: string) => void;
   }
 };
 
@@ -29,11 +32,12 @@ export const useQuestionnaireStore = create<QuestionnaireState>((set, get) => ({
   currentQuestionIndex: 0,
   answers: {},
   futureQuestionnaire: undefined,
+  surveySessionId: undefined,
   actions: {
     startRetake: () => {
       set({ currentQuestionIndex: 0 });
     },
-    answerQuestion: (questionId, answer) => {
+    answerQuestion: (questionId, answer, saveToBackend) => {
       set(produce((state: QuestionnaireState) => {
         state.answers[questionId] = answer;
         
@@ -64,6 +68,11 @@ export const useQuestionnaireStore = create<QuestionnaireState>((set, get) => ({
 
         state.questionFlow = newFlow;
       }));
+
+      // Save to backend if function provided
+      if (saveToBackend) {
+        saveToBackend(questionId, answer);
+      }
     },
     setAnswer: (questionId, answer) => {
       set(produce((state: QuestionnaireState) => {
@@ -116,6 +125,23 @@ export const useQuestionnaireStore = create<QuestionnaireState>((set, get) => ({
     },
     setFutureQuestionnaire: (data: any) => {
       set({ futureQuestionnaire: data });
+    },
+    loadSavedAnswers: (savedAnswers: Answers, surveyId: string) => {
+      set(produce((state: QuestionnaireState) => {
+        state.answers = { ...savedAnswers };
+        state.surveySessionId = surveyId;
+        
+        // Calculate current question index based on answered questions
+        const answeredQuestionIds = Object.keys(savedAnswers);
+        const lastAnsweredIndex = state.questionFlow.findIndex(q => 
+          !answeredQuestionIds.includes(q.id)
+        );
+        
+        state.currentQuestionIndex = lastAnsweredIndex === -1 ? state.questionFlow.length : lastAnsweredIndex;
+      }));
+    },
+    setSurveySessionId: (id: string) => {
+      set({ surveySessionId: id });
     },
   }
 }));

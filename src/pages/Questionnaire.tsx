@@ -7,9 +7,10 @@ import QuestionBox from "@/components/QuestionBox";
 import OverallProgressBar from "@/components/OverallProgressBar";
 import Header from "@/components/Header";
 import { SaveProgressModal } from "@/components/SaveProgressModal";
+import { SurveyCompletionDialog } from "@/components/SurveyCompletionDialog";
 import { useQuestionnaireStore } from "@/store/questionnaireStore";
 import { useSecureAuth } from "@/hooks/useSecureAuth";
-import { useSecureSurvey } from "@/hooks/useSecureSurvey";
+import { useSurveySession } from "@/hooks/useSurveySession";
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -25,33 +26,28 @@ import {
 
 const Questionnaire = () => {
   const { actions, answers, currentQuestionIndex, questionFlow } = useQuestionnaireStore();
-  const { getCurrentQuestion, getProgress } = actions;
+  const { getCurrentQuestion, getProgress, loadSavedAnswers, setSurveySessionId } = actions;
   const { user } = useSecureAuth();
-  const { saveSurveyProgress, loadSurveyProgress } = useSecureSurvey();
+  const { surveySession, isLoading, isResuming, saveAnswer, completeSurvey, makePublic, isAuthenticated } = useSurveySession();
   const navigate = useNavigate();
   const location = useLocation();
   const isRetake = location.state?.retake === true;
   
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [hasShownSaveModal, setHasShownSaveModal] = useState(false);
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   
   const currentQuestion = getCurrentQuestion();
   const { overallPercentage, pillarPercentages } = getProgress();
 
-  // Load saved progress when user logs in
+  // Load saved survey session when available
   useEffect(() => {
-    if (user && !isRetake) {
-      loadSurveyProgress().then(({ data }) => {
-        if (data?.answers) {
-          console.log('Loading saved progress:', data.answers);
-          // Load the saved answers into the store
-          Object.entries(data.answers).forEach(([questionId, answer]) => {
-            actions.setAnswer(questionId, answer);
-          });
-        }
-      });
+    if (surveySession && !isRetake) {
+      console.log('Loading saved survey session:', surveySession);
+      loadSavedAnswers(surveySession.answers, surveySession.id);
+      setSurveySessionId(surveySession.id);
     }
-  }, [user, isRetake, loadSurveyProgress, actions]);
+  }, [surveySession, isRetake, loadSavedAnswers, setSurveySessionId]);
 
   // Show save modal after question 8 (index 7) if user is not logged in
   useEffect(() => {
@@ -61,17 +57,30 @@ const Questionnaire = () => {
     }
   }, [currentQuestionIndex, user, hasShownSaveModal, answers]);
 
-  // Complete questionnaire
+  // Handle questionnaire completion
   useEffect(() => {
     if (questionFlow.length > 0 && currentQuestionIndex >= questionFlow.length) {
-      console.log("Submitting questionnaire answers to backend:", JSON.stringify(answers, null, 2));
-      navigate('/results');
+      console.log("Questionnaire completed, showing completion dialog");
+      if (isAuthenticated) {
+        // Complete the survey in the backend
+        completeSurvey().then((result) => {
+          if (result.success) {
+            setShowCompletionDialog(true);
+          }
+        });
+      } else {
+        // For non-authenticated users, redirect to results
+        navigate('/results');
+      }
     }
-  }, [currentQuestionIndex, questionFlow.length, navigate, answers]);
+  }, [currentQuestionIndex, questionFlow.length, navigate, answers, isAuthenticated, completeSurvey]);
 
   const handleSaveProgress = async () => {
-    if (user) {
-      await saveSurveyProgress(answers);
+    if (user && surveySession) {
+      // Save all current answers to the backend
+      for (const [questionId, answer] of Object.entries(answers)) {
+        await saveAnswer(questionId, answer);
+      }
       setShowSaveModal(false);
     }
   };
@@ -84,6 +93,37 @@ const Questionnaire = () => {
     navigate('/results');
   };
 
+  const handleCompletionAction = async () => {
+    setShowCompletionDialog(false);
+    // Navigate to results page
+    navigate('/results');
+  };
+
+  // Enhanced answer handling with backend save
+  const handleAnswerQuestion = (questionId: string, answer: any) => {
+    actions.answerQuestion(
+      questionId, 
+      answer, 
+      isAuthenticated ? saveAnswer : undefined
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <Header />
+        <main className="flex-grow flex flex-col items-center justify-center px-4 py-8 md:py-12">
+          <div className="w-full max-w-5xl text-center">
+            <h1 className="text-3xl font-bold text-gray-800 my-8">
+              Loading your survey...
+            </h1>
+            <p className="text-lg text-gray-600">Please wait a moment.</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   if (!currentQuestion) {
     // Handle completion state
     return (
@@ -92,7 +132,7 @@ const Questionnaire = () => {
         <main className="flex-grow flex flex-col items-center justify-center px-4 py-8 md:py-12">
           <div className="w-full max-w-5xl text-center">
             <h1 className="text-3xl font-bold text-gray-800 my-8">
-              Calculating your results...
+              {isAuthenticated ? 'Completing your survey...' : 'Calculating your results...'}
             </h1>
             <p className="text-lg text-gray-600">Please wait a moment.</p>
           </div>
@@ -128,14 +168,24 @@ const Questionnaire = () => {
               </AlertDialog>
             )}
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 text-center">
-            Building Your 5-Year Snapshot
-          </h1>
+          
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-800">
+              Building Your 5-Year Snapshot
+            </h1>
+            {isResuming && (
+              <p className="text-lg text-purple-600 mt-2">
+                Welcome back! Continuing from question {currentQuestionIndex + 1}
+              </p>
+            )}
+          </div>
+          
           <PillarStatus pillarPercentages={pillarPercentages} />
           <QuestionBox 
             key={currentQuestion.id}
             question={currentQuestion}
             value={answers[currentQuestion.id]}
+            onAnswer={handleAnswerQuestion}
           />
           <OverallProgressBar value={overallPercentage} />
         </div>
@@ -146,6 +196,12 @@ const Questionnaire = () => {
         onClose={() => setShowSaveModal(false)}
         onSaveProgress={handleSaveProgress}
         onContinueWithoutSaving={handleContinueWithoutSaving}
+      />
+
+      <SurveyCompletionDialog
+        isOpen={showCompletionDialog}
+        onClose={handleCompletionAction}
+        onMakePublic={makePublic}
       />
     </div>
   );
