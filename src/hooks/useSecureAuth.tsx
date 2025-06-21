@@ -190,7 +190,7 @@ export const useSecureAuth = () => {
     }
   };
 
-  const signInWithProvider = async (provider: 'google' | 'facebook') => {
+  const signInWithProvider = async (provider: 'google' | 'facebook' | 'discord') => {
     try {
       const redirectUrl = `${window.location.origin}/`;
       
