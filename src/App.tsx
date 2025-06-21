@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +8,7 @@ import { SecureAuthGuard } from "@/components/auth/SecureAuthGuard";
 import Index from "./pages/Index";
 import Questionnaire from "./pages/Questionnaire";
 import Results from "./pages/Results";
+import Profile from "./pages/Profile";
 import FutureQuestionnaire from "./pages/FutureQuestionnaire";
 import HabitBuilder from "./pages/HabitBuilder";
 import Auth from "./pages/Auth";
@@ -26,6 +28,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/questionnaire" element={<Questionnaire />} />
           <Route path="/results" element={<SecureAuthGuard><Results /></SecureAuthGuard>} />
+          <Route path="/profile" element={<SecureAuthGuard><Profile /></SecureAuthGuard>} />
           <Route path="/results/:slug" element={<PublicProfile />} />
           <Route path="/future-questionnaire" element={<SecureAuthGuard><FutureQuestionnaire /></SecureAuthGuard>} />
           <Route path="/habit-builder" element={<SecureAuthGuard><HabitBuilder /></SecureAuthGuard>} />
