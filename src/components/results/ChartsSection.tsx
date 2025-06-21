@@ -56,11 +56,10 @@ const ChartsSection = ({
           </CardHeader>
           <CardContent>
             <NewQuadrantChart
-              data={currentProgress}
+              progress={currentProgress}
+              answers={answers}
               onPillarClick={onPillarClick}
               activePillar={activePillar}
-              title="Current Balance"
-              highlightColor="text-blue-600"
             />
             {!isPublicView && (
               <div className="mt-6 text-center">
@@ -91,9 +90,9 @@ const ChartsSection = ({
             </CardHeader>
             <CardContent>
               <NewQuadrantChart
-                data={futureProgress}
-                title="Target Balance"
-                highlightColor="text-green-600"
+                progress={futureProgress}
+                answers={answers}
+                isFuture={true}
               />
               <div className="mt-6 text-center">
                 <Button
@@ -150,19 +149,20 @@ const ChartsSection = ({
             <CardContent>
               <div className="grid md:grid-cols-2 gap-8">
                 <div>
+                  <h3 className="text-lg font-semibold text-center mb-4 text-blue-600">Current</h3>
                   <NewQuadrantChart
-                    data={currentProgress}
-                    title="Current"
-                    highlightColor="text-blue-600"
-                    size="small"
+                    progress={currentProgress}
+                    answers={answers}
+                    className="scale-75"
                   />
                 </div>
                 <div>
+                  <h3 className="text-lg font-semibold text-center mb-4 text-green-600">Target</h3>
                   <NewQuadrantChart
-                    data={futureProgress}
-                    title="Target"
-                    highlightColor="text-green-600"
-                    size="small"
+                    progress={futureProgress}
+                    answers={answers}
+                    isFuture={true}
+                    className="scale-75"
                   />
                 </div>
               </div>
