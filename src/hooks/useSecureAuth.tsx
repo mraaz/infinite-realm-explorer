@@ -80,22 +80,51 @@ export const useSecureAuth = () => {
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.error('Session retrieval error:', error);
-        toast({
-          title: "Session Error",
-          description: "Unable to restore your session.",
-          variant: "destructive",
-        });
-      }
-      
-      if (!mounted) return;
-      
-      if (!session) {
+    const checkSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Session retrieval error:', error);
+          toast({
+            title: "Session Error",
+            description: "Unable to restore your session.",
+            variant: "destructive",
+          });
+        }
+        
+        if (!mounted) return;
+        
+        if (session) {
+          // If we have a session, verify the user exists in our database
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('id, email, is_public')
+              .eq('id', session.user.id)
+              .single();
+
+            if (!userError && userData) {
+              setIsVerified(true);
+              setSession(session);
+              setUser(session.user);
+            } else {
+              setIsVerified(false);
+            }
+          } catch (error) {
+            console.error('Error checking user in database:', error);
+            setIsVerified(false);
+          }
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error checking session:', error);
         setLoading(false);
       }
-    });
+    };
+
+    checkSession();
 
     return () => {
       mounted = false;

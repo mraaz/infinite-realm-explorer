@@ -13,7 +13,7 @@ export const SecureAuthGuard: React.FC<SecureAuthGuardProps> = ({
   children, 
   requireVerification = true 
 }) => {
-  const { user, loading, isVerified } = useSecureAuth();
+  const { user, loading, isVerified, session } = useSecureAuth();
 
   if (loading) {
     return (
@@ -23,10 +23,12 @@ export const SecureAuthGuard: React.FC<SecureAuthGuardProps> = ({
     );
   }
 
-  if (!user) {
+  // If no user or session, show auth form
+  if (!user || !session) {
     return <AuthForm />;
   }
 
+  // If verification is required but user isn't verified, show verification message
   if (requireVerification && !isVerified) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 p-4">

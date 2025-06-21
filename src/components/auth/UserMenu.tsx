@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { User, LogOut, Settings, ExternalLink } from 'lucide-react';
+import { LogOut, Settings, ExternalLink } from 'lucide-react';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -23,14 +23,18 @@ export const UserMenu = () => {
     const fetchUserProfile = async () => {
       if (!user?.id) return;
       
-      const { data, error } = await supabase
-        .from('users')
-        .select('public_slug, public_name, is_public')
-        .eq('id', user.id)
-        .single();
-        
-      if (!error) {
-        setUserProfile(data);
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('public_slug, public_name, is_public')
+          .eq('id', user.id)
+          .single();
+          
+        if (!error && data) {
+          setUserProfile(data);
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
       }
     };
 
@@ -41,6 +45,7 @@ export const UserMenu = () => {
 
   const handleSignOut = async () => {
     await signOut();
+    navigate('/');
   };
 
   const handleProfileClick = () => {
