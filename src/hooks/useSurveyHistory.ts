@@ -3,15 +3,16 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface SurveyHistoryItem {
   id: string;
   created_at: string;
   status: string;
   is_public: boolean;
-  answers: Record<string, any>;
+  answers: Json;
   profiles: {
-    scores: Record<string, any>;
+    scores: Json;
   }[];
 }
 

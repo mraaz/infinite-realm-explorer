@@ -18,7 +18,7 @@ const SurveyCard = ({ survey, onShare, onViewResults }: SurveyCardProps) => {
   const chartRef = useRef<HTMLDivElement>(null);
 
   // Extract scores from the profiles data
-  const scores = survey.profiles?.[0]?.scores || {};
+  const scores = survey.profiles?.[0]?.scores as Record<string, any> || {};
   const progress = {
     basics: scores.basics || 0,
     career: scores.career || 0,
@@ -84,7 +84,7 @@ const SurveyCard = ({ survey, onShare, onViewResults }: SurveyCardProps) => {
           <h3 className="text-lg font-semibold text-center mb-4">Your Current Self</h3>
           <NewQuadrantChart
             progress={progress}
-            answers={survey.answers}
+            answers={survey.answers as Record<string, any>}
             className="scale-90"
           />
         </div>
