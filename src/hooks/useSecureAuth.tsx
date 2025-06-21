@@ -190,7 +190,7 @@ export const useSecureAuth = () => {
     }
   };
 
-  const signInWithProvider = async (provider: 'google' | 'facebook' | 'discord') => {
+  const signInWithProvider = async (provider: 'google' | 'facebook' | 'discord'): Promise<{ error: any }> => {
     try {
       const redirectUrl = `${window.location.origin}/auth/callback`;
       
