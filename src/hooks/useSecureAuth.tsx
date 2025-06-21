@@ -192,32 +192,80 @@ export const useSecureAuth = () => {
 
   const signInWithProvider = async (provider: 'google' | 'facebook' | 'discord') => {
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      const redirectUrl = `${window.location.origin}/auth/callback`;
       
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: redirectUrl,
-          skipBrowserRedirect: false, // Ensure full page redirect
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          }
-        }
-      });
-
-      if (error) {
+      // Create popup window
+      const popup = window.open('', '_blank', 'width=500,height=600,scrollbars=yes,resizable=yes');
+      
+      if (!popup) {
         toast({
-          title: "OAuth Sign In Failed",
-          description: error.message,
+          title: "Popup Blocked",
+          description: "Please allow popups for this site and try again.",
           variant: "destructive",
         });
-        return { error };
+        return { error: { message: 'Popup blocked' } };
       }
 
-      // Note: After successful OAuth initiation, the browser will redirect
-      // to the provider's page, so we don't return here in normal flow
-      return { error: null };
+      // Set up message listener for popup communication
+      return new Promise((resolve) => {
+        const messageListener = (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return;
+
+          if (event.data.type === 'OAUTH_SUCCESS') {
+            console.log('OAuth success received from popup');
+            toast({
+              title: "Login Successful",
+              description: "You have been successfully logged in.",
+            });
+            window.removeEventListener('message', messageListener);
+            resolve({ error: null });
+          } else if (event.data.type === 'OAUTH_ERROR') {
+            console.error('OAuth error received from popup:', event.data.error);
+            toast({
+              title: "Login Failed",
+              description: event.data.error || "An error occurred during login.",
+              variant: "destructive",
+            });
+            window.removeEventListener('message', messageListener);
+            resolve({ error: { message: event.data.error } });
+          }
+        };
+
+        window.addEventListener('message', messageListener);
+
+        // Set up popup close listener
+        const popupCloseChecker = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(popupCloseChecker);
+            window.removeEventListener('message', messageListener);
+            resolve({ error: { message: 'Popup was closed' } });
+          }
+        }, 1000);
+
+        // Initiate OAuth flow
+        supabase.auth.signInWithOAuth({
+          provider,
+          options: {
+            redirectTo: redirectUrl,
+            skipBrowserRedirect: true, // Don't redirect the main window
+          }
+        }).then(({ data, error }) => {
+          if (error) {
+            popup.close();
+            clearInterval(popupCloseChecker);
+            window.removeEventListener('message', messageListener);
+            toast({
+              title: "OAuth Sign In Failed",
+              description: error.message,
+              variant: "destructive",
+            });
+            resolve({ error });
+          } else if (data?.url) {
+            // Redirect the popup to the OAuth URL
+            popup.location.href = data.url;
+          }
+        });
+      });
     } catch (error) {
       console.error('OAuth sign in error:', error);
       return { error: { message: 'An unexpected error occurred' } };
