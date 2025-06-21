@@ -33,6 +33,7 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
+            <Route path="/auth/v1/callback" element={<AuthCallbackPage />} />
             <Route path="/" element={<Index />} />
             <Route path="/questionnaire" element={<Questionnaire />} />
             <Route path="/results" element={<Results />} />
