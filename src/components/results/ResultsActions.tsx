@@ -1,22 +1,34 @@
 
 import { useState } from 'react';
-import { Share2, Download } from 'lucide-react';
+import { Share2, Download, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useNavigate } from 'react-router-dom';
 import ShareDialog from './ShareDialog';
 
 interface ResultsActionsProps {
   isArchitectComplete: boolean;
   onDownload: () => void;
+  isAuthenticated?: boolean;
 }
 
-const ResultsActions = ({ isArchitectComplete, onDownload }: ResultsActionsProps) => {
+const ResultsActions = ({ isArchitectComplete, onDownload, isAuthenticated = false }: ResultsActionsProps) => {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   const handleDownloadClick = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to download your results.",
+      });
+      navigate('/auth');
+      return;
+    }
+
     if (isArchitectComplete) {
       onDownload();
     } else {
@@ -28,6 +40,15 @@ const ResultsActions = ({ isArchitectComplete, onDownload }: ResultsActionsProps
   };
 
   const handleShareClick = async () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to share your results.",
+      });
+      navigate('/auth');
+      return;
+    }
+
     if (isMobile && navigator.share) {
       try {
         await navigator.share({
@@ -53,8 +74,17 @@ const ResultsActions = ({ isArchitectComplete, onDownload }: ResultsActionsProps
           onClick={handleShareClick}
           className="w-full sm:w-auto justify-center font-semibold"
         >
-          <Share2 size={18} className="mr-2" />
-          Share My Life View
+          {isAuthenticated ? (
+            <>
+              <Share2 size={18} className="mr-2" />
+              Share My Life View
+            </>
+          ) : (
+            <>
+              <LogIn size={18} className="mr-2" />
+              Sign in to Share
+            </>
+          )}
         </Button>
         <Button 
           variant="outline" 
@@ -62,15 +92,26 @@ const ResultsActions = ({ isArchitectComplete, onDownload }: ResultsActionsProps
           onClick={handleDownloadClick} 
           className="w-full sm:w-auto justify-center font-semibold"
         >
-          <Download size={18} className="mr-2" />
-          Print / Save as PDF
+          {isAuthenticated ? (
+            <>
+              <Download size={18} className="mr-2" />
+              Print / Save as PDF
+            </>
+          ) : (
+            <>
+              <LogIn size={18} className="mr-2" />
+              Sign in to Download
+            </>
+          )}
         </Button>
       </section>
       
-      <ShareDialog 
-        open={shareDialogOpen} 
-        onOpenChange={setShareDialogOpen} 
-      />
+      {isAuthenticated && (
+        <ShareDialog 
+          open={shareDialogOpen} 
+          onOpenChange={setShareDialogOpen} 
+        />
+      )}
     </>
   );
 };
