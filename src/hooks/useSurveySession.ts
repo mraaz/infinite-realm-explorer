@@ -11,7 +11,7 @@ interface SurveySession {
   status: 'in_progress' | 'completed';
   answers: Record<string, any>;
   created_at: string;
-  updated_at?: string;
+  updated_at: string;
   is_public?: boolean;
 }
 
