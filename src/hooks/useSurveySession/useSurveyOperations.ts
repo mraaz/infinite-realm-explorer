@@ -78,96 +78,90 @@ export const useSurveyOperations = () => {
   };
 
   const completeSurvey = async (surveySession: SurveySession | null, user: any, setSurveySession: any, completionInProgress: React.MutableRefObject<boolean>) => {
-    if (!surveySession || !user || completionInProgress.current) {
-      logError("Cannot complete survey - missing session, user, or completion in progress");
+    if (!surveySession || !user) {
+      logError("Cannot complete survey - missing session or user");
+      return { success: false };
+    }
+
+    if (completionInProgress.current) {
+      logInfo("Survey completion already in progress, skipping");
       return { success: false };
     }
 
     completionInProgress.current = true;
 
     try {
-      logInfo("Completing survey:", surveySession.id);
+      logInfo("Starting survey completion process:", surveySession.id);
 
+      // Check current survey status
       const { data: currentSurvey, error: checkError } = await supabase
         .from('surveys')
         .select('status')
         .eq('id', surveySession.id)
+        .eq('user_id', user.id)
         .single();
 
       if (checkError) {
         logError('Error checking survey status:', checkError);
-        throw new Error('Failed to check survey status');
+        throw new Error('Failed to verify survey status');
       }
 
       if (currentSurvey.status === 'completed') {
-        logInfo("Survey already completed, skipping completion");
+        logInfo("Survey already completed, skipping");
         return { success: true };
       }
 
+      // Check if profile already exists
       const { data: existingProfile, error: profileCheckError } = await supabase
         .from('profiles')
         .select('id')
         .eq('survey_id', surveySession.id)
-        .single();
+        .maybeSingle();
 
       if (profileCheckError && profileCheckError.code !== 'PGRST116') {
         logError('Error checking existing profile:', profileCheckError);
         throw new Error('Failed to check existing profile');
       }
 
-      if (existingProfile) {
-        logInfo("Profile already exists for survey, skipping creation");
-        
-        const { error: updateError } = await supabase
-          .from('surveys')
-          .update({ 
-            status: 'completed',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', surveySession.id);
-
-        if (updateError) {
-          logError('Error completing survey:', updateError);
-          throw new Error('Failed to complete survey');
-        }
-
-        setSurveySession((prev: SurveySession | null) => prev ? { 
-          ...prev, 
-          status: 'completed' as const,
-          updated_at: new Date().toISOString()
-        } : null);
-
-        return { success: true };
-      }
-
+      // Update survey status to completed
       const { error: updateError } = await supabase
         .from('surveys')
         .update({ 
           status: 'completed',
           updated_at: new Date().toISOString()
         })
-        .eq('id', surveySession.id);
+        .eq('id', surveySession.id)
+        .eq('user_id', user.id);
 
       if (updateError) {
-        logError('Error completing survey:', updateError);
+        logError('Error updating survey status:', updateError);
         throw new Error('Failed to complete survey');
       }
 
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
+      // Create profile only if it doesn't exist
+      if (!existingProfile) {
+        const profileData = {
           survey_id: surveySession.id,
           scores: generateBasicScores(surveySession.answers),
           insights: generateBasicInsights(surveySession.answers),
           actions: generateBasicActions(surveySession.answers)
-        });
+        };
 
-      if (profileError) {
-        logError('Error creating profile:', profileError);
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert(profileData);
+
+        if (profileError) {
+          logError('Error creating profile:', profileError);
+          // Don't throw here - survey is still completed
+        } else {
+          logDebug("Profile created successfully");
+        }
       } else {
-        logDebug("Profile created successfully");
+        logInfo("Profile already exists, skipping creation");
       }
 
+      // Update local state
       setSurveySession((prev: SurveySession | null) => prev ? { 
         ...prev, 
         status: 'completed' as const,
@@ -176,14 +170,15 @@ export const useSurveyOperations = () => {
 
       toast({
         title: "Survey Completed!",
-        description: "Your 5-Year Snapshot is ready. View your results now.",
+        description: "Your assessment is ready. View your results now.",
       });
 
+      logInfo("Survey completion successful");
       return { success: true };
     } catch (error) {
       logError('Complete survey error:', error);
       toast({
-        title: "Completion Failed",
+        title: "Completion Failed", 
         description: "Unable to complete your survey. Please try again.",
         variant: "destructive",
       });
@@ -202,19 +197,22 @@ export const useSurveyOperations = () => {
     try {
       logInfo("Making survey public:", surveySession.id);
 
+      // Update survey to public
       const { error: surveyError } = await supabase
         .from('surveys')
         .update({ 
           is_public: true,
           updated_at: new Date().toISOString()
         })
-        .eq('id', surveySession.id);
+        .eq('id', surveySession.id)
+        .eq('user_id', user.id);
 
       if (surveyError) {
         logError('Error making survey public:', surveyError);
         throw new Error('Failed to make survey public');
       }
 
+      // Get user's public slug
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('public_slug')
@@ -226,6 +224,7 @@ export const useSurveyOperations = () => {
         throw new Error('Failed to get public link');
       }
 
+      // Update user public status
       const { error: updateUserError } = await supabase
         .from('users')
         .update({ is_public: true })

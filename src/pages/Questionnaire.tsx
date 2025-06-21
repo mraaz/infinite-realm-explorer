@@ -33,10 +33,11 @@ const Questionnaire = () => {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [hasShownSaveModal, setHasShownSaveModal] = useState(false);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
-  const [hasCompletedSurvey, setHasCompletedSurvey] = useState(false);
+  const [isCompletionProcessed, setIsCompletionProcessed] = useState(false);
   
   const currentQuestion = getCurrentQuestion();
   const { overallPercentage, pillarPercentages } = getProgress();
+  const isQuestionnaireComplete = questionFlow.length > 0 && currentQuestionIndex >= questionFlow.length;
 
   // Load saved survey session when available
   useEffect(() => {
@@ -58,27 +59,34 @@ const Questionnaire = () => {
 
   // Handle questionnaire completion - ONLY ONCE
   useEffect(() => {
-    if (questionFlow.length > 0 && 
-        currentQuestionIndex >= questionFlow.length && 
-        !hasCompletedSurvey && 
-        !isCompleting) {
-      
+    if (isQuestionnaireComplete && !isCompletionProcessed && !isCompleting && !isLoading) {
       logInfo("Questionnaire completed, processing completion");
-      setHasCompletedSurvey(true);
+      setIsCompletionProcessed(true);
       
-      if (isAuthenticated) {
+      if (isAuthenticated && surveySession) {
         completeSurvey().then((result) => {
           if (result.success) {
             setShowCompletionDialog(true);
           } else {
-            setHasCompletedSurvey(false);
+            // Reset if completion failed
+            setIsCompletionProcessed(false);
           }
         });
       } else {
+        // For unauthenticated users, go directly to results
         navigate('/results');
       }
     }
-  }, [currentQuestionIndex, questionFlow.length, hasCompletedSurvey, isCompleting, isAuthenticated, completeSurvey, navigate]);
+  }, [
+    isQuestionnaireComplete, 
+    isCompletionProcessed, 
+    isCompleting, 
+    isLoading,
+    isAuthenticated, 
+    surveySession,
+    completeSurvey, 
+    navigate
+  ]);
 
   const handleSaveProgress = async () => {
     logDebug("Save progress requested");
@@ -100,10 +108,10 @@ const Questionnaire = () => {
 
   const handleConfirmCancel = () => {
     logDebug("User cancelled questionnaire");
-    navigate('/results');
+    navigate('/');
   };
 
-  const handleCompletionAction = async () => {
+  const handleCompletionAction = () => {
     logDebug("Survey completion action triggered");
     setShowCompletionDialog(false);
     navigate('/results');
@@ -131,10 +139,18 @@ const Questionnaire = () => {
     );
   }
 
-  if (!currentQuestion) {
+  if (!currentQuestion && !isQuestionnaireComplete) {
     return (
       <QuestionnaireLayout>
         <LoadingState isAuthenticated={isAuthenticated} isCompleting={isCompleting} />
+      </QuestionnaireLayout>
+    );
+  }
+
+  if (isQuestionnaireComplete && (isCompleting || !isCompletionProcessed)) {
+    return (
+      <QuestionnaireLayout>
+        <LoadingState isAuthenticated={isAuthenticated} isCompleting={true} />
       </QuestionnaireLayout>
     );
   }
