@@ -104,7 +104,14 @@ const Questionnaire = () => {
             }, 2000);
           });
       } else {
-        logInfo("Unauthenticated user - navigating directly to results");
+        logInfo("Unauthenticated user - storing answers in memory and navigating to results");
+        // Store answers in memory for unauthenticated users
+        const completedSurvey = {
+          answers,
+          completedAt: new Date().toISOString(),
+          isTemporary: true // Flag to indicate this is a temporary, non-saved survey
+        };
+        localStorage.setItem('temporarySurveyResults', JSON.stringify(completedSurvey));
         navigate('/results');
       }
     }
@@ -116,7 +123,8 @@ const Questionnaire = () => {
     isAuthenticated, 
     surveySession,
     completeSurvey, 
-    navigate
+    navigate,
+    answers
   ]);
 
   const handleSaveProgress = async () => {
@@ -132,7 +140,17 @@ const Questionnaire = () => {
   const handleContinueWithoutSaving = () => {
     logDebug("User chose to continue without saving");
     if (!user) {
+      // Store answers in memory for potential results generation
       storePendingProgress(answers, currentQuestionIndex);
+      
+      // Also store a backup in localStorage for reliability
+      const progressData = {
+        answers,
+        currentQuestionIndex,
+        timestamp: new Date().toISOString(),
+        isTemporary: true
+      };
+      localStorage.setItem('temporaryQuestionnaireProgress', JSON.stringify(progressData));
     }
     setShowSaveModal(false);
   };
