@@ -10,7 +10,6 @@ interface SurveySession {
   status: 'open' | 'completed';
   answers: Record<string, any>;
   created_at: string;
-  updated_at: string;
   is_public?: boolean;
 }
 
@@ -54,9 +53,12 @@ export const useSurveySession = () => {
       if (existingSurvey) {
         // Found existing survey - resume
         const sessionData: SurveySession = {
-          ...existingSurvey,
-          answers: existingSurvey.answers as Record<string, any> || {},
-          updated_at: existingSurvey.updated_at || existingSurvey.created_at
+          id: existingSurvey.id,
+          user_id: existingSurvey.user_id || '',
+          status: (existingSurvey.status as 'open' | 'completed') || 'open',
+          answers: (existingSurvey.answers as Record<string, any>) || {},
+          created_at: existingSurvey.created_at || new Date().toISOString(),
+          is_public: existingSurvey.is_public || false
         };
         setSurveySession(sessionData);
         setIsResuming(true);
@@ -82,9 +84,12 @@ export const useSurveySession = () => {
         }
 
         const sessionData: SurveySession = {
-          ...newSurvey,
-          answers: newSurvey.answers as Record<string, any> || {},
-          updated_at: newSurvey.updated_at || newSurvey.created_at
+          id: newSurvey.id,
+          user_id: newSurvey.user_id || '',
+          status: (newSurvey.status as 'open' | 'completed') || 'open',
+          answers: (newSurvey.answers as Record<string, any>) || {},
+          created_at: newSurvey.created_at || new Date().toISOString(),
+          is_public: newSurvey.is_public || false
         };
         setSurveySession(sessionData);
         setIsResuming(false);
@@ -113,8 +118,7 @@ export const useSurveySession = () => {
       const { error } = await supabase
         .from('surveys')
         .update({
-          answers: updatedAnswers,
-          updated_at: new Date().toISOString()
+          answers: updatedAnswers
         })
         .eq('id', surveySession.id);
 
@@ -126,8 +130,7 @@ export const useSurveySession = () => {
       // Update local session
       setSurveySession(prev => prev ? {
         ...prev,
-        answers: updatedAnswers,
-        updated_at: new Date().toISOString()
+        answers: updatedAnswers
       } : null);
 
       return { success: true };
