@@ -8,16 +8,6 @@ const EdgeFunctionTest = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [authStatus, setAuthStatus] = useState<'checking' | 'authenticated' | 'unauthenticated'>('checking');
-
-  // Check authentication status on component mount
-  React.useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setAuthStatus(user ? 'authenticated' : 'unauthenticated');
-    };
-    checkAuth();
-  }, []);
 
   // Simulated answers for 19 questions (excluding optional ones)
   const simulatedAnswers = {
@@ -52,29 +42,33 @@ const EdgeFunctionTest = () => {
     connections_goal: "Deepen existing friendships and make new ones"
   };
 
-  const signInAnonymously = async () => {
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.signInAnonymously();
-      if (error) {
-        setError(`Authentication error: ${error.message}`);
-      } else {
-        setAuthStatus('authenticated');
-        setError(null);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Authentication failed');
-    } finally {
-      setLoading(false);
+  // Current system prompt being used in the edge function
+  const currentPrompt = `You are an expert life coach and analyst. Based on the questionnaire answers provided, analyze the user's responses and provide scores for four key life pillars:
+
+1. Career (0-100): Based on career situation, fulfillment, hours worked, and goals
+2. Finances (0-100): Based on financial situation, confidence, savings, and goals  
+3. Health (0-100): Based on activity levels, sleep, energy, barriers, and goals
+4. Connections (0-100): Based on sense of belonging, time spent, relationships, and goals
+
+Return your response as a JSON object with this exact structure:
+{
+  "career_score": 75,
+  "financial_score": 60,
+  "health_score": 85,
+  "connections_score": 70,
+  "insights": [
+    {
+      "title": "Career Growth Focus",
+      "description": "Your career fulfillment score suggests room for growth...",
+      "pillar": "career",
+      "priority": "high"
     }
-  };
+  ]
+}
+
+Provide 2-4 insights based on the analysis. Each insight should identify patterns or areas for improvement.`;
 
   const testEdgeFunction = async () => {
-    if (authStatus !== 'authenticated') {
-      setError('Please authenticate first');
-      return;
-    }
-
     setLoading(true);
     setError(null);
     setResult(null);
@@ -101,18 +95,6 @@ const EdgeFunctionTest = () => {
     }
   };
 
-  if (authStatus === 'checking') {
-    return (
-      <div className="p-6 max-w-4xl mx-auto">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">Checking authentication status...</div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <Card>
@@ -124,28 +106,12 @@ const EdgeFunctionTest = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {authStatus === 'unauthenticated' && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded p-4">
-                <h4 className="text-yellow-800 font-semibold mb-2">Authentication Required</h4>
-                <p className="text-yellow-700 mb-3">
-                  The generate-scores function requires authentication. Please sign in to test the function.
-                </p>
-                <Button 
-                  onClick={signInAnonymously} 
-                  disabled={loading}
-                  variant="outline"
-                >
-                  {loading ? 'Signing in...' : 'Sign In Anonymously'}
-                </Button>
-              </div>
-            )}
-
-            {authStatus === 'authenticated' && (
-              <div className="bg-green-50 border border-green-200 rounded p-4">
-                <h4 className="text-green-800 font-semibold">✓ Authenticated</h4>
-                <p className="text-green-700">Ready to test the edge function.</p>
-              </div>
-            )}
+            <div className="bg-blue-50 border border-blue-200 rounded p-4">
+              <h3 className="text-lg font-semibold mb-2 text-blue-800">Current AI Prompt:</h3>
+              <pre className="bg-white p-4 rounded text-sm overflow-auto max-h-60 border whitespace-pre-wrap">
+                {currentPrompt}
+              </pre>
+            </div>
             
             <div>
               <h3 className="text-lg font-semibold mb-2">Simulated Answers (19 questions):</h3>
@@ -156,7 +122,7 @@ const EdgeFunctionTest = () => {
             
             <Button 
               onClick={testEdgeFunction} 
-              disabled={loading || authStatus !== 'authenticated'}
+              disabled={loading}
               className="w-full"
             >
               {loading ? 'Testing Edge Function...' : 'Test generate-scores Function'}
