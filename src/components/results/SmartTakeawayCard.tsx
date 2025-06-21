@@ -16,7 +16,7 @@ const SmartTakeawayCard = ({ takeaway }: SmartTakeawayCardProps) => {
       </CardHeader>
       <CardContent>
         <p className="text-gray-600 leading-relaxed">
-          {takeaway.explanation}
+          {takeaway.description}
         </p>
       </CardContent>
     </Card>

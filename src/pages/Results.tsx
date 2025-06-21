@@ -47,7 +47,7 @@ const Results = () => {
 
   const { handlePrintReport } = usePrintReport();
   
-  const { results, isLoading, isError, refetch } = useGenerateResults();
+  const { data: results, isLoading, isError, refetch } = useGenerateResults();
 
   const handlePillarClick = (pillar: string) => {
     setActivePillar(current => (current === pillar ? undefined : pillar));
@@ -115,7 +115,7 @@ const Results = () => {
             <p className="text-gray-600 text-center max-w-md mb-6">
               We encountered an issue while generating your personalized insights. Please try again.
             </p>
-            <Button onClick={refetch} className="flex items-center gap-2">
+            <Button onClick={() => refetch()} className="flex items-center gap-2">
               <RefreshCw className="h-4 w-4" />
               Try Again
             </Button>
