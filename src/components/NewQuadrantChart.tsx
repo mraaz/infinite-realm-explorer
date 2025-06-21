@@ -37,6 +37,26 @@ export interface NewQuadrantChartProps {
   className?: string
 }
 
+// Helper function to validate and ensure numeric values
+const validateScore = (value: any): number => {
+  if (value === null || value === undefined || value === '') {
+    return 0;
+  }
+  const parsed = typeof value === 'number' ? value : parseFloat(value);
+  return isNaN(parsed) ? 0 : Math.max(0, Math.min(100, parsed));
+};
+
+// Helper function to validate progress object
+const validateProgress = (progress: PillarProgress): PillarProgress => {
+  return {
+    basics: validateScore(progress?.basics),
+    career: validateScore(progress?.career),
+    finances: validateScore(progress?.finances),
+    health: validateScore(progress?.health),
+    connections: validateScore(progress?.connections),
+  };
+};
+
 // Memoized component to prevent unnecessary re-renders
 export const NewQuadrantChart = memo(function NewQuadrantChart({
   progress,
@@ -46,6 +66,9 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
   isFuture = false,
   className,
 }: NewQuadrantChartProps) {
+  // Validate and sanitize progress data
+  const validatedProgress = validateProgress(progress);
+  
   // State for animations and hover effects
   const [animatedProgress, setAnimatedProgress] = useState<PillarProgress>({
     basics: 0,
@@ -66,8 +89,10 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
   const radius = size * 0.4
   const innerRadius = radius * 0.375
 
-  // Calculate overall score
-  const overallScore = Math.round((progress.career + progress.finances + progress.health + progress.connections) / 4)
+  // Calculate overall score with validation
+  const overallScore = Math.round(
+    (validatedProgress.career + validatedProgress.finances + validatedProgress.health + validatedProgress.connections) / 4
+  )
   const [animatedOverallScore, setAnimatedOverallScore] = useState(0)
 
   // Animate progress changes
@@ -79,11 +104,11 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
 
     // Calculate step size for each pillar
     const stepSizes = {
-      basics: (progress.basics - animatedProgress.basics) / steps,
-      career: (progress.career - animatedProgress.career) / steps,
-      finances: (progress.finances - animatedProgress.finances) / steps,
-      health: (progress.health - animatedProgress.health) / steps,
-      connections: (progress.connections - animatedProgress.connections) / steps,
+      basics: (validatedProgress.basics - animatedProgress.basics) / steps,
+      career: (validatedProgress.career - animatedProgress.career) / steps,
+      finances: (validatedProgress.finances - animatedProgress.finances) / steps,
+      health: (validatedProgress.health - animatedProgress.health) / steps,
+      connections: (validatedProgress.connections - animatedProgress.connections) / steps,
     }
 
     // Calculate step size for overall score
@@ -95,7 +120,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
 
       if (currentStep >= steps) {
         // Final step - set exact values
-        setAnimatedProgress({ ...progress })
+        setAnimatedProgress({ ...validatedProgress })
         setAnimatedOverallScore(overallScore)
         clearInterval(interval)
       } else {
@@ -112,7 +137,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
     }, stepDuration)
 
     return () => clearInterval(interval)
-  }, [progress, overallScore])
+  }, [validatedProgress, overallScore])
 
   // Define quadrants with all necessary data - adjust positioning for mobile
   const getQuadrants = (): QuadrantData[] => {
@@ -124,7 +149,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
       {
         key: "career",
         name: "Career",
-        score: Math.round(scores.career),
+        score: Math.round(validateScore(scores.career)),
         color: "#9333ea", // Purple
         hoverColor: "#a855f7", // Lighter purple
         icon: <Target className={cn("w-4 h-4", !isMobile && "w-6 h-6")} />,
@@ -137,7 +162,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
       {
         key: "finances",
         name: "Finances",
-        score: Math.round(scores.finances),
+        score: Math.round(validateScore(scores.finances)),
         color: "#2563eb", // Blue
         hoverColor: "#3b82f6", // Lighter blue
         icon: <PiggyBank className={cn("w-4 h-4", !isMobile && "w-6 h-6")} />,
@@ -150,7 +175,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
       {
         key: "health",
         name: "Health",
-        score: Math.round(scores.health),
+        score: Math.round(validateScore(scores.health)),
         color: "#16a34a", // Green
         hoverColor: "#22c55e", // Lighter green
         icon: <Heart className={cn("w-4 h-4", !isMobile && "w-6 h-6")} />,
@@ -163,7 +188,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
       {
         key: "connections",
         name: "Connections",
-        score: Math.round(scores.connections),
+        score: Math.round(validateScore(scores.connections)),
         color: "#ea580c", // Orange
         hoverColor: "#f97316", // Lighter orange
         icon: <Users className={cn("w-4 h-4", !isMobile && "w-6 h-6")} />,
@@ -183,21 +208,32 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
     const startAngleRad = (quadrant.startAngle * Math.PI) / 180
     const endAngleRad = (quadrant.endAngle * Math.PI) / 180
 
-    // Calculate the radius based on the score
-    const scoreRadius = innerRadius + ((radius - innerRadius) * quadrant.score) / 100
+    // Calculate the radius based on the score - ensure it's a valid number
+    const validScore = validateScore(quadrant.score)
+    const scoreRadius = innerRadius + ((radius - innerRadius) * validScore) / 100
 
-    // Calculate points for the path
+    // Ensure all coordinates are valid numbers
     const x1 = center + innerRadius * Math.cos(startAngleRad)
     const y1 = center + innerRadius * Math.sin(startAngleRad)
     const x2 = center + scoreRadius * Math.cos(startAngleRad)
     const y2 = center + scoreRadius * Math.sin(startAngleRad)
 
-    // Create the arc
+    // Create the arc - validate all coordinates
     const largeArcFlag = quadrant.endAngle - quadrant.startAngle > 180 ? 1 : 0
     const xEnd = center + scoreRadius * Math.cos(endAngleRad)
     const yEnd = center + scoreRadius * Math.sin(endAngleRad)
     const x4 = center + innerRadius * Math.cos(endAngleRad)
     const y4 = center + innerRadius * Math.sin(endAngleRad)
+
+    // Validate all coordinates before creating the path
+    const coords = [x1, y1, x2, y2, xEnd, yEnd, x4, y4, scoreRadius, innerRadius]
+    const hasInvalidCoords = coords.some(coord => isNaN(coord) || !isFinite(coord))
+    
+    if (hasInvalidCoords) {
+      console.warn('Invalid coordinates detected, using fallback path')
+      // Return a simple fallback path
+      return `M ${center} ${center} L ${center} ${center}`
+    }
 
     // Use SVG arc command
     return `
@@ -216,6 +252,25 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
       e.preventDefault()
       onPillarClick?.(quadrant.key)
     }
+  }
+
+  // Show loading state if data is not ready
+  const hasValidData = quadrants.some(q => q.score > 0)
+  
+  if (!hasValidData) {
+    return (
+      <div className={cn("flex flex-col items-center justify-center p-8", className)}>
+        <div className="text-center">
+          <div className="text-gray-400 mb-4">
+            <Target className="w-12 h-12 mx-auto" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">No Results Available</h3>
+          <p className="text-gray-500 text-sm">
+            Complete your survey to see your Current Life Balance
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -325,7 +380,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
             dominantBaseline="middle"
             className={cn("font-bold fill-gray-900", isMobile ? "text-2xl" : "text-4xl")}
           >
-            {Math.round(animatedOverallScore)}
+            {Math.round(validateScore(animatedOverallScore))}
           </text>
           <text
             x={center}
@@ -382,7 +437,7 @@ export const NewQuadrantChart = memo(function NewQuadrantChart({
                 {q.name}: {q.score}%
               </li>
             ))}
-            <li>Overall score: {Math.round(animatedOverallScore)}%</li>
+            <li>Overall score: {Math.round(validateScore(animatedOverallScore))}%</li>
           </ul>
         </div>
       </div>
