@@ -160,7 +160,9 @@ export type Database = {
           created_at: string | null
           email: string
           id: string
+          is_deleted: boolean | null
           is_public: boolean | null
+          public_name: string | null
           public_slug: string | null
           updated_at: string | null
         }
@@ -168,7 +170,9 @@ export type Database = {
           created_at?: string | null
           email: string
           id: string
+          is_deleted?: boolean | null
           is_public?: boolean | null
+          public_name?: string | null
           public_slug?: string | null
           updated_at?: string | null
         }
@@ -176,7 +180,9 @@ export type Database = {
           created_at?: string | null
           email?: string
           id?: string
+          is_deleted?: boolean | null
           is_public?: boolean | null
+          public_name?: string | null
           public_slug?: string | null
           updated_at?: string | null
         }
