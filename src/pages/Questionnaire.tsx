@@ -31,17 +31,16 @@ const Questionnaire = () => {
   const isRetake = location.state?.retake === true;
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [guestMode, setGuestMode] = useState(false);
-  const [modalDismissed, setModalDismissed] = useState(false);
   
   const currentQuestion = getCurrentQuestion();
   const { overallPercentage, pillarPercentages } = getProgress();
 
   // Show login modal for non-authenticated users (but not on retakes)
   useEffect(() => {
-    if (!isLoggedIn && !isRetake && !guestMode && !modalDismissed) {
+    if (!isLoggedIn && !isRetake && !guestMode) {
       setShowLoginModal(true);
     }
-  }, [isLoggedIn, isRetake, guestMode, modalDismissed]);
+  }, [isLoggedIn, isRetake, guestMode]);
 
   useEffect(() => {
     if (questionFlow.length > 0 && currentQuestionIndex >= questionFlow.length) {
@@ -56,13 +55,16 @@ const Questionnaire = () => {
 
   const handleContinueAsGuest = () => {
     setGuestMode(true);
-    setModalDismissed(true);
+    setShowLoginModal(false);
   };
 
   const handleModalOpenChange = (open: boolean) => {
-    setShowLoginModal(open);
-    if (!open) {
-      setModalDismissed(true);
+    if (!open && !isLoggedIn && !guestMode) {
+      // User closed modal without logging in or choosing guest mode
+      // Redirect them back to home page
+      navigate('/');
+    } else {
+      setShowLoginModal(open);
     }
   };
 
