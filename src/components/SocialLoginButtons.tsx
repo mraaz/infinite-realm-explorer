@@ -21,7 +21,7 @@ const SocialLoginButtons = ({ onLoginClick }: SocialLoginButtonsProps) => {
     <div className="space-y-4">
       <Button
         onClick={() => handleProviderClick('google')}
-        className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-3 transition-colors"
+        className="w-full bg-red-600 hover:bg-red-700 text-black font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-3 transition-colors"
         variant="outline"
         style={{ backgroundColor: '#f5f5f5', borderColor: '#dc2626' }}
       >
