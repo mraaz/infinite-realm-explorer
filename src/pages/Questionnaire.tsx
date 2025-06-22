@@ -69,43 +69,6 @@ const Questionnaire = () => {
   // Check if user has access to the questionnaire
   const hasQuestionnaireAccess = isLoggedIn || isRetake || guestMode;
 
-  // If user dismissed modal without choosing guest mode and isn't logged in, show access denied
-  if (!hasQuestionnaireAccess && modalDismissed) {
-    return (
-      <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
-        <Header />
-        <main className="flex-grow flex flex-col items-center justify-center px-4 py-8 md:py-12">
-          <div className="w-full max-w-2xl text-center">
-            <h1 className="text-3xl font-bold text-gray-800 mb-4">
-              Access Required
-            </h1>
-            <p className="text-lg text-gray-600 mb-8">
-              Please sign in or continue as a guest to access the questionnaire.
-            </p>
-            <div className="space-y-4">
-              <Button
-                onClick={() => {
-                  setModalDismissed(false);
-                  setShowLoginModal(true);
-                }}
-                className="w-full"
-              >
-                Show Login Options
-              </Button>
-              <Button
-                onClick={() => navigate('/')}
-                variant="outline"
-                className="w-full"
-              >
-                Go Back Home
-              </Button>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
   if (!currentQuestion) {
     // Handle completion state
     return (
