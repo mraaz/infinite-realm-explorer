@@ -1,5 +1,6 @@
-
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Infinity } from 'lucide-react';
 import SocialLoginModal from '@/components/SocialLoginModal';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -9,7 +10,13 @@ const Header = () => {
 
   return (
     <header className="py-6 px-6 md:px-10 flex justify-between items-center">
-      <h1 className="text-xl font-bold text-white">Infinite Life</h1>
+      <Link 
+        to="/" 
+        className="flex items-center space-x-2 text-xl font-bold text-white hover:text-purple-400 transition-colors duration-200"
+      >
+        <Infinity className="w-6 h-6" />
+        <span>Infinite Life</span>
+      </Link>
       
       {isLoggedIn ? (
         <div className="flex items-center space-x-4">
