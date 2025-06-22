@@ -1,11 +1,14 @@
-import { useEffect } from 'react';
+
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import QuestionnaireHeader from "@/components/QuestionnaireHeader";
 import PillarStatus from "@/components/PillarStatus";
 import QuestionBox from "@/components/QuestionBox";
 import OverallProgressBar from "@/components/OverallProgressBar";
 import Header from "@/components/Header";
+import QuestionnaireLoginModal from "@/components/QuestionnaireLoginModal";
 import { useQuestionnaireStore } from "@/store/questionnaireStore";
+import { useAuth } from '@/contexts/AuthContext';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -22,12 +25,22 @@ import {
 const Questionnaire = () => {
   const { actions, answers, currentQuestionIndex, questionFlow } = useQuestionnaireStore();
   const { getCurrentQuestion, getProgress } = actions;
+  const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const isRetake = location.state?.retake === true;
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [guestMode, setGuestMode] = useState(false);
   
   const currentQuestion = getCurrentQuestion();
   const { overallPercentage, pillarPercentages } = getProgress();
+
+  // Show login modal for non-authenticated users (but not on retakes)
+  useEffect(() => {
+    if (!isLoggedIn && !isRetake && !guestMode) {
+      setShowLoginModal(true);
+    }
+  }, [isLoggedIn, isRetake, guestMode]);
 
   useEffect(() => {
     if (questionFlow.length > 0 && currentQuestionIndex >= questionFlow.length) {
@@ -38,6 +51,10 @@ const Questionnaire = () => {
 
   const handleConfirmCancel = () => {
     navigate('/results');
+  };
+
+  const handleContinueAsGuest = () => {
+    setGuestMode(true);
   };
 
   if (!currentQuestion) {
@@ -96,6 +113,12 @@ const Questionnaire = () => {
           <OverallProgressBar value={overallPercentage} />
         </div>
       </main>
+      
+      <QuestionnaireLoginModal
+        open={showLoginModal}
+        onOpenChange={setShowLoginModal}
+        onContinueAsGuest={handleContinueAsGuest}
+      />
     </div>
   );
 };
