@@ -8,7 +8,7 @@ export const useSocialAuth = () => {
     setIsLoading(true);
     
     // --- Configuration ---
-    const GOOGLE_CLIENT_ID = '807079821345-35pbtdeppqrf45i6vb3kusu4iv5p29kl.apps.googleusercontent.com';
+    const GOOGLE_CLIENT_ID = '641437646622-n482j0ta8p8f3qbp83pd3gambq2ck4kv.apps.googleusercontent.com';
     const DISCORD_CLIENT_ID = '1385860077050658926';
     const FACEBOOK_CLIENT_ID = 'YOUR_FACEBOOK_APP_ID_HERE';
     
