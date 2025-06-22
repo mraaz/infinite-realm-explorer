@@ -56,7 +56,7 @@ const Index = () => {
 
   const handleContinueAsGuest = () => {
     setShowLoginModal(false);
-    navigate('/questionnaire');
+    navigate('/questionnaire?guest=true');
   };
 
   const handleModalOpenChange = (open: boolean) => {

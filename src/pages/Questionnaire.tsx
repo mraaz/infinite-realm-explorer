@@ -6,7 +6,6 @@ import PillarStatus from "@/components/PillarStatus";
 import QuestionBox from "@/components/QuestionBox";
 import OverallProgressBar from "@/components/OverallProgressBar";
 import Header from "@/components/Header";
-import QuestionnaireLoginModal from "@/components/QuestionnaireLoginModal";
 import { useQuestionnaireStore } from "@/store/questionnaireStore";
 import { useAuth } from '@/contexts/AuthContext';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -29,18 +28,20 @@ const Questionnaire = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isRetake = location.state?.retake === true;
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [guestMode, setGuestMode] = useState(false);
+  
+  // Check if user came from guest flow via URL parameter
+  const urlParams = new URLSearchParams(location.search);
+  const isGuestMode = urlParams.get('guest') === 'true';
   
   const currentQuestion = getCurrentQuestion();
   const { overallPercentage, pillarPercentages } = getProgress();
 
-  // Show login modal for non-authenticated users who navigate directly to questionnaire (but not on retakes)
+  // Redirect unauthenticated users to home (except retakes and guest mode)
   useEffect(() => {
-    if (!isLoggedIn && !isRetake && !guestMode) {
-      setShowLoginModal(true);
+    if (!isLoggedIn && !isRetake && !isGuestMode) {
+      navigate('/');
     }
-  }, [isLoggedIn, isRetake, guestMode]);
+  }, [isLoggedIn, isRetake, isGuestMode, navigate]);
 
   useEffect(() => {
     if (questionFlow.length > 0 && currentQuestionIndex >= questionFlow.length) {
@@ -53,23 +54,13 @@ const Questionnaire = () => {
     navigate('/results');
   };
 
-  const handleContinueAsGuest = () => {
-    setGuestMode(true);
-    setShowLoginModal(false);
-  };
-
-  const handleModalOpenChange = (open: boolean) => {
-    if (!open && !isLoggedIn && !guestMode) {
-      // User closed modal without logging in or choosing guest mode
-      // Redirect them back to home page
-      navigate('/');
-    } else {
-      setShowLoginModal(open);
-    }
-  };
-
   // Check if user has access to the questionnaire
-  const hasQuestionnaireAccess = isLoggedIn || isRetake || guestMode;
+  const hasQuestionnaireAccess = isLoggedIn || isRetake || isGuestMode;
+
+  // If user doesn't have access, return null (they'll be redirected)
+  if (!hasQuestionnaireAccess) {
+    return null;
+  }
 
   if (!currentQuestion) {
     // Handle completion state
@@ -127,12 +118,6 @@ const Questionnaire = () => {
           <OverallProgressBar value={overallPercentage} />
         </div>
       </main>
-      
-      <QuestionnaireLoginModal
-        open={showLoginModal}
-        onOpenChange={handleModalOpenChange}
-        onContinueAsGuest={handleContinueAsGuest}
-      />
     </div>
   );
 };
