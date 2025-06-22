@@ -35,7 +35,7 @@ const SocialLoginButtons = ({ onLoginClick }: SocialLoginButtonsProps) => {
 
       <Button
         disabled={true}
-        className="w-full text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-3 transition-colors opacity-50 cursor-not-allowed"
+        className="w-full bg-[#1877F2] hover:bg-[#166FE5] text-white font-medium hover:font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-3 transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
         variant="outline"
         style={{ backgroundColor: '#1877f2', borderColor: '#1877f2' }}
       >
