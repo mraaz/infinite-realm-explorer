@@ -2,7 +2,11 @@
 import Header from '@/components/Header';
 import PillarCard from '@/components/PillarCard';
 import CallToActionSection from '@/components/CallToActionSection';
+import QuestionnaireLoginModal from '@/components/QuestionnaireLoginModal';
 import { Target, PiggyBank, Heart, Users } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const pillars = [
   {
@@ -36,6 +40,29 @@ const pillars = [
 ];
 
 const Index = () => {
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const { isLoggedIn } = useAuth();
+  const navigate = useNavigate();
+
+  const handleGetSnapshotClick = () => {
+    if (isLoggedIn) {
+      // If user is already logged in, go directly to questionnaire
+      navigate('/questionnaire');
+    } else {
+      // If not logged in, show the modal
+      setShowLoginModal(true);
+    }
+  };
+
+  const handleContinueAsGuest = () => {
+    setShowLoginModal(false);
+    navigate('/questionnaire');
+  };
+
+  const handleModalOpenChange = (open: boolean) => {
+    setShowLoginModal(open);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <Header />
@@ -65,12 +92,18 @@ const Index = () => {
         </section>
 
         <section>
-          <CallToActionSection />
+          <CallToActionSection onGetSnapshotClick={handleGetSnapshotClick} />
         </section>
       </main>
       <footer className="text-center py-6 text-sm text-gray-500 border-t border-gray-200">
         © {new Date().getFullYear()} Infinite Life. All rights reserved.
       </footer>
+
+      <QuestionnaireLoginModal
+        open={showLoginModal}
+        onOpenChange={handleModalOpenChange}
+        onContinueAsGuest={handleContinueAsGuest}
+      />
     </div>
   );
 };

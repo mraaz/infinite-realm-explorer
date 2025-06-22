@@ -35,7 +35,7 @@ const Questionnaire = () => {
   const currentQuestion = getCurrentQuestion();
   const { overallPercentage, pillarPercentages } = getProgress();
 
-  // Show login modal for non-authenticated users (but not on retakes)
+  // Show login modal for non-authenticated users who navigate directly to questionnaire (but not on retakes)
   useEffect(() => {
     if (!isLoggedIn && !isRetake && !guestMode) {
       setShowLoginModal(true);
