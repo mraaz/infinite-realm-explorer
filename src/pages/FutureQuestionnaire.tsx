@@ -158,11 +158,11 @@ const FutureQuestionnaire = () => {
 
     if (!progress) {
         return (
-            <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+            <div className="min-h-screen flex flex-col bg-[#16161a]">
                 <Header />
                 <main className="flex-grow flex flex-col items-center justify-center px-4 text-center">
-                    <h1 className="text-2xl font-bold text-gray-800">Error</h1>
-                    <p className="text-gray-600 mt-2">Progress data not found. Please go back to the results page and try again.</p>
+                    <h1 className="text-2xl font-bold text-white">Error</h1>
+                    <p className="text-gray-400 mt-2">Progress data not found. Please go back to the results page and try again.</p>
                     <Button onClick={() => navigate('/results')} className="mt-4">Back to Results</Button>
                 </main>
             </div>
@@ -172,7 +172,7 @@ const FutureQuestionnaire = () => {
     const renderCurrentStep = () => {
         if (isArchitect) {
             if (!priorities) {
-                return <div className="text-center py-12">Calculating focus areas...</div>;
+                return <div className="text-center py-12 text-gray-400">Calculating focus areas...</div>;
             }
             
             if (step === 4) {
@@ -231,7 +231,7 @@ const FutureQuestionnaire = () => {
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <div className="min-h-screen flex flex-col bg-[#16161a]">
             <Header />
             <main className="flex-grow flex flex-col items-center px-4 py-8 md:py-12">
                 <div className="w-full max-w-5xl">
@@ -239,29 +239,29 @@ const FutureQuestionnaire = () => {
                         {step < (isArchitect ? 4 : 5) && (
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="ghost">Cancel and Return to Results</Button>
+                                    <Button variant="ghost" className="text-gray-400 hover:text-white">Cancel and Return to Results</Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent>
+                                <AlertDialogContent className="bg-[#1e1e24] border-gray-700">
                                     <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you sure you want to cancel?</AlertDialogTitle>
-                                        <AlertDialogDescription>
+                                        <AlertDialogTitle className="text-white">Are you sure you want to cancel?</AlertDialogTitle>
+                                        <AlertDialogDescription className="text-gray-400">
                                             Your progress for the Future Self Architect will be lost. You can always start again from the results page.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                        <AlertDialogCancel>Continue Designing</AlertDialogCancel>
+                                        <AlertDialogCancel className="text-gray-400 border-gray-600 hover:text-white hover:border-gray-500">Continue Designing</AlertDialogCancel>
                                         <AlertDialogAction onClick={handleConfirmCancel} className={buttonVariants({ variant: "destructive" })}>Yes, Cancel</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
                         )}
                     </div>
-                    <div className="bg-white/60 p-6 md:p-10 rounded-2xl shadow-lg border border-gray-200/80">
+                    <div className="bg-[#1e1e24] p-6 md:p-10 rounded-2xl shadow-lg border border-gray-700">
                         <div className="text-center mb-8">
-                            <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">
+                            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
                                 {isArchitect ? 'Future Self Architect' : 'Future Self Questionnaire'}
                             </h1>
-                            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+                            <p className="text-lg text-gray-400 max-w-3xl mx-auto">
                                 {isArchitect
                                     ? "Let's design the identity, systems, and proof for your future self."
                                     : 'This questionnaire is designed to help you define your vision for the next five years.'}

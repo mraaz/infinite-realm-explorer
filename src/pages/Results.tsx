@@ -44,7 +44,7 @@ const Results = () => {
   const completedHabits = futureSelfArchitect?.filter(h => h.isCompleted) || [];
   
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+    <div className="min-h-screen flex flex-col bg-[#16161a]">
       <Header />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <ResultsHeader />

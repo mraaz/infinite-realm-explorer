@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import QuestionnaireHeader from "@/components/QuestionnaireHeader";
@@ -65,14 +64,14 @@ const Questionnaire = () => {
   if (!currentQuestion) {
     // Handle completion state
     return (
-      <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+      <div className="min-h-screen flex flex-col bg-[#16161a]">
         <Header />
         <main className="flex-grow flex flex-col items-center justify-center px-4 py-8 md:py-12">
           <div className="w-full max-w-5xl text-center">
-            <h1 className="text-3xl font-bold text-gray-800 my-8">
+            <h1 className="text-3xl font-bold text-white my-8">
               Calculating your results...
             </h1>
-            <p className="text-lg text-gray-600">Please wait a moment.</p>
+            <p className="text-lg text-gray-400">Please wait a moment.</p>
           </div>
         </main>
       </div>
@@ -80,7 +79,7 @@ const Questionnaire = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+    <div className="min-h-screen flex flex-col bg-[#16161a]">
       <Header />
       <main className="flex-grow flex flex-col items-center px-4 py-8 md:py-12">
         <div className="w-full max-w-5xl">
@@ -89,24 +88,24 @@ const Questionnaire = () => {
             {isRetake && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost">Cancel and Return to Results</Button>
+                  <Button variant="ghost" className="text-gray-400 hover:text-white">Cancel and Return to Results</Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
+                <AlertDialogContent className="bg-[#1e1e24] border-gray-700">
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure you want to cancel?</AlertDialogTitle>
-                    <AlertDialogDescription>
+                    <AlertDialogTitle className="text-white">Are you sure you want to cancel?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-gray-400">
                       Your progress on this retake will be lost. You can always start again from the results page.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Continue Retake</AlertDialogCancel>
+                    <AlertDialogCancel className="text-gray-400 border-gray-600 hover:text-white hover:border-gray-500">Continue Retake</AlertDialogCancel>
                     <AlertDialogAction onClick={handleConfirmCancel} className={buttonVariants({ variant: "destructive" })}>Yes, Cancel</AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
             )}
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 text-center">
+          <h1 className="text-3xl font-bold text-white text-center">
             Building Your 5-Year Snapshot
           </h1>
           <PillarStatus pillarPercentages={pillarPercentages} />
