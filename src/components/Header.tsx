@@ -1,14 +1,5 @@
 
 import { useState } from 'react';
-import { User, ChevronDown, LogOut } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 import SocialLoginModal from '@/components/SocialLoginModal';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -17,48 +8,32 @@ const Header = () => {
   const { user, isLoggedIn, logout } = useAuth();
 
   return (
-    <header className="py-4 px-6 md:px-10 flex justify-between items-center border-b border-gray-200 no-print">
-      <Link to="/" className="flex items-center space-x-2">
-        <img 
-          src="/lovable-uploads/3ed0df40-9d9f-4016-bdba-991ba7a3468c.png" 
-          alt="Infinite Life Logo" 
-          className="h-7 w-7"
-        />
-        <span className="text-xl font-semibold text-gray-800">Infinite Life</span>
-      </Link>
+    <header className="py-6 px-6 md:px-10 flex justify-between items-center">
+      <h1 className="text-xl font-bold text-white">Infinite Life</h1>
       
       {isLoggedIn ? (
-        // User is logged in - show user info and logout
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center space-x-2 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors">
-              <User className="h-5 w-5 text-gray-600" />
-              <span className="text-sm text-gray-700">
-                {user?.email || user?.name || 'User'}
-              </span>
-              <ChevronDown className="h-4 w-4 text-gray-600" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link to="/results">View Results</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={logout} className="text-red-600">
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center space-x-4">
+          <span className="text-sm text-gray-400">
+            {user?.email || user?.name || 'User'}
+          </span>
+          <button 
+            onClick={logout}
+            className="border border-gray-600 hover:border-red-500 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+          >
+            <span>Logout</span>
+          </button>
+        </div>
       ) : (
-        // User is not logged in - show login button
-        <Button 
+        <button 
           onClick={() => setLoginModalOpen(true)}
-          variant="outline"
-          className="flex items-center space-x-1"
+          className="border border-gray-600 hover:border-purple-500 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2"
         >
-          <User className="h-4 w-4" />
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path fillRule="evenodd" d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0v-2z"/>
+            <path fillRule="evenodd" d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
+          </svg>
           <span>Login</span>
-        </Button>
+        </button>
       )}
       
       <SocialLoginModal 
