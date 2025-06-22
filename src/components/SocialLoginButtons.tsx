@@ -23,7 +23,7 @@ const SocialLoginButtons = ({ onLoginClick }: SocialLoginButtonsProps) => {
         onClick={() => handleProviderClick('google')}
         className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-3 transition-colors"
         variant="outline"
-        style={{ backgroundColor: '#dc2626', borderColor: '#dc2626' }}
+        style={{ backgroundColor: '#f5f5f5', borderColor: '#dc2626' }}
       >
         <img 
           src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" 
