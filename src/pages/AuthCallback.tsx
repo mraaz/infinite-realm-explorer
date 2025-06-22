@@ -1,10 +1,12 @@
 
 import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AuthCallback = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   useEffect(() => {
     // Get the token from the URL query parameter.
@@ -15,8 +17,8 @@ const AuthCallback = () => {
     const preLoginPath = localStorage.getItem('preLoginPath') || '/'; // Default to the homepage if not found.
 
     if (token) {
-      // 1. Save the token to localStorage for future authenticated API requests.
-      localStorage.setItem('infinitelife_jwt', token);
+      // 1. Use the auth context to handle login (this updates global state)
+      login(token);
       
       // 2. Clean up the stored path from localStorage.
       localStorage.removeItem('preLoginPath');
@@ -27,7 +29,7 @@ const AuthCallback = () => {
       // If login failed for some reason, send them to a login error page or the homepage.
       navigate('/?error=true', { replace: true });
     }
-  }, [location, navigate]);
+  }, [location, navigate, login]);
 
   // Display a simple loading message while the redirect logic runs.
   return (

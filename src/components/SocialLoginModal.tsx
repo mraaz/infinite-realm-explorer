@@ -37,6 +37,8 @@ const SocialLoginModal = ({ open, onOpenChange }: SocialLoginModalProps) => {
     if (loginUrl) {
       // Save the user's current page path so we can return them here after login.
       localStorage.setItem('preLoginPath', window.location.pathname);
+      // Close the modal before redirecting
+      onOpenChange(false);
       // Redirect the user to the AWS authentication endpoint.
       window.location.href = loginUrl;
     }
