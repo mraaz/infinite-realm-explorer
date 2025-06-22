@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import { User, ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
@@ -7,8 +8,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import SocialLoginModal from '@/components/SocialLoginModal';
 
 const Header = () => {
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+
   return (
     <header className="py-4 px-6 md:px-10 flex justify-between items-center border-b border-gray-200 no-print">
       <Link to="/" className="flex items-center space-x-2">
@@ -27,6 +31,9 @@ const Header = () => {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setLoginModalOpen(true)}>
+            Login
+          </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link to="/results">View Results (Test)</Link>
           </DropdownMenuItem>
@@ -35,6 +42,11 @@ const Header = () => {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      
+      <SocialLoginModal 
+        open={loginModalOpen} 
+        onOpenChange={setLoginModalOpen} 
+      />
     </header>
   );
 };
