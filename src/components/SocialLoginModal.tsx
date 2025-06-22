@@ -15,19 +15,32 @@ interface SocialLoginModalProps {
 }
 
 const SocialLoginModal = ({ open, onOpenChange }: SocialLoginModalProps) => {
-  const handleGoogleLogin = () => {
-    console.log('Google login clicked');
-    // TODO: Implement Google OAuth
-  };
+  const handleLoginClick = (provider: 'google' | 'facebook' | 'discord') => {
+    // --- Configuration ---
+    // You will need to replace these with your actual IDs.
+    const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE';
+    const DISCORD_CLIENT_ID = 'YOUR_DISCORD_CLIENT_ID_HERE';
+    const FACEBOOK_CLIENT_ID = 'YOUR_FACEBOOK_APP_ID_HERE';
+    
+    // This is your live AWS API Gateway URL.
+    const API_GATEWAY_URL = 'https://ffwkwcix01.execute-api.us-east-1.amazonaws.com/prod';
 
-  const handleFacebookLogin = () => {
-    console.log('Facebook login clicked');
-    // TODO: Implement Facebook OAuth
-  };
+    let loginUrl;
 
-  const handleDiscordLogin = () => {
-    console.log('Discord login clicked');
-    // TODO: Implement Discord OAuth
+    if (provider === 'google') {
+      loginUrl = `https://accounts.google.com/o/oauth2/v2/auth?scope=openid%20email%20profile&response_type=code&redirect_uri=${API_GATEWAY_URL}/auth/google/callback&client_id=${GOOGLE_CLIENT_ID}`;
+    } else if (provider === 'discord') {
+      loginUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(`${API_GATEWAY_URL}/auth/discord/callback`)}&scope=identify%20email`;
+    } else if (provider === 'facebook') {
+      loginUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${FACEBOOK_CLIENT_ID}&redirect_uri=${encodeURIComponent(`${API_GATEWAY_URL}/auth/facebook/callback`)}&scope=email`;
+    }
+
+    if (loginUrl) {
+      // Save the user's current page path so we can return them here after login.
+      localStorage.setItem('preLoginPath', window.location.pathname);
+      // Redirect the user to the AWS authentication endpoint.
+      window.location.href = loginUrl;
+    }
   };
 
   return (
@@ -48,7 +61,7 @@ const SocialLoginModal = ({ open, onOpenChange }: SocialLoginModalProps) => {
         </DialogHeader>
         <div className="space-y-4 pt-4">
           <Button
-            onClick={handleGoogleLogin}
+            onClick={() => handleLoginClick('google')}
             className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-3 transition-colors"
             variant="outline"
             style={{ backgroundColor: '#dc2626', borderColor: '#dc2626' }}
@@ -75,7 +88,7 @@ const SocialLoginModal = ({ open, onOpenChange }: SocialLoginModalProps) => {
           </Button>
 
           <Button
-            onClick={handleFacebookLogin}
+            onClick={() => handleLoginClick('facebook')}
             className="w-full text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-3 transition-colors"
             variant="outline"
             style={{ backgroundColor: '#1877f2', borderColor: '#1877f2' }}
@@ -85,7 +98,7 @@ const SocialLoginModal = ({ open, onOpenChange }: SocialLoginModalProps) => {
           </Button>
 
           <Button
-            onClick={handleDiscordLogin}
+            onClick={() => handleLoginClick('discord')}
             className="w-full text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-3 transition-colors"
             variant="outline"
             style={{ backgroundColor: '#5865f2', borderColor: '#5865f2' }}

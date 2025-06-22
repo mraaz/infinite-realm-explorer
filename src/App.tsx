@@ -8,6 +8,7 @@ import Results from '@/pages/Results';
 import FutureQuestionnaire from '@/pages/FutureQuestionnaire';
 import HabitBuilder from '@/pages/HabitBuilder';
 import EdgeFunctionTestPage from '@/pages/EdgeFunctionTest';
+import AuthCallback from '@/pages/AuthCallback';
 import NotFound from '@/pages/NotFound';
 import './App.css';
 
@@ -24,6 +25,7 @@ function App() {
           <Route path="/future-questionnaire" element={<FutureQuestionnaire />} />
           <Route path="/habit-builder" element={<HabitBuilder />} />
           <Route path="/test-edge-function" element={<EdgeFunctionTestPage />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
