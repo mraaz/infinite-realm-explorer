@@ -26,8 +26,13 @@ const QuestionnaireLoginModal = ({ open, onOpenChange, onContinueAsGuest }: Ques
     onOpenChange(false);
   };
 
+  const handleModalClose = (isOpen: boolean) => {
+    // Only close the modal, don't trigger guest mode
+    onOpenChange(isOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleModalClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-center">

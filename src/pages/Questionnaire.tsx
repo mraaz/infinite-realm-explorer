@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import QuestionnaireHeader from "@/components/QuestionnaireHeader";
@@ -31,16 +30,17 @@ const Questionnaire = () => {
   const isRetake = location.state?.retake === true;
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [guestMode, setGuestMode] = useState(false);
+  const [modalDismissed, setModalDismissed] = useState(false);
   
   const currentQuestion = getCurrentQuestion();
   const { overallPercentage, pillarPercentages } = getProgress();
 
   // Show login modal for non-authenticated users (but not on retakes)
   useEffect(() => {
-    if (!isLoggedIn && !isRetake && !guestMode) {
+    if (!isLoggedIn && !isRetake && !guestMode && !modalDismissed) {
       setShowLoginModal(true);
     }
-  }, [isLoggedIn, isRetake, guestMode]);
+  }, [isLoggedIn, isRetake, guestMode, modalDismissed]);
 
   useEffect(() => {
     if (questionFlow.length > 0 && currentQuestionIndex >= questionFlow.length) {
@@ -55,6 +55,14 @@ const Questionnaire = () => {
 
   const handleContinueAsGuest = () => {
     setGuestMode(true);
+    setModalDismissed(true);
+  };
+
+  const handleModalOpenChange = (open: boolean) => {
+    setShowLoginModal(open);
+    if (!open) {
+      setModalDismissed(true);
+    }
   };
 
   if (!currentQuestion) {
@@ -116,7 +124,7 @@ const Questionnaire = () => {
       
       <QuestionnaireLoginModal
         open={showLoginModal}
-        onOpenChange={setShowLoginModal}
+        onOpenChange={handleModalOpenChange}
         onContinueAsGuest={handleContinueAsGuest}
       />
     </div>
