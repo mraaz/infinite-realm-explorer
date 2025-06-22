@@ -48,8 +48,8 @@ const SocialLoginButtons = ({ onLoginClick }: SocialLoginButtonsProps) => {
       </Button>
 
       <Button
-        onClick={() => handleProviderClick('discord')}
-        className="w-full text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-3 transition-colors"
+        onClick={() => handleProviderClick('discord')}        
+        className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white font-medium hover:font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-3 transition-all duration-200 shadow-sm"
         variant="outline"
         style={{ backgroundColor: '#5865f2', borderColor: '#5865f2' }}
       >
