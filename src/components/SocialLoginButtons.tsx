@@ -54,7 +54,7 @@ const SocialLoginButtons = ({ onLoginClick }: SocialLoginButtonsProps) => {
         style={{ backgroundColor: '#5865f2', borderColor: '#5865f2' }}
       >
         <img 
-          src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66e3d80db9971f10a9757c99_Symbol.svg" 
+          src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66e3d7f4ef6498ac018f2c55_Symbol.svg" 
           alt="Discord logo" 
           className="w-5 h-5"
         />
