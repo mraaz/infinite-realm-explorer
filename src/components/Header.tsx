@@ -18,10 +18,10 @@ const Header = () => {
       <Link to="/" className="flex items-center space-x-2">
         <img 
           src="/lovable-uploads/3ed0df40-9d9f-4016-bdba-991ba7a3468c.png" 
-          alt="Infinite Game Logo" 
+          alt="Infinite Life Logo" 
           className="h-7 w-7"
         />
-        <span className="text-xl font-semibold text-gray-800">Infinite Game</span>
+        <span className="text-xl font-semibold text-gray-800">Infinite Life</span>
       </Link>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

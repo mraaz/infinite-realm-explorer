@@ -34,8 +34,16 @@ const SocialLoginModal = ({ open, onOpenChange }: SocialLoginModalProps) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-center text-xl font-semibold text-gray-900">
-            Sign in to your account
+          <DialogTitle className="text-center">
+            <div className="flex items-center justify-center space-x-2 mb-4">
+              <img 
+                src="/lovable-uploads/3ed0df40-9d9f-4016-bdba-991ba7a3468c.png" 
+                alt="Infinite Life Logo" 
+                className="h-8 w-8"
+              />
+              <span className="text-2xl font-semibold text-gray-900">Infinite Life</span>
+            </div>
+            <p className="text-sm text-gray-600 font-normal">Sign in to your account</p>
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-4">
