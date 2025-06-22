@@ -17,9 +17,8 @@ interface SocialLoginModalProps {
 const SocialLoginModal = ({ open, onOpenChange }: SocialLoginModalProps) => {
   const handleLoginClick = (provider: 'google' | 'facebook' | 'discord') => {
     // --- Configuration ---
-    // You will need to replace these with your actual IDs.
-    const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE';
-    const DISCORD_CLIENT_ID = 'YOUR_DISCORD_CLIENT_ID_HERE';
+    const GOOGLE_CLIENT_ID = '807079821345-35pbtdeppqrf45i6vb3kusu4iv5p29kl.apps.googleusercontent.com';
+    const DISCORD_CLIENT_ID = '1385860077050658926';
     const FACEBOOK_CLIENT_ID = 'YOUR_FACEBOOK_APP_ID_HERE';
     
     // This is your live AWS API Gateway URL.
@@ -88,13 +87,13 @@ const SocialLoginModal = ({ open, onOpenChange }: SocialLoginModalProps) => {
           </Button>
 
           <Button
-            onClick={() => handleLoginClick('facebook')}
-            className="w-full text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-3 transition-colors"
+            disabled={true}
+            className="w-full text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-3 transition-colors opacity-50 cursor-not-allowed"
             variant="outline"
             style={{ backgroundColor: '#1877f2', borderColor: '#1877f2' }}
           >
             <Facebook className="w-5 h-5" />
-            Continue with Facebook
+            Continue with Facebook (Coming Soon)
           </Button>
 
           <Button
