@@ -43,9 +43,6 @@ const Header = () => {
             <DropdownMenuItem asChild>
               <Link to="/results">View Results</Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/test-edge-function">Test Edge Function</Link>
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={logout} className="text-red-600">
               <LogOut className="h-4 w-4 mr-2" />
               Logout
