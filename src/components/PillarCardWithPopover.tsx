@@ -30,8 +30,7 @@ const PillarCardWithPopover: FC<PillarCardWithPopoverProps> = ({
     <Popover className="relative">
       {({ open }) => (
         <>
-          {/* 1. The focus outline has been removed. */}
-          <Popover.Button className="w-full text-left rounded-2xl focus:outline-none">
+          <Popover.Button className="w-full text-left rounded-2xl focus:outline-none h-full">
             <PillarCard
               icon={icon}
               title={title}
@@ -50,14 +49,11 @@ const PillarCardWithPopover: FC<PillarCardWithPopoverProps> = ({
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            {/* 2. The Panel now overlays the card directly. */}
-            <Popover.Panel
-              static // 'static' helps with animations by keeping the element in the DOM
-              className="absolute inset-0 z-10 p-4"
-            >
-              {/* This div creates the dark backdrop and centers the text */}
-              <div className="flex h-full w-full items-center justify-center rounded-2xl bg-black/70 p-6 backdrop-blur-sm text-center">
-                <div>
+            <Popover.Panel static className="absolute inset-0 z-10">
+              {/* This div creates the backdrop */}
+              <div className="relative h-full w-full rounded-2xl bg-black/70 backdrop-blur-sm">
+                {/* This div holds the content and is centered using the transform technique */}
+                <div className="absolute top-1/2 left-1/2 w-full -translate-y-1/2 -translate-x-1/2 p-6 text-center">
                   <h3 className="text-lg font-bold text-white mb-2">
                     {popoverContent.title}
                   </h3>

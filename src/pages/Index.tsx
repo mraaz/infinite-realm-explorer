@@ -174,7 +174,7 @@ const Index = () => {
               Ready to begin?
             </h3>
             <p className="text-gray-400 mb-6">
-              Take our quick assessment and unlock your personalized life
+              Take our quick assessment and unlock your personalised life
               insights.
             </p>
 
