@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import ArchitectEmptyState from "./architect/ArchitectEmptyState";
 import HabitDashboard from "./architect/HabitDashboard";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface HabitArchitectSectionProps {
   architect?: FutureSelfArchitect[];
@@ -84,16 +86,16 @@ const HabitArchitectSection = ({
         <CardFooter className="p-6 pt-0 md:p-8 md:pt-0">
           <div className="w-full flex flex-col sm:flex-row gap-2">
             {activeHabits.length === 0 ? (
-              // Updated primary button with gradient style
               <Button
                 onClick={handleDesignHabits}
-                className="w-full justify-center no-print h-11 px-8 rounded-md bg-gradient-cta text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105"
-                disabled={!isQuestionnaireComplete}
+                className={cn(
+                  "w-full justify-center no-print h-11 px-8 rounded-md bg-gradient-cta text-white font-bold transition-all duration-300 transform hover:scale-105",
+                  !isQuestionnaireComplete && "opacity-50 cursor-not-allowed"
+                )}
               >
                 <span>Design Your Habits!</span>
               </Button>
             ) : (
-              // Updated secondary button with dark theme outline style
               <Button
                 onClick={handleAddHabit}
                 variant="outline"
