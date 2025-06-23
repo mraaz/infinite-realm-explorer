@@ -21,7 +21,7 @@ const SocialLoginModal = ({ open, onOpenChange }: SocialLoginModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-w-sm w-full mx-auto">
+      <DialogContent className="sm:max-w-md max-w-sm w-full mx-auto overflow-hidden">
         <DialogHeader className="space-y-4">
           <DialogTitle className="text-center">
             <div className="flex items-center justify-center space-x-2 mb-4">
@@ -37,8 +37,8 @@ const SocialLoginModal = ({ open, onOpenChange }: SocialLoginModalProps) => {
             </p>
           </DialogTitle>
         </DialogHeader>
-        <div className="pt-4 w-full">
-          <SocialLoginButtons onLoginClick={handleLoginClick} />
+        <div className="pt-4 w-full relative">
+          <SocialLoginButtons onLoginClick={handleLoginClick} inModal={true} />
         </div>
       </DialogContent>
     </Dialog>
