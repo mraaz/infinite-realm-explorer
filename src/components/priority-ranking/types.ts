@@ -7,7 +7,7 @@ export type PillarInfo = {
   id: Pillar;
   name: Pillar;
   score: number;
-  icon: JSX.Element;
+  icon: React.ReactNode;
 };
 
 export interface PriorityRankingProps {
