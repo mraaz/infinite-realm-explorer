@@ -1,8 +1,9 @@
+
 /*
 ================================================================================
-File: /components/PillarCard.tsx
+File: /components/HomepagePillarCard.tsx
 ================================================================================
-- This is the updated PillarCard component for the homepage.
+- This is the updated HomepagePillarCard component for the homepage.
 - Styles have been updated to match the dark theme and add interactive
   hover effects for a more modern feel.
 */
@@ -10,7 +11,7 @@ import { FC, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 // --- TYPE DEFINITION ---
-interface PillarCardProps {
+interface HomepagePillarCardProps {
   icon: ReactNode;
   title: string;
   description: string;
@@ -19,7 +20,7 @@ interface PillarCardProps {
 }
 
 // --- MAIN COMPONENT ---
-const PillarCard: FC<PillarCardProps> = ({
+const HomepagePillarCard: FC<HomepagePillarCardProps> = ({
   icon,
   title,
   description,
@@ -48,4 +49,4 @@ const PillarCard: FC<PillarCardProps> = ({
   </div>
 );
 
-export default PillarCard;
+export default HomepagePillarCard;

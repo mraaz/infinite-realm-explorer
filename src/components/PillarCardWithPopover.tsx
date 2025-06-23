@@ -1,8 +1,9 @@
+
 // src/components/PillarCardWithPopover.tsx
 
 import { FC, Fragment, ReactNode } from "react";
 import { Popover, Transition } from "@headlessui/react";
-import PillarCard from "@/components/PillarCard";
+import HomepagePillarCard from "@/components/HomepagePillarCard";
 
 // --- TYPE DEFINITION ---
 interface PillarCardWithPopoverProps {
@@ -31,7 +32,7 @@ const PillarCardWithPopover: FC<PillarCardWithPopoverProps> = ({
       {({ open }) => (
         <>
           <Popover.Button className="w-full text-left rounded-2xl focus:outline-none h-full">
-            <PillarCard
+            <HomepagePillarCard
               icon={icon}
               title={title}
               description={description}
