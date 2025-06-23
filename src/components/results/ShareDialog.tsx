@@ -1,10 +1,15 @@
-
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Copy, Check } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Copy, Check } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface ShareDialogProps {
   open: boolean;
@@ -14,7 +19,8 @@ interface ShareDialogProps {
 const ShareDialog = ({ open, onOpenChange }: ShareDialogProps) => {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
-  const currentUrl = window.location.href;
+  // In a real app, you might get this URL from props or context
+  const currentUrl = typeof window !== "undefined" ? window.location.href : "";
 
   const handleCopyLink = async () => {
     try {
@@ -36,31 +42,31 @@ const ShareDialog = ({ open, onOpenChange }: ShareDialogProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Share My Life View</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
+        <div className="space-y-4 pt-2">
+          <p className="text-sm text-gray-400">
             Share your Life View results with others using this link:
           </p>
           <div className="flex items-center space-x-2">
             <Input
               value={currentUrl}
               readOnly
-              className="flex-1"
+              className="flex-1 bg-gray-800 border-gray-700 text-gray-300"
             />
             <Button
               size="sm"
               onClick={handleCopyLink}
-              className="shrink-0"
+              className="shrink-0 bg-gradient-cta text-white font-bold disabled:opacity-50 transition-all duration-300 transform hover:scale-105"
             >
               {copied ? (
-                <Check className="h-4 w-4" />
+                <Check className="h-4 w-4 mr-2" />
               ) : (
-                <Copy className="h-4 w-4" />
+                <Copy className="h-4 w-4 mr-2" />
               )}
-              {copied ? 'Copied!' : 'Copy'}
+              {copied ? "Copied!" : "Copy"}
             </Button>
           </div>
         </div>

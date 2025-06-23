@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,7 +33,6 @@ const HabitArchitectSection = ({
   const handleDesignHabits = () => {
     if (!isQuestionnaireComplete) {
       toast({
-        title: "Action Required",
         description:
           "Please complete the Future Self Questionnaire before you can proceed.",
       });
