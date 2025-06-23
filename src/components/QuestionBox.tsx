@@ -109,7 +109,6 @@ const QuestionInput = ({
 };
 
 // This is the main QuestionBox component.
-// The container has been updated to match the dark theme.
 const QuestionBox = ({
   question,
   value,
@@ -141,12 +140,10 @@ const QuestionBox = ({
     internalValue !== null &&
     internalValue !== "";
 
-  // Main container updated with dark theme classes
   return (
     <div className="bg-[#1e1e24] p-6 sm:p-8 rounded-2xl shadow-2xl ring-1 ring-white/10 w-full max-w-2xl mx-auto">
       <div className="flex items-center gap-2 mb-4">
         {pillarInfo && PillarIcon && (
-          // Badge styling updated for dark theme
           <Badge
             variant="outline"
             className={`border-${pillarInfo.color}-500/30 bg-${pillarInfo.color}-500/10 text-${pillarInfo.color}-400 font-medium`}
@@ -181,7 +178,7 @@ const QuestionBox = ({
           variant="outline"
           onClick={handlePrevious}
           disabled={currentQuestionIndex === 0}
-          className="bg-transparent hover:bg-gray-800 text-gray-300 border-gray-700 hover:border-gray-600"
+          className="bg-transparent hover:bg-gray-800 text-gray-300 border-gray-700 hover:border-gray-600 disabled:opacity-50 disabled:bg-transparent"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Previous
