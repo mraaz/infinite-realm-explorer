@@ -44,21 +44,28 @@ export function YearPicker({
           <Button
             variant="outline"
             disabled={disabled}
-            className={cn("w-full justify-start text-left font-normal", !year && "text-muted-foreground")}
+            className={cn(
+              "w-full justify-start text-left font-normal bg-gray-800 border-gray-700 text-white placeholder-gray-500 hover:bg-gray-700 hover:border-gray-600",
+              !year && "text-gray-400"
+            )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {year ? year.toString() : <span>{placeholder}</span>}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-700" align="start">
           <div className="p-4">
             <Select value={year?.toString()} onValueChange={handleYearChange}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-[200px] bg-gray-800 border-gray-700 text-white hover:bg-gray-700">
                 <SelectValue placeholder="Select a year" />
               </SelectTrigger>
-              <SelectContent className="max-h-80">
+              <SelectContent className="max-h-80 bg-gray-800 border-gray-700">
                 {years.map((yearOption) => (
-                  <SelectItem key={yearOption} value={yearOption.toString()}>
+                  <SelectItem 
+                    key={yearOption} 
+                    value={yearOption.toString()}
+                    className="text-white hover:bg-gray-700 focus:bg-gray-700"
+                  >
                     {yearOption}
                   </SelectItem>
                 ))}
