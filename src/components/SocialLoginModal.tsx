@@ -32,7 +32,7 @@ const SocialLoginModal = ({ open, onOpenChange }: SocialLoginModalProps) => {
               />
               <span className="text-2xl font-semibold">Sign In</span>
             </div>
-            <p className="text-sm font-normal">
+            <p className="text-sm font-normal text-gray-400">
               Choose your preferred sign-in method to continue
             </p>
           </DialogTitle>

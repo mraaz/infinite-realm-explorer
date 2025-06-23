@@ -1,14 +1,7 @@
-/* ================================================================================
-File: /components/SocialLoginButtons.tsx
-================================================================================
-- This component now contains the redesigned buttons.
-- All <img> tags are replaced with inline SVGs for reliability and color control.
-- A conditional "Continue as Guest" option has been added.
-*/
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
-// Assuming useSocialAuth is in your project
-// import { useSocialAuth } from '@/hooks/useSocialAuth'; 
+import { useSocialAuth } from '@/hooks/useSocialAuth';
 
 interface SocialLoginButtonsProps {
   onLoginClick?: () => void;
@@ -16,13 +9,7 @@ interface SocialLoginButtonsProps {
 }
 
 const SocialLoginButtons = ({ onLoginClick, showGuestOption = false }: SocialLoginButtonsProps) => {
-  // const { handleLoginClick } = useSocialAuth(); // This would be your real hook
-  
-  // Placeholder function for demonstration
-  const handleLoginClick = (provider: string) => {
-    console.log('Login with', provider);
-  };
-
+  const { handleLoginClick } = useSocialAuth();
 
   const handleProviderClick = (provider: 'google' | 'facebook' | 'discord') => {
     onLoginClick?.();
