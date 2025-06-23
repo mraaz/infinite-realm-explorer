@@ -21,8 +21,8 @@ const SocialLoginModal = ({ open, onOpenChange }: SocialLoginModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md max-w-sm w-full mx-auto">
+        <DialogHeader className="space-y-4">
           <DialogTitle className="text-center">
             <div className="flex items-center justify-center space-x-2 mb-4">
               <img 
@@ -30,14 +30,14 @@ const SocialLoginModal = ({ open, onOpenChange }: SocialLoginModalProps) => {
                 alt="Infinite Life Logo" 
                 className="h-8 w-8"
               />
-              <span className="text-2xl font-semibold">Sign In</span>
+              <span className="text-2xl font-semibold text-white">Sign In</span>
             </div>
             <p className="text-sm font-normal text-gray-400">
               Choose your preferred sign-in method to continue
             </p>
           </DialogTitle>
         </DialogHeader>
-        <div className="pt-4">
+        <div className="pt-4 w-full">
           <SocialLoginButtons onLoginClick={handleLoginClick} />
         </div>
       </DialogContent>
