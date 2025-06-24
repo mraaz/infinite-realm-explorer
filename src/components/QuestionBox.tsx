@@ -1,9 +1,10 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Question, pillarsInfo } from "@/data/questions";
-import { useQuestionnaireStore } from "@/store/questionnaireStore";
+import { useOnboardingQuestionnaireStore } from "@/store/onboardingQuestionnaireStore";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -116,20 +117,19 @@ const QuestionBox = ({
   question: Question;
   value: any;
 }) => {
-  const { answerQuestion, nextQuestion, previousQuestion } =
-    useQuestionnaireStore((state) => state.actions);
+  const { actions } = useOnboardingQuestionnaireStore();
   const [internalValue, setInternalValue] = useState(value);
-  const currentQuestionIndex = useQuestionnaireStore(
+  const currentQuestionIndex = useOnboardingQuestionnaireStore(
     (state) => state.currentQuestionIndex
   );
 
   const handleNext = () => {
-    answerQuestion(question.id, internalValue);
-    nextQuestion();
+    actions.answerQuestion(question.id, internalValue);
+    actions.nextQuestion();
   };
 
   const handlePrevious = () => {
-    previousQuestion();
+    actions.previousQuestion();
   };
 
   const pillarInfo =
