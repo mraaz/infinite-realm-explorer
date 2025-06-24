@@ -1,10 +1,17 @@
+import React from "react";
+import { Progress } from "@/components/ui/progress";
 
-import React from 'react';
-
-const OverallProgressBar = () => {
+const OverallProgressBar = ({ value }: { value: number }) => {
   return (
-    <div className="w-full bg-gray-700 rounded-full h-2">
-      <div className="bg-purple-500 h-2 rounded-full" style={{ width: '0%' }}></div>
+    <div className="w-full max-w-2xl mx-auto mt-12">
+      <Progress
+        value={value}
+        className="h-2 bg-gray-700"
+        indicatorClassName="bg-purple-500"
+      />
+      <p className="text-center text-sm text-gray-400 mt-2">
+        {Math.round(value)}% complete
+      </p>
     </div>
   );
 };
