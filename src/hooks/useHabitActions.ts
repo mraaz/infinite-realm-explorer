@@ -1,5 +1,5 @@
 
-import { useQuestionnaireStore } from '@/store/questionnaireStore';
+import { useOnboardingQuestionnaireStore } from '@/store/onboardingQuestionnaireStore';
 import { useFireworks } from '@/hooks/useFireworks';
 import { useToast } from '@/hooks/use-toast';
 import { MarkAsDoneData } from '@/components/results/MarkAsDoneDialog';
@@ -7,7 +7,7 @@ import { FutureQuestionnaire } from '@/types/results';
 import { updateHabitWithStreak } from '@/utils/habitUtils';
 
 export const useHabitActions = () => {
-  const { actions } = useQuestionnaireStore();
+  const { actions } = useOnboardingQuestionnaireStore();
   const { fire } = useFireworks();
   const { toast } = useToast();
 
@@ -33,7 +33,6 @@ export const useHabitActions = () => {
       architect: updatedArchitect,
     };
 
-    actions.setFutureQuestionnaire(updatedFq);
     return updatedFq;
   };
 

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useQuestionnaireStore } from '@/store/questionnaireStore';
+import { useOnboardingQuestionnaireStore } from '@/store/onboardingQuestionnaireStore';
 
 export type BuilderStep = 'pillar' | 'archetype' | 'habit' | 'unlocked';
 
@@ -19,18 +19,16 @@ export const useHabitBuilderState = () => {
   const [habitData, setHabitData] = useState<Partial<HabitData>>({});
   const location = useLocation();
   const navigate = useNavigate();
-  const { futureQuestionnaire, actions } = useQuestionnaireStore();
   
   const editHabitIndex = location.state?.editHabitIndex;
   const isEditing = editHabitIndex !== undefined;
 
   useEffect(() => {
-    console.log('HabitBuilder - Current futureQuestionnaire:', futureQuestionnaire);
     console.log('HabitBuilder - Is editing:', isEditing, 'Edit index:', editHabitIndex);
     
     // If editing, populate existing data
-    if (isEditing && futureQuestionnaire?.architect?.[editHabitIndex]) {
-      const existingHabit = futureQuestionnaire.architect[editHabitIndex];
+    if (isEditing && location.state?.futureQuestionnaire?.architect?.[editHabitIndex]) {
+      const existingHabit = location.state.futureQuestionnaire.architect[editHabitIndex];
       // Parse existing habit data and set initial step
       setHabitData({
         pillar: existingHabit.mainFocus,
@@ -40,7 +38,7 @@ export const useHabitBuilderState = () => {
       });
       setCurrentStep('habit');
     }
-  }, [isEditing, editHabitIndex, futureQuestionnaire]);
+  }, [isEditing, editHabitIndex, location.state]);
 
   const handleNext = (data: Partial<HabitData>) => {
     setHabitData(prev => ({ ...prev, ...data }));
@@ -77,22 +75,24 @@ export const useHabitBuilderState = () => {
   };
 
   const handleDelete = () => {
-    if (isEditing && futureQuestionnaire?.architect) {
-      const updatedArchitect = [...futureQuestionnaire.architect];
+    if (isEditing && location.state?.futureQuestionnaire?.architect) {
+      const updatedArchitect = [...location.state.futureQuestionnaire.architect];
       updatedArchitect.splice(editHabitIndex, 1);
       
-      actions.setFutureQuestionnaire({
-        ...futureQuestionnaire,
-        architect: updatedArchitect,
+      navigate('/results', {
+        state: {
+          ...location.state,
+          futureQuestionnaire: {
+            ...location.state.futureQuestionnaire,
+            architect: updatedArchitect,
+          }
+        }
       });
-      
-      navigate('/results');
     }
   };
 
   const handleFinish = () => {
     console.log('HabitBuilder - Finishing with habitData:', habitData);
-    console.log('HabitBuilder - Current futureQuestionnaire before save:', futureQuestionnaire);
     
     // Save habit to store
     const newHabit = {
@@ -108,28 +108,26 @@ export const useHabitBuilderState = () => {
     console.log('HabitBuilder - New habit being created:', newHabit);
 
     let updatedFutureQuestionnaire;
+    const currentFutureQuestionnaire = location.state?.futureQuestionnaire;
 
     if (isEditing) {
       // Update existing habit
-      const updatedArchitect = [...(futureQuestionnaire?.architect || [])];
+      const updatedArchitect = [...(currentFutureQuestionnaire?.architect || [])];
       updatedArchitect[editHabitIndex] = newHabit;
       updatedFutureQuestionnaire = {
-        ...futureQuestionnaire!,
+        ...currentFutureQuestionnaire!,
         architect: updatedArchitect,
       };
     } else {
       // Add new habit
-      const updatedArchitect = [...(futureQuestionnaire?.architect || []), newHabit];
+      const updatedArchitect = [...(currentFutureQuestionnaire?.architect || []), newHabit];
       updatedFutureQuestionnaire = {
-        ...futureQuestionnaire!,
+        ...currentFutureQuestionnaire!,
         architect: updatedArchitect,
       };
     }
 
     console.log('HabitBuilder - Updated futureQuestionnaire:', updatedFutureQuestionnaire);
-
-    // Update the store
-    actions.setFutureQuestionnaire(updatedFutureQuestionnaire);
 
     // Navigate back to results with the updated data
     navigate('/results', {

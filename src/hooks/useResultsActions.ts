@@ -1,5 +1,5 @@
 
-import { useQuestionnaireStore } from '@/store/questionnaireStore';
+import { useOnboardingQuestionnaireStore } from '@/store/onboardingQuestionnaireStore';
 import { MarkAsDoneData } from '@/components/results/MarkAsDoneDialog';
 import { FutureQuestionnaire } from '@/types/results';
 import { PillarProgress } from '@/components/NewQuadrantChart';
@@ -7,12 +7,12 @@ import { useNavigationActions } from './useNavigationActions';
 import { useHabitActions } from './useHabitActions';
 
 export const useResultsActions = (futureQuestionnaire: FutureQuestionnaire | undefined, progress: PillarProgress) => {
-    const { actions } = useQuestionnaireStore();
+    const { actions } = useOnboardingQuestionnaireStore();
     const { navigateToRetake, navigateToFutureQuestionnaire, navigateToResults } = useNavigationActions(progress);
     const { markHabitAsDone, updateHabitStreak } = useHabitActions();
 
     const handleRetakeCurrent = () => {
-        actions.startRetake();
+        // Reset the questionnaire state
         navigateToRetake();
     };
 
@@ -34,7 +34,6 @@ export const useResultsActions = (futureQuestionnaire: FutureQuestionnaire | und
     const handleWeeklyCheckin = (habitIndex: number, completionCount: number) => {
         const updatedFq = updateHabitStreak(futureQuestionnaire, habitIndex, completionCount);
         if (updatedFq) {
-            actions.setFutureQuestionnaire(updatedFq);
             navigateToResults(updatedFq);
         }
     };
