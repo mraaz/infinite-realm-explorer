@@ -1,4 +1,3 @@
-
 /*
 ================================================================================
 File: /components/Header.tsx
@@ -47,15 +46,15 @@ const Header = () => {
                 <User className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent 
-              align="end" 
+            <DropdownMenuContent
+              align="end"
               className="w-56 bg-gray-900 border-gray-700"
             >
               <DropdownMenuLabel className="text-gray-300">
-                {user?.email || "User"}
+                {user?.name || user?.email || "User"}
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-700" />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={logout}
                 className="text-gray-300 hover:bg-gray-800 hover:text-red-400 cursor-pointer"
               >
