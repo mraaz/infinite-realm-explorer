@@ -1,3 +1,4 @@
+
 // src/pages/index.tsx
 
 import Header from "@/components/Header";
@@ -117,7 +118,7 @@ const Index = () => {
 
   const handleGetSnapshotClick = () => {
     if (isLoggedIn) {
-      navigate("/questionnaire");
+      navigate("/onboarding-questionnaire");
     } else {
       setShowLoginModal(true);
     }
@@ -125,7 +126,7 @@ const Index = () => {
 
   const handleContinueAsGuest = () => {
     setShowLoginModal(false);
-    navigate("/questionnaire?guest=true");
+    navigate("/onboarding-questionnaire?guest=true");
   };
 
   const handleModalOpenChange = (open: boolean) => {

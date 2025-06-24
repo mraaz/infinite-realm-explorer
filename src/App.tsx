@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/AuthContext';
 import Index from '@/pages/Index';
-import Questionnaire from '@/pages/Questionnaire';
+import OnboardingQuestionnaire from '@/pages/OnboardingQuestionnaire';
 import Results from '@/pages/Results';
 import FutureQuestionnaire from '@/pages/FutureQuestionnaire';
 import HabitBuilder from '@/pages/HabitBuilder';
@@ -21,7 +21,7 @@ function App() {
         <Router>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/questionnaire" element={<Questionnaire />} />
+            <Route path="/onboarding-questionnaire" element={<OnboardingQuestionnaire />} />
             <Route path="/results" element={<Results />} />
             <Route path="/future-questionnaire" element={<FutureQuestionnaire />} />
             <Route path="/habit-builder" element={<HabitBuilder />} />
