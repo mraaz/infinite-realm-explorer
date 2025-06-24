@@ -1,17 +1,26 @@
+
 /*
 ================================================================================
 File: /components/Header.tsx
 ================================================================================
-- This is the corrected version of the Header component.
-- The <SocialLoginModal /> has been moved outside the <header> element
-  to prevent Flexbox layout conflicts.
-- A React Fragment <>...</> is used to wrap both components.
+- Updated to show profile icon dropdown for logged-in users
+- Kept Login button for logged-out users
+- Added dropdown menu with user email and logout option
 */
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Infinity } from "lucide-react";
+import { Infinity, User } from "lucide-react";
 import SocialLoginModal from "@/components/SocialLoginModal";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 const Header = () => {
   const [loginModalOpen, setLoginModalOpen] = useState(false);
@@ -29,17 +38,31 @@ const Header = () => {
         </Link>
 
         {isLoggedIn ? (
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-400">
-              {user?.email || "User"}
-            </span>
-            <button
-              onClick={logout}
-              className="border border-gray-600 hover:border-red-500 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="h-10 w-10 rounded-full border border-gray-600 hover:border-purple-500 text-white hover:bg-gray-800 transition-colors duration-200"
+              >
+                <User className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent 
+              align="end" 
+              className="w-56 bg-gray-900 border-gray-700"
             >
-              <span>Logout</span>
-            </button>
-          </div>
+              <DropdownMenuLabel className="text-gray-300">
+                {user?.email || "User"}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-gray-700" />
+              <DropdownMenuItem 
+                onClick={logout}
+                className="text-gray-300 hover:bg-gray-800 hover:text-red-400 cursor-pointer"
+              >
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         ) : (
           <button
             onClick={() => setLoginModalOpen(true)}
