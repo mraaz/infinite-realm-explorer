@@ -1,50 +1,49 @@
-import React, { useMemo } from "react";
+import React, { useEffect } from "react";
 import Header from "@/components/Header";
 import ClarityRings from "@/components/onboarding-questionnaire/ClarityRings";
 import QuestionBox from "@/components/onboarding-questionnaire/QuestionBox";
 import OverallProgressBar from "@/components/onboarding-questionnaire/OverallProgressBar";
-// --- THIS IS THE FIX: Import 'questions' directly ---
-import {
-  useOnboardingQuestionnaireStore,
-  questions,
-} from "@/store/onboardingQuestionnaireStore";
+import { useOnboardingQuestionnaireStore } from "@/store/onboardingQuestionnaireStore";
+
+// A simple utility to get the token from localStorage.
+// You can replace this with your existing authentication context or hook.
+const getAuthToken = () => localStorage.getItem("session_jwt");
 
 const OnboardingQuestionnaire = () => {
-  // Select only the state and actions needed
+  // Select the new state and actions from our updated store
   const {
-    currentQuestionIndex,
+    currentQuestion,
     answers,
-    answerQuestion,
-    nextQuestion,
-    previousQuestion,
+    pillarProgress,
+    isLoading,
+    isCompleted,
+    initializeQuestionnaire,
+    submitAnswer,
   } = useOnboardingQuestionnaireStore();
 
-  const currentQuestion = questions[currentQuestionIndex];
+  // --- NEW --- Initialize the questionnaire on component mount
+  useEffect(() => {
+    const token = getAuthToken();
+    initializeQuestionnaire(token || undefined);
+  }, [initializeQuestionnaire]);
 
-  // This calculation is safe here
-  const { overallPercentage, pillarPercentages } = useMemo(() => {
-    const answeredQuestions = Object.keys(answers).length;
-    const totalQuestions = questions.length;
-    const overall =
-      totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
+  // --- REMOVED --- The complex useMemo for calculating progress is no longer needed.
+  // The backend now provides this data as `pillarProgress`.
 
-    const pillars = { career: 0, financials: 0, health: 0, connections: 0 };
-    Object.keys(answers).forEach((questionId) => {
-      const question = questions.find((q) => q.id === questionId);
-      if (question && question.pillar !== "Basics") {
-        const pillarKey = question.pillar.toLowerCase() as keyof typeof pillars;
-        const pillarQuestions = questions.filter(
-          (q) => q.pillar === question.pillar
-        );
-        const totalPillarQuestions =
-          pillarQuestions.length > 0 ? pillarQuestions.length : 1;
-        pillars[pillarKey] += 100 / totalPillarQuestions;
-      }
-    });
-    return { overallPercentage: overall, pillarPercentages: pillars };
-  }, [answers]);
+  const handleSubmitAnswer = (answer: any) => {
+    if (currentQuestion) {
+      const token = getAuthToken();
+      submitAnswer(currentQuestion.id, answer, token || undefined);
+    }
+  };
 
-  const clarityThreshold = 80;
+  // The overall progress can now be an average of the pillar percentages
+  const overallPercentage =
+    (pillarProgress.career +
+      pillarProgress.financials +
+      pillarProgress.health +
+      pillarProgress.connections) /
+    4;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#16161a]">
@@ -60,24 +59,18 @@ const OnboardingQuestionnaire = () => {
             </p>
           </div>
 
-          <ClarityRings
-            progress={pillarPercentages}
-            threshold={clarityThreshold}
-          />
+          {/* --- MODIFIED --- Pass the new pillarProgress state from the store */}
+          <ClarityRings progress={pillarProgress} threshold={80} />
 
           <div className="mt-12">
-            {currentQuestion ? (
-              <QuestionBox
-                key={currentQuestion.id}
-                question={currentQuestion}
-                value={answers[currentQuestion.id]}
-                // --- THIS IS THE FIX: Pass all actions down as props ---
-                answerQuestion={answerQuestion}
-                nextQuestion={nextQuestion}
-                previousQuestion={previousQuestion}
-                isFirstQuestion={currentQuestionIndex === 0}
-              />
-            ) : (
+            {/* --- NEW --- Handle loading and completed states */}
+            {isLoading && (
+              <div className="text-center text-white py-10">
+                <h2 className="text-2xl font-bold">Loading...</h2>
+              </div>
+            )}
+
+            {isCompleted && (
               <div className="text-center text-white py-10">
                 <h2 className="text-2xl font-bold">Questionnaire Complete!</h2>
                 <p className="text-gray-400 mt-2">
@@ -85,9 +78,24 @@ const OnboardingQuestionnaire = () => {
                 </p>
               </div>
             )}
+
+            {/* Render the question box only when not loading, not completed, and a question exists */}
+            {!isLoading && !isCompleted && currentQuestion && (
+              <QuestionBox
+                key={currentQuestion.id} // The key is crucial for React to remount the component
+                question={currentQuestion}
+                value={answers[currentQuestion.id]}
+                // --- MODIFIED --- Pass a single onSubmit handler
+                onSubmit={handleSubmitAnswer}
+                isSubmitting={isLoading} // Pass loading state to disable the button
+              />
+            )}
           </div>
 
-          {currentQuestion && <OverallProgressBar value={overallPercentage} />}
+          {/* Only show the progress bar while the questionnaire is active */}
+          {!isCompleted && !isLoading && (
+            <OverallProgressBar value={overallPercentage} />
+          )}
         </div>
       </main>
     </div>

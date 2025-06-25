@@ -2,20 +2,20 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { YearPicker } from "@/components/ui/year-picker";
+import { ArrowRight } from "lucide-react";
+import { YearPicker } from "@/components/ui/year-picker"; // Assuming this is the correct path
 import { Question } from "@/store/onboardingQuestionnaireStore";
 import { cn } from "@/lib/utils";
 
+// --- This is the simplified props interface ---
 interface QuestionBoxProps {
   question: Question;
   value: any;
-  answerQuestion: (id: string, value: any) => void;
-  nextQuestion: () => void;
-  previousQuestion: () => void;
-  isFirstQuestion: boolean;
+  onSubmit: (answer: any) => void;
+  isSubmitting: boolean;
 }
 
+// --- The QuestionInput sub-component remains logically the same ---
 const QuestionInput = ({
   question,
   value,
@@ -33,7 +33,6 @@ const QuestionInput = ({
     onChange(newValue);
   };
 
-  // This useEffect ensures the slider value resets when the question changes
   useEffect(() => {
     setSliderValue(value);
   }, [value, question.id]);
@@ -146,13 +145,13 @@ const QuestionInput = ({
   }
 };
 
+
+// --- This is the simplified QuestionBox component ---
 const QuestionBox = ({
   question,
   value,
-  answerQuestion,
-  nextQuestion,
-  previousQuestion,
-  isFirstQuestion,
+  onSubmit,
+  isSubmitting,
 }: QuestionBoxProps) => {
   const [internalValue, setInternalValue] = useState(value);
 
@@ -161,8 +160,7 @@ const QuestionBox = ({
   }, [value, question.id]);
 
   const handleNext = () => {
-    answerQuestion(question.id, internalValue);
-    nextQuestion();
+    onSubmit(internalValue);
   };
 
   const isAnswered =
@@ -184,27 +182,15 @@ const QuestionBox = ({
         />
       </div>
 
-      <div className="flex flex-col-reverse sm:flex-row sm:justify-between items-center mt-8 gap-4 sm:gap-2">
-        <Button
-          variant="outline"
-          onClick={previousQuestion}
-          disabled={isFirstQuestion}
-          className="w-full sm:w-auto bg-transparent hover:bg-gray-800 text-gray-300 border-gray-700 hover:border-gray-600 disabled:opacity-50"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Previous
-        </Button>
+      <div className="flex justify-end items-center mt-8">
         <Button
           onClick={handleNext}
-          disabled={!isAnswered}
+          disabled={!isAnswered || isSubmitting}
           className="w-full sm:w-auto bg-gradient-cta text-white font-bold disabled:opacity-50"
         >
-          Next
+          {isSubmitting ? "Submitting..." : "Next"}
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
     </div>
   );
-};
-
-export default QuestionBox;
