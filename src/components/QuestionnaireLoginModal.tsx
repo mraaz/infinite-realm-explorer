@@ -1,94 +1,112 @@
-/*
-================================================================================
-File: /components/QuestionnaireLoginModal.tsx
-================================================================================
-- This is the corrected version of the modal.
-- It now correctly uses the base DialogTitle and DialogDescription components
-  to ensure text colors are readable on the dark theme.
-- All hardcoded text color classes (like text-gray-900) have been removed.
-*/
-import React from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import SocialLoginButtons from "@/components/SocialLoginButtons";
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // CORRECT import for your project
+import Header from "@/components/Header";
+import ClarityRings from "@/components/onboarding-questionnaire/ClarityRings";
+import QuestionBox from "@/components/onboarding-questionnaire/QuestionBox";
+import OverallProgressBar from "@/components/onboarding-questionnaire/OverallProgressBar";
+import { useOnboardingQuestionnaireStore } from "@/store/onboardingQuestionnaireStore";
 
-interface QuestionnaireLoginModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onContinueAsGuest: () => void;
-}
+// A simple utility to get the token from localStorage.
+const getAuthToken = () => localStorage.getItem("session_jwt");
 
-const QuestionnaireLoginModal = ({
-  open,
-  onOpenChange,
-  onContinueAsGuest,
-}: QuestionnaireLoginModalProps) => {
-  const handleLoginClick = () => {
-    // Close the modal before redirecting
-    onOpenChange(false);
+const OnboardingQuestionnaire = () => {
+  // CORRECT hook for your project's router
+  const navigate = useNavigate();
+
+  // Select all the necessary state and actions from our Zustand store
+  const {
+    currentQuestion,
+    answers,
+    pillarProgress,
+    isLoading,
+    isCompleted,
+    initializeQuestionnaire,
+    submitAnswer,
+  } = useOnboardingQuestionnaireStore();
+
+  // Effect to initialize the questionnaire when the component first loads
+  useEffect(() => {
+    const token = getAuthToken();
+    initializeQuestionnaire(token || undefined);
+  }, [initializeQuestionnaire]);
+
+  // Effect to handle redirection when the questionnaire is complete
+  useEffect(() => {
+    if (isCompleted) {
+      const redirectTimeout = setTimeout(() => {
+        // CORRECT way to navigate in your project
+        navigate("/results");
+      }, 2000);
+
+      return () => clearTimeout(redirectTimeout);
+    }
+  }, [isCompleted, navigate]);
+
+  // Handler to submit an answer via the store action
+  const handleSubmitAnswer = (answer: any) => {
+    if (currentQuestion) {
+      const token = getAuthToken();
+      submitAnswer(currentQuestion.id, answer, token || undefined);
+    }
   };
 
-  const handleContinueAsGuest = () => {
-    onContinueAsGuest();
-    onOpenChange(false);
-  };
+  const overallPercentage =
+    (pillarProgress.career +
+      pillarProgress.financials +
+      pillarProgress.health +
+      pillarProgress.connections) /
+    4;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader className="text-center space-y-4">
-          <div className="flex flex-col items-center justify-center text-center space-y-2">
-            <svg
-              className="h-8 w-8 text-purple-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
-              ></path>
-            </svg>
-            <DialogTitle>Save Your Progress!</DialogTitle>
-            <DialogDescription className="whitespace-pre-line">
-              This questionnaire takes about 5 minutes. Sign in to save your
-              answers and continue anytime. If you proceed as a guest, you'll
-              need to complete it all in one go.
-            </DialogDescription>
-          </div>
-        </DialogHeader>
-        <div className="pt-4 space-y-4">
-          <SocialLoginButtons onLoginClick={handleLoginClick} />
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-gray-700" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-[#1e1e24] px-2 text-gray-500">Or</span>
-            </div>
+    <div className="min-h-screen flex flex-col bg-[#16161a]">
+      <Header />
+      <main className="flex-grow flex flex-col items-center px-4 py-8 md:py-12">
+        <div className="w-full max-w-5xl">
+          <div className="text-center mb-12">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">
+              Building Your 5-Year Snapshot
+            </h1>
+            <p className="text-base sm:text-lg text-gray-400">
+              Complete each area to unlock your personalized insights.
+            </p>
           </div>
 
-          <Button
-            onClick={handleContinueAsGuest}
-            variant="outline"
-            className="w-full bg-transparent hover:bg-gray-800 text-gray-300 font-medium py-6 px-4 rounded-lg border border-gray-700 hover:border-gray-600 transition-all"
-          >
-            Continue as Guest
-          </Button>
+          <ClarityRings progress={pillarProgress} threshold={80} />
+
+          <div className="mt-12">
+            {isLoading && (
+              <div className="text-center text-white py-10">
+                <h2 className="text-2xl font-bold">Loading...</h2>
+              </div>
+            )}
+
+            {isCompleted && (
+              <div className="text-center text-white py-10">
+                <h2 className="text-2xl font-bold">Questionnaire Complete!</h2>
+                <p className="text-gray-400 mt-2">
+                  Taking you to your results...
+                </p>
+              </div>
+            )}
+
+            {!isLoading && !isCompleted && currentQuestion && (
+              <QuestionBox
+                key={currentQuestion.id}
+                question={currentQuestion}
+                value={answers[currentQuestion.id]}
+                onSubmit={handleSubmitAnswer}
+                isSubmitting={isLoading}
+              />
+            )}
+          </div>
+
+          {!isCompleted && !isLoading && (
+            <OverallProgressBar value={overallPercentage} />
+          )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </main>
+    </div>
   );
 };
 
-export default QuestionnaireLoginModal;
+export default OnboardingQuestionnaire;

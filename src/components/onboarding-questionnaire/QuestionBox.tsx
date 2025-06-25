@@ -3,19 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { ArrowRight } from "lucide-react";
-import { YearPicker } from "@/components/ui/year-picker"; // Assuming this is the correct path
+import { YearPicker } from "@/components/ui/year-picker";
 import { Question } from "@/store/onboardingQuestionnaireStore";
 import { cn } from "@/lib/utils";
 
-// --- This is the simplified props interface ---
-interface QuestionBoxProps {
-  question: Question;
-  value: any;
-  onSubmit: (answer: any) => void;
-  isSubmitting: boolean;
-}
-
-// --- The QuestionInput sub-component remains logically the same ---
+// This first component, QuestionInput, is complex but its logic does not need to change.
+// The syntax error likely came from an accidentally deleted brace here.
 const QuestionInput = ({
   question,
   value,
@@ -143,10 +136,16 @@ const QuestionInput = ({
         </p>
       );
   }
-};
+}; // <-- This closing brace and semicolon is crucial and was likely the source of the error.
 
+// --- This is the simplified component from our plan ---
+interface QuestionBoxProps {
+  question: Question;
+  value: any;
+  onSubmit: (answer: any) => void;
+  isSubmitting: boolean;
+}
 
-// --- This is the simplified QuestionBox component ---
 const QuestionBox = ({
   question,
   value,
@@ -194,3 +193,6 @@ const QuestionBox = ({
       </div>
     </div>
   );
+};
+
+export default QuestionBox;
