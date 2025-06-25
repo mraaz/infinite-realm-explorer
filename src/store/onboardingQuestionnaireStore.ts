@@ -22,11 +22,10 @@ export interface PillarProgress {
 // Hardcode the first question for guest users.
 // This avoids an API call for non-logged-in users.
 const GUEST_USER_FIRST_QUESTION: Question = {
-  id: "career_fulfillment_q1",
-  question: "On a typical day, how energised do you feel by your work?",
-  type: "slider",
-  section: "career_fulfillment",
-  sliderLabels: { min: "Drained", max: "Energised" },
+  id: "dob",
+  question: "`To better understand your life`, what year were you born?",
+  type: "year",
+  section: "basics",
 };
 
 // Define the complete shape of our state and actions
