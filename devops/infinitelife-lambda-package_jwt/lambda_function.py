@@ -31,13 +31,20 @@ CORS_HEADERS = {
 # --- Helper Functions ---
 def get_user_from_jwt(event):
     headers = event.get('headers') or {}
-    auth_header = headers.get('Authorization') or headers.get('authorization')
+    # Handle case-insensitive headers from API Gateway
+    auth_header = None
+    for key, value in headers.items():
+        if key.lower() == 'authorization':
+            auth_header = value
+            break
+    
     if not auth_header or not auth_header.startswith('Bearer '):
         return None
     try:
         token = auth_header.split(' ')[1]
         return jwt.decode(token, JWT_SECRET_KEY, algorithms=['HS256'])
-    except Exception:
+    except Exception as e:
+        print(f"JWT decode error: {e}")
         return None
 
 def calculate_score(question, answer):
@@ -171,8 +178,14 @@ def lambda_handler(event, context):
         body = {}
         if http_method == 'POST' and event.get('body'):
             try:
-                body = json.loads(event['body'])
-            except json.JSONDecodeError:
+                # Handle base64 encoded body from API Gateway if needed
+                body_content = event['body']
+                if event.get('isBase64Encoded', False):
+                    import base64
+                    body_content = base64.b64decode(body_content).decode('utf-8')
+                body = json.loads(body_content)
+            except json.JSONDecodeError as e:
+                print(f"JSON decode error: {e}")
                 return {
                     'statusCode': 400,
                     'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'},
