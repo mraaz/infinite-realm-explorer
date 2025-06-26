@@ -1,0 +1,343 @@
+{
+  "question_flow": [
+    "dob",
+    "career_fulfillment_q1",
+    "career_fulfillment_q2",
+    "career_fulfillment_q3",
+    "career_fulfillment_q4",
+    "career_fulfillment_q5",
+    "career_fulfillment_q6",
+    "career_fulfillment_q7",
+    "career_balance_q1",
+    "career_balance_q2",
+    "career_balance_q3",
+    "career_balance_q4",
+    "career_balance_q5",
+    "career_balance_q6",
+    "career_balance_q7",
+    "career_balance_q8",
+    "career_salary_q1",
+    "career_salary_q2",
+    "career_salary_q3",
+    "career_salary_q4",
+    "career_salary_q5",
+    "career_salary_q6",
+    "career_salary_q7",
+    "career_growth_q1",
+    "career_growth_q2",
+    "career_growth_q3",
+    "career_growth_q4",
+    "career_growth_q5",
+    "career_growth_q6",
+    "career_growth_q7"
+  ],
+  "section_flow": [
+    "basics",
+    "career_fulfillment",
+    "career_balance",
+    "career_salary",
+    "career_growth"
+  ],
+  "sections": {
+    "basics": {
+      "total_points": 0,
+      "adaptive_trigger_questions": [],
+      "adaptive_max_score": 0,
+      "questions": ["dob"]
+    },
+    "career_fulfillment": {
+      "total_points": 25,
+      "adaptive_trigger_questions": ["career_fulfillment_q4"],
+      "adaptive_max_score": 17,
+      "questions": [
+        "career_fulfillment_q1",
+        "career_fulfillment_q2",
+        "career_fulfillment_q3",
+        "career_fulfillment_q4",
+        "career_fulfillment_q5",
+        "career_fulfillment_q6",
+        "career_fulfillment_q7"
+      ]
+    },
+    "career_balance": {
+      "total_points": 25,
+      "adaptive_trigger_questions": ["career_balance_q4"],
+      "adaptive_max_score": 15,
+      "questions": [
+        "career_balance_q1",
+        "career_balance_q2",
+        "career_balance_q3",
+        "career_balance_q4",
+        "career_balance_q5",
+        "career_balance_q6",
+        "career_balance_q7",
+        "career_balance_q8"
+      ]
+    },
+    "career_salary": {
+      "total_points": 25,
+      "adaptive_trigger_questions": ["career_salary_q4"],
+      "adaptive_max_score": 17,
+      "questions": [
+        "career_salary_q1",
+        "career_salary_q2",
+        "career_salary_q3",
+        "career_salary_q4",
+        "career_salary_q5",
+        "career_salary_q6",
+        "career_salary_q7"
+      ]
+    },
+    "career_growth": {
+      "total_points": 25,
+      "adaptive_trigger_questions": ["career_growth_q4"],
+      "adaptive_max_score": 16,
+      "questions": [
+        "career_growth_q1",
+        "career_growth_q2",
+        "career_growth_q3",
+        "career_growth_q4",
+        "career_growth_q5",
+        "career_growth_q6",
+        "career_growth_q7"
+      ]
+    }
+  },
+  "questions": {
+    "dob": {
+      "id": "dob",
+      "question": "To better understand your life, what year were you born?",
+      "type": "year",
+      "section": "basics",
+      "scoring": { "points": 0 }
+    },
+    "career_fulfillment_q1": {
+      "id": "career_fulfillment_q1",
+      "question": "On a typical day, how energised do you feel by your work?",
+      "type": "slider",
+      "section": "career_fulfillment",
+      "scoring": { "points": 5 }
+    },
+    "career_fulfillment_q2": {
+      "id": "career_fulfillment_q2",
+      "question": "How well does your role align with your personal values and interests?",
+      "type": "slider",
+      "section": "career_fulfillment",
+      "scoring": { "points": 5 }
+    },
+    "career_fulfillment_q3": {
+      "id": "career_fulfillment_q3",
+      "question": "How much autonomy or control do you have over your daily work?",
+      "type": "slider",
+      "section": "career_fulfillment",
+      "scoring": { "points": 4 }
+    },
+    "career_fulfillment_q4": {
+      "id": "career_fulfillment_q4",
+      "question": "When you describe your job to others, do you feel a sense of pride?",
+      "type": "yes-no",
+      "section": "career_fulfillment",
+      "scoring": { "points": 3, "target_answer": "yes" }
+    },
+    "career_fulfillment_q5": {
+      "id": "career_fulfillment_q5",
+      "question": "Does your work challenge you in a positive and engaging way?",
+      "type": "yes-no",
+      "section": "career_fulfillment",
+      "scoring": { "points": 2, "target_answer": "yes" }
+    },
+    "career_fulfillment_q6": {
+      "id": "career_fulfillment_q6",
+      "question": "Do you feel recognised and appreciated by your colleagues or manager?",
+      "type": "yes-no",
+      "section": "career_fulfillment",
+      "scoring": { "points": 3, "target_answer": "yes" }
+    },
+    "career_fulfillment_q7": {
+      "id": "career_fulfillment_q7",
+      "question": "Do you feel connected to your team or workplace culture in a meaningful way?",
+      "type": "yes-no",
+      "section": "career_fulfillment",
+      "scoring": { "points": 3, "target_answer": "yes" }
+    },
+
+    "career_balance_q1": {
+      "id": "career_balance_q1",
+      "question": "After your workday ends, how easily can you mentally disconnect from work-related thoughts?",
+      "type": "slider",
+      "section": "career_balance",
+      "scoring": { "points": 4 }
+    },
+    "career_balance_q2": {
+      "id": "career_balance_q2",
+      "question": "How often do you work or check emails outside of your planned working hours?",
+      "type": "multiple-choice",
+      "section": "career_balance",
+      "scoring": {
+        "Daily": 0,
+        "A few times a week": 1,
+        "Once a week": 2,
+        "Rarely": 3,
+        "Never": 4
+      }
+    },
+    "career_balance_q3": {
+      "id": "career_balance_q3",
+      "question": "Do you feel like you have enough time for personal interests, hobbies, or downtime?",
+      "type": "yes-no",
+      "section": "career_balance",
+      "scoring": { "points": 4, "target_answer": "yes" }
+    },
+    "career_balance_q4": {
+      "id": "career_balance_q4",
+      "question": "Does your current work routine feel healthy and sustainable long-term?",
+      "type": "yes-no",
+      "section": "career_balance",
+      "scoring": { "points": 3, "target_answer": "yes" }
+    },
+    "career_balance_q5": {
+      "id": "career_balance_q5",
+      "question": "Do you feel guilt or anxiety when you take time off or are unavailable for work?",
+      "type": "yes-no",
+      "section": "career_balance",
+      "scoring": { "points": 3, "target_answer": "no" }
+    },
+    "career_balance_q6": {
+      "id": "career_balance_q6",
+      "question": "How much control do you feel you have over your daily schedule and workload?",
+      "type": "slider",
+      "section": "career_balance",
+      "scoring": { "points": 3 }
+    },
+    "career_balance_q7": {
+      "id": "career_balance_q7",
+      "question": "Have your personal relationships been negatively impacted by your work?",
+      "type": "yes-no",
+      "section": "career_balance",
+      "scoring": { "points": 2, "target_answer": "no" }
+    },
+    "career_balance_q8": {
+      "id": "career_balance_q8",
+      "question": "If a personal matter comes up during work hours, how easy is it for you to handle it?",
+      "type": "multiple-choice",
+      "section": "career_balance",
+      "scoring": {
+        "Very easy": 2,
+        "Manageable": 1,
+        "Difficult": 0.5,
+        "Impossible": 0
+      }
+    },
+
+    "career_salary_q1": {
+      "id": "career_salary_q1",
+      "question": "Based on market benchmarks, how do you believe your salary compares?",
+      "type": "multiple-choice",
+      "section": "career_salary",
+      "scoring": {
+        "Well Above Market": 5,
+        "Slightly Above": 4,
+        "At Market Rate": 3,
+        "Slightly Below": 1,
+        "Well Below Market": 0
+      }
+    },
+    "career_salary_q2": {
+      "id": "career_salary_q2",
+      "question": "Considering your responsibilities, how fairly are you compensated?",
+      "type": "slider",
+      "section": "career_salary",
+      "scoring": { "points": 5 }
+    },
+    "career_salary_q3": {
+      "id": "career_salary_q3",
+      "question": "How satisfied are you with your total compensation package?",
+      "type": "slider",
+      "section": "career_salary",
+      "scoring": { "points": 4 }
+    },
+    "career_salary_q4": {
+      "id": "career_salary_q4",
+      "question": "Is there a clear process for salary reviews at your company?",
+      "type": "yes-no",
+      "section": "career_salary",
+      "scoring": { "points": 3, "target_answer": "yes" }
+    },
+    "career_salary_q5": {
+      "id": "career_salary_q5",
+      "question": "Does your compensation allow you to meet financial goals without stress?",
+      "type": "yes-no",
+      "section": "career_salary",
+      "scoring": { "points": 4, "target_answer": "yes" }
+    },
+    "career_salary_q6": {
+      "id": "career_salary_q6",
+      "question": "Has your salary kept pace with your workload over time?",
+      "type": "yes-no",
+      "section": "career_salary",
+      "scoring": { "points": 2, "target_answer": "yes" }
+    },
+    "career_salary_q7": {
+      "id": "career_salary_q7",
+      "question": "Is your compensation aligned with the value you bring?",
+      "type": "slider",
+      "section": "career_salary",
+      "scoring": { "points": 2 }
+    },
+
+    "career_growth_q1": {
+      "id": "career_growth_q1",
+      "question": "Do you have a clear idea of your next career step?",
+      "type": "yes-no",
+      "section": "career_growth",
+      "scoring": { "points": 4, "target_answer": "yes" }
+    },
+    "career_growth_q2": {
+      "id": "career_growth_q2",
+      "question": "When did you last learn a new, relevant skill?",
+      "type": "multiple-choice",
+      "section": "career_growth",
+      "scoring": {
+        "This month": 4,
+        "This quarter": 3,
+        "This year": 2,
+        "More than a year ago": 0
+      }
+    },
+    "career_growth_q3": {
+      "id": "career_growth_q3",
+      "question": "Do you actively stay up to date with trends in your field?",
+      "type": "multiple-choice",
+      "section": "career_growth",
+      "scoring": { "Yes, actively": 4, "Somewhat": 2, "Not really": 0 }
+    },
+    "career_growth_q4": {
+      "id": "career_growth_q4",
+      "question": "Do you regularly make time for self-learning?",
+      "type": "yes-no",
+      "section": "career_growth",
+      "scoring": { "points": 4, "target_answer": "yes" }
+    },
+    "career_growth_q5": {
+      "id": "career_growth_q5",
+      "question": "Do you know what would make your skills obsolete in 5 years?",
+      "type": "yes-no",
+      "section": "career_growth",
+      "scoring": { "points": 3, "target_answer": "yes" }
+    },
+    "career_growth_q6": {
+      "id": "career_growth_q6",
+      "question": "Are there visible pathways for progression in your company?",
+      "type": "yes-no",
+      "section": "career_growth",
+      "scoring": { "points": 3, "target_answer": "yes" }
+    },
+    "career_growth_q7": {
+      "id": "career_growth_q7",
+      "question": "How valuable is the feedback you receive for professional growth?",
+      "type": "slider",
+      "section": "career_growth",
+      "scoring": { "points": 3 }
+    }
+  }
+}
