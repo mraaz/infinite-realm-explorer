@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { API_GATEWAY_URL } from '@/config/api';
 
 export const useSocialAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,9 +12,6 @@ export const useSocialAuth = () => {
     const GOOGLE_CLIENT_ID = '641437646622-n482j0ta8p8f3qbp83pd3gambq2ck4kv.apps.googleusercontent.com';
     const DISCORD_CLIENT_ID = '1385860077050658926';
     const FACEBOOK_CLIENT_ID = 'YOUR_FACEBOOK_APP_ID_HERE';
-    
-    // This is your live AWS API Gateway URL.
-    const API_GATEWAY_URL = 'https://ffwkwcix01.execute-api.us-east-1.amazonaws.com/prod';
 
     let loginUrl;
 

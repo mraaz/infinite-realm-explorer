@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { API_GATEWAY_URL } from "@/config/api";
 
 // Define the shape of a single question
 export interface Question {
@@ -66,7 +67,7 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
       if (authToken) {
         set({ isLoading: true });
         try {
-          const response = await fetch(`${API_BASE_URL}/state`, {
+          const response = await fetch(`${API_GATEWAY_URL}/state`, {
             method: "GET",
             headers: { Authorization: `Bearer ${authToken}` },
           });
@@ -116,7 +117,7 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
       };
 
       try {
-        const response = await fetch(`${API_BASE_URL}/answer`, {
+        const response = await fetch(`${API_GATEWAY_URL}/answer`, {
           method: "POST",
           headers,
           body: JSON.stringify({ questionId, answer }),
@@ -149,7 +150,7 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
       if (Object.keys(answers).length === 0) return;
 
       try {
-        await fetch(`${API_BASE_URL}/save-progress`, {
+        await fetch(`${API_GATEWAY_URL}/save-progress`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
