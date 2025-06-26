@@ -26,7 +26,8 @@ except FileNotFoundError:
 CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type,Authorization,x-client-info,apikey',
-    'Access-Control-Allow-Methods': 'POST,OPTIONS,GET'
+    'Access-Control-Allow-Methods': 'POST,OPTIONS,GET',
+    'Content-Type': 'application/json'
 }
 
 # --- Helper Functions ---
@@ -154,19 +155,8 @@ def handle_get_state(user):
 def lambda_handler(event, context):
     print("Received event: " + json.dumps(event, indent=2))
     
-    # --- Handle CORS preflight requests FIRST ---
-    # Check multiple possible ways the HTTP method might be passed
-    http_method = (
-        event.get('httpMethod') or 
-        event.get('requestContext', {}).get('httpMethod') or
-        event.get('requestContext', {}).get('http', {}).get('method') or
-        'POST'  # Default fallback
-    )
-    
-    print(f"Detected HTTP method: {http_method}")
-    
-    # Handle OPTIONS preflight request immediately
-    if http_method == 'OPTIONS':
+    # Handle CORS preflight requests immediately - this MUST be first
+    if event.get('httpMethod') == 'OPTIONS' or event.get('requestContext', {}).get('httpMethod') == 'OPTIONS' or event.get('requestContext', {}).get('http', {}).get('method') == 'OPTIONS':
         print("Handling OPTIONS preflight request")
         return {
             'statusCode': 200,
