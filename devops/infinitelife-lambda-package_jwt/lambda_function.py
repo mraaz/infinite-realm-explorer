@@ -79,8 +79,6 @@ def calculate_pillar_progress(user_state, questions_config):
     return pillar_percentages
 
 # --- Main Logic Handlers ---
-# ... keep existing code (handle_answer, handle_save_progress, handle_get_state functions) the same ...
-
 def handle_answer(event_body, user):
     question_id = event_body.get('questionId')
     answer = event_body.get('answer')
