@@ -1,3 +1,4 @@
+
 import json
 import os
 import jwt
@@ -21,11 +22,10 @@ except FileNotFoundError:
     QUESTIONS_CONFIG = {"questions": {}, "sections": {}, "question_flow": [], "section_flow": []}
 
 # --- CORS Headers ---
-# Central place for all CORS headers to ensure consistency.
 CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-    'Access-Control-Allow-Methods': 'POST,OPTIONS'
+    'Access-Control-Allow-Methods': 'POST,GET,OPTIONS'
 }
 
 # --- Helper Functions ---
@@ -82,10 +82,10 @@ def handle_answer(event_body, user):
     question_id = event_body.get('questionId')
     answer = event_body.get('answer')
     if not question_id or answer is None:
-        return {'statusCode': 400, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'questionId and answer are required'})}
+        return {'statusCode': 400, 'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'}, 'body': json.dumps({'error': 'questionId and answer are required'})}
     question_data = QUESTIONS_CONFIG['questions'].get(question_id)
     if not question_data:
-        return {'statusCode': 404, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Question not found'})}
+        return {'statusCode': 404, 'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'}, 'body': json.dumps({'error': 'Question not found'})}
     user_state = {'answers': {}, 'section_scores': {}, 'completed_sections': []}
     if user:
         try:
@@ -108,10 +108,10 @@ def handle_answer(event_body, user):
     if next_question_id:
         next_question_data = QUESTIONS_CONFIG['questions'][next_question_id]
         response_body = {'nextQuestion': next_question_data, 'pillarProgress': progress}
-        return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': json.dumps(response_body)}
+        return {'statusCode': 200, 'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'}, 'body': json.dumps(response_body)}
     else:
         response_body = {'status': 'completed', 'finalScores': user_state['section_scores'], 'pillarProgress': progress}
-        return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': json.dumps(response_body)}
+        return {'statusCode': 200, 'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'}, 'body': json.dumps(response_body)}
 
 def handle_save_progress(event_body, user):
     answers = event_body.get('answers', {})
@@ -129,7 +129,7 @@ def handle_save_progress(event_body, user):
     progress = calculate_pillar_progress(user_state, QUESTIONS_CONFIG)
     user_state['pillarProgress'] = progress
     table.put_item(Item=user_state)
-    return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': json.dumps(user_state)}
+    return {'statusCode': 200, 'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'}, 'body': json.dumps(user_state)}
 
 def handle_get_state(user):
     try:
@@ -138,53 +138,79 @@ def handle_get_state(user):
             user_state = response['Item']
             progress = calculate_pillar_progress(user_state, QUESTIONS_CONFIG)
             user_state['pillarProgress'] = progress
-            return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': json.dumps(user_state)}
+            return {'statusCode': 200, 'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'}, 'body': json.dumps(user_state)}
         else:
             first_question_id = QUESTIONS_CONFIG['question_flow'][0]
             first_question = QUESTIONS_CONFIG['questions'][first_question_id]
             initial_progress = calculate_pillar_progress({}, QUESTIONS_CONFIG)
             response_body = {'nextQuestion': first_question, 'pillarProgress': initial_progress}
-            return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': json.dumps(response_body)}
+            return {'statusCode': 200, 'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'}, 'body': json.dumps(response_body)}
     except Exception as e:
         print(f"Error getting state: {e}")
-        return {'statusCode': 500, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Could not retrieve state'})}
+        return {'statusCode': 500, 'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'}, 'body': json.dumps({'error': 'Could not retrieve state'})}
 
 # --- Lambda Entry Point ---
 def lambda_handler(event, context):
     print("Lambda invoked. Event: " + json.dumps(event, indent=2))
     
     try:
-        # Robustly check for the OPTIONS preflight request first.
-        if event.get('requestContext', {}).get('http', {}).get('method') == 'OPTIONS':
+        # Handle API Gateway event structure
+        http_method = event.get('httpMethod', '')
+        path = event.get('path', '')
+        
+        # Handle OPTIONS preflight request for CORS
+        if http_method == 'OPTIONS':
             print("Handling OPTIONS preflight request. Returning CORS headers.")
             return {
                 'statusCode': 200,
                 'headers': CORS_HEADERS,
-                'body': json.dumps({'message': 'CORS preflight check successful'})
+                'body': ''
             }
 
-        # If it's not OPTIONS, it must be a POST request.
-        body = json.loads(event.get('body', '{}'))
-        action = body.get('action')
-        payload = body.get('payload', {})
+        # Parse request body for POST requests
+        body = {}
+        if http_method == 'POST' and event.get('body'):
+            try:
+                body = json.loads(event['body'])
+            except json.JSONDecodeError:
+                return {
+                    'statusCode': 400,
+                    'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'},
+                    'body': json.dumps({'error': 'Invalid JSON body'})
+                }
+
         user = get_user_from_jwt(event)
 
-        if action in ['saveProgress', 'getState'] and not user:
-            return {'statusCode': 401, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Authentication required'})}
-
-        if action == 'submitAnswer':
-            return handle_answer(payload, user)
-        elif action == 'saveProgress':
-            return handle_save_progress(payload, user)
-        elif action == 'getState':
+        # Route based on path and method
+        if path == '/questionnaire/answer' and http_method == 'POST':
+            return handle_answer(body, user)
+        elif path == '/questionnaire/save-progress' and http_method == 'POST':
+            if not user:
+                return {
+                    'statusCode': 401,
+                    'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'},
+                    'body': json.dumps({'error': 'Authentication required'})
+                }
+            return handle_save_progress(body, user)
+        elif path == '/questionnaire/state' and http_method == 'GET':
+            if not user:
+                return {
+                    'statusCode': 401,
+                    'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'},
+                    'body': json.dumps({'error': 'Authentication required'})
+                }
             return handle_get_state(user)
         else:
-            return {'statusCode': 404, 'headers': CORS_HEADERS, 'body': json.dumps({'error': f"Action '{action}' not recognized."})}
+            return {
+                'statusCode': 404,
+                'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'},
+                'body': json.dumps({'error': f"Endpoint {path} with method {http_method} not found"})
+            }
 
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         return {
             'statusCode': 500,
-            'headers': CORS_HEADERS,
+            'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'},
             'body': json.dumps({'error': f'An internal server error occurred: {str(e)}'})
         }

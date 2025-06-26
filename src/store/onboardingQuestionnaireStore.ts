@@ -40,9 +40,8 @@ interface QuestionnaireState {
   saveGuestProgressAfterLogin: (authToken: string) => Promise<void>;
 }
 
-// The URL is now just the root Function URL
-const API_BASE_URL =
-  "https://dndhqnh4ycs43x47snnbysmrgy0bafsb.lambda-url.us-east-1.on.aws/";
+// Updated to use API Gateway URL
+const API_BASE_URL = "https://ffwkwcix01.execute-api.us-east-1.amazonaws.com/prod";
 
 export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
   (set, get) => ({
@@ -58,14 +57,13 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
       if (authToken) {
         set({ isLoading: true });
         try {
-          // --- MODIFIED --- No longer calling `/state`
-          const response = await fetch(API_BASE_URL, {
-            method: "POST", // Changed to POST to send a body
+          // Changed to GET request to /questionnaire/state
+          const response = await fetch(`${API_BASE_URL}/questionnaire/state`, {
+            method: "GET",
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${authToken}`,
             },
-            body: JSON.stringify({ action: "getState" }), // Send action in body
           });
           const data = await response.json();
           set({
@@ -113,15 +111,11 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
       };
 
       try {
-        // --- MODIFIED --- No longer calling `/answer`
-        const response = await fetch(API_BASE_URL, {
+        // Changed to POST request to /questionnaire/answer with direct payload
+        const response = await fetch(`${API_BASE_URL}/questionnaire/answer`, {
           method: "POST",
           headers,
-          // --- MODIFIED --- Send action and payload together
-          body: JSON.stringify({
-            action: "submitAnswer",
-            payload: { questionId, answer },
-          }),
+          body: JSON.stringify({ questionId, answer }),
         });
         const data = await response.json();
 
@@ -151,18 +145,14 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
       if (Object.keys(answers).length === 0) return;
 
       try {
-        // --- MODIFIED --- No longer calling `/save-progress`
-        await fetch(API_BASE_URL, {
+        // Changed to POST request to /questionnaire/save-progress with direct payload
+        await fetch(`${API_BASE_URL}/questionnaire/save-progress`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${authToken}`,
           },
-          // --- MODIFIED --- Send action and payload together
-          body: JSON.stringify({
-            action: "saveProgress",
-            payload: { answers },
-          }),
+          body: JSON.stringify({ answers }),
         });
         get().initializeQuestionnaire(authToken);
       } catch (error) {
