@@ -1,4 +1,3 @@
-
 import json
 import os
 import jwt
@@ -25,9 +24,8 @@ except FileNotFoundError:
 # Central place for all CORS headers to ensure consistency.
 CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type,Authorization,x-client-info,apikey',
-    'Access-Control-Allow-Methods': 'POST,OPTIONS,GET',
-    'Content-Type': 'application/json'
+    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+    'Access-Control-Allow-Methods': 'POST,OPTIONS'
 }
 
 # --- Helper Functions ---
@@ -153,19 +151,19 @@ def handle_get_state(user):
 
 # --- Lambda Entry Point ---
 def lambda_handler(event, context):
-    print("Received event: " + json.dumps(event, indent=2))
+    print("Lambda invoked. Event: " + json.dumps(event, indent=2))
     
-    # Handle CORS preflight requests immediately - this MUST be first
-    if event.get('httpMethod') == 'OPTIONS' or event.get('requestContext', {}).get('httpMethod') == 'OPTIONS' or event.get('requestContext', {}).get('http', {}).get('method') == 'OPTIONS':
-        print("Handling OPTIONS preflight request")
-        return {
-            'statusCode': 200,
-            'headers': CORS_HEADERS,
-            'body': ''
-        }
-
-    # Process the actual request
     try:
+        # Robustly check for the OPTIONS preflight request first.
+        if event.get('requestContext', {}).get('http', {}).get('method') == 'OPTIONS':
+            print("Handling OPTIONS preflight request. Returning CORS headers.")
+            return {
+                'statusCode': 200,
+                'headers': CORS_HEADERS,
+                'body': json.dumps({'message': 'CORS preflight check successful'})
+            }
+
+        # If it's not OPTIONS, it must be a POST request.
         body = json.loads(event.get('body', '{}'))
         action = body.get('action')
         payload = body.get('payload', {})
@@ -188,5 +186,5 @@ def lambda_handler(event, context):
         return {
             'statusCode': 500,
             'headers': CORS_HEADERS,
-            'body': json.dumps({'error': 'An internal server error occurred.'})
+            'body': json.dumps({'error': f'An internal server error occurred: {str(e)}'})
         }
