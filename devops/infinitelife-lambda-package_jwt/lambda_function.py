@@ -83,11 +83,9 @@ def handle_answer(event_body, user):
     answer = event_body.get('answer')
     if not question_id or answer is None:
         return {'statusCode': 400, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'questionId and answer are required'})}
-    
     question_data = QUESTIONS_CONFIG['questions'].get(question_id)
     if not question_data:
         return {'statusCode': 404, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Question not found'})}
-        
     user_state = {'answers': {}, 'section_scores': {}, 'completed_sections': []}
     if user:
         try:
@@ -96,21 +94,17 @@ def handle_answer(event_body, user):
                 user_state = response['Item']
         except Exception as e:
             print(f"Error fetching user state: {e}")
-            
     user_state['answers'][question_id] = answer
     score = calculate_score(question_data, answer)
     section_id = question_data.get('section', 'unknown')
     user_state['section_scores'][section_id] = user_state['section_scores'].get(section_id, 0) + score
     next_question_id = get_next_question_id(question_id)
-    
     if user:
         user_state['userId'] = user['sub']
         user_state['lastQuestionId'] = next_question_id if next_question_id else 'completed'
         user_state['updatedAt'] = datetime.now(timezone.utc).isoformat()
         table.put_item(Item=user_state)
-        
     progress = calculate_pillar_progress(user_state, QUESTIONS_CONFIG)
-    
     if next_question_id:
         next_question_data = QUESTIONS_CONFIG['questions'][next_question_id]
         response_body = {'nextQuestion': next_question_data, 'pillarProgress': progress}
@@ -155,15 +149,18 @@ def handle_get_state(user):
         print(f"Error getting state: {e}")
         return {'statusCode': 500, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Could not retrieve state'})}
 
-
 # --- Lambda Entry Point ---
 def lambda_handler(event, context):
     print("Received event: " + json.dumps(event, indent=2))
     
-    http_method = event.get('requestContext', {}).get('http', {}).get('method')
+    # --- THIS IS THE CORRECTED FIX BASED ON YOUR DIAGNOSIS ---
+    # The key is 'httpMethod' inside 'requestContext', not 'http'.
+    request_context = event.get('requestContext', {})
+    http_method = request_context.get('http', {}).get('method')
     
     # Handle the browser's preflight OPTIONS request first.
     if http_method == 'OPTIONS':
+        print("Handling OPTIONS preflight request")
         return {
             'statusCode': 200,
             'headers': CORS_HEADERS,
@@ -172,23 +169,27 @@ def lambda_handler(event, context):
 
     # If not OPTIONS, proceed with processing the POST request.
     try:
-        body = json.loads(event.get('body', '{}')) if isinstance(event.get('body'), str) else event.get('body', {})
-    except (json.JSONDecodeError, TypeError):
-        return {'statusCode': 400, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Invalid JSON in request body'})}
+        body = json.loads(event.get('body', '{}'))
+        action = body.get('action')
+        payload = body.get('payload', {})
+        user = get_user_from_jwt(event)
 
-    action = body.get('action')
-    payload = body.get('payload', {})
-    user = get_user_from_jwt(event)
+        if action in ['saveProgress', 'getState'] and not user:
+            return {'statusCode': 401, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Authentication required'})}
 
-    # All handlers need a user object, except for anonymous answer submissions
-    if action in ['saveProgress', 'getState'] and not user:
-         return {'statusCode': 401, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Authentication required'})}
+        if action == 'submitAnswer':
+            return handle_answer(payload, user)
+        elif action == 'saveProgress':
+            return handle_save_progress(payload, user)
+        elif action == 'getState':
+            return handle_get_state(user)
+        else:
+            return {'statusCode': 404, 'headers': CORS_HEADERS, 'body': json.dumps({'error': f"Action '{action}' not recognized."})}
 
-    if action == 'submitAnswer':
-        return handle_answer(payload, user)
-    elif action == 'saveProgress':
-        return handle_save_progress(payload, user)
-    elif action == 'getState':
-        return handle_get_state(user)
-    else:
-        return {'statusCode': 404, 'headers': CORS_HEADERS, 'body': json.dumps({'error': f"Action '{action}' not recognized."})}
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return {
+            'statusCode': 500,
+            'headers': CORS_HEADERS,
+            'body': json.dumps({'error': 'An internal server error occurred.'})
+        }
