@@ -1,3 +1,4 @@
+
 import json
 import os
 import jwt
@@ -78,6 +79,8 @@ def calculate_pillar_progress(user_state, questions_config):
     return pillar_percentages
 
 # --- Main Logic Handlers ---
+# ... keep existing code (handle_answer, handle_save_progress, handle_get_state functions) the same ...
+
 def handle_answer(event_body, user):
     question_id = event_body.get('questionId')
     answer = event_body.get('answer')
@@ -153,10 +156,14 @@ def handle_get_state(user):
 def lambda_handler(event, context):
     print("Received event: " + json.dumps(event, indent=2))
     
-    # --- THIS IS THE CORRECTED FIX BASED ON YOUR DIAGNOSIS ---
-    # The key is 'httpMethod' inside 'requestContext', not 'http'.
-    request_context = event.get('requestContext', {})
-    http_method = request_context.get('http', {}).get('method')
+    # --- UPDATED: More robust HTTP method detection for AWS Lambda Function URLs ---
+    http_method = (
+        event.get('httpMethod') or 
+        event.get('requestContext', {}).get('httpMethod') or
+        event.get('requestContext', {}).get('http', {}).get('method')
+    )
+    
+    print(f"Detected HTTP method: {http_method}")
     
     # Handle the browser's preflight OPTIONS request first.
     if http_method == 'OPTIONS':
