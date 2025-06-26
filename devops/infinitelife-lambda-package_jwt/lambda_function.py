@@ -25,8 +25,8 @@ except FileNotFoundError:
 # Central place for all CORS headers to ensure consistency.
 CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-    'Access-Control-Allow-Methods': 'POST,OPTIONS'
+    'Access-Control-Allow-Headers': 'Content-Type,Authorization,x-client-info,apikey',
+    'Access-Control-Allow-Methods': 'POST,OPTIONS,GET'
 }
 
 # --- Helper Functions ---
@@ -154,16 +154,18 @@ def handle_get_state(user):
 def lambda_handler(event, context):
     print("Received event: " + json.dumps(event, indent=2))
     
-    # --- UPDATED: More robust HTTP method detection for AWS Lambda Function URLs ---
+    # --- Handle CORS preflight requests FIRST ---
+    # Check multiple possible ways the HTTP method might be passed
     http_method = (
         event.get('httpMethod') or 
         event.get('requestContext', {}).get('httpMethod') or
-        event.get('requestContext', {}).get('http', {}).get('method')
+        event.get('requestContext', {}).get('http', {}).get('method') or
+        'POST'  # Default fallback
     )
     
     print(f"Detected HTTP method: {http_method}")
     
-    # Handle the browser's preflight OPTIONS request first.
+    # Handle OPTIONS preflight request immediately
     if http_method == 'OPTIONS':
         print("Handling OPTIONS preflight request")
         return {
@@ -172,7 +174,7 @@ def lambda_handler(event, context):
             'body': ''
         }
 
-    # If not OPTIONS, proceed with processing the POST request.
+    # Process the actual request
     try:
         body = json.loads(event.get('body', '{}'))
         action = body.get('action')
