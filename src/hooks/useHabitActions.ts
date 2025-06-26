@@ -7,7 +7,6 @@ import { FutureQuestionnaire } from '@/types/results';
 import { updateHabitWithStreak } from '@/utils/habitUtils';
 
 export const useHabitActions = () => {
-  const { actions } = useOnboardingQuestionnaireStore();
   const { fire } = useFireworks();
   const { toast } = useToast();
 

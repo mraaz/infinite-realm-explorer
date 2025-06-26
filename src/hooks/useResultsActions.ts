@@ -7,7 +7,6 @@ import { useNavigationActions } from './useNavigationActions';
 import { useHabitActions } from './useHabitActions';
 
 export const useResultsActions = (futureQuestionnaire: FutureQuestionnaire | undefined, progress: PillarProgress) => {
-    const { actions } = useOnboardingQuestionnaireStore();
     const { navigateToRetake, navigateToFutureQuestionnaire, navigateToResults } = useNavigationActions(progress);
     const { markHabitAsDone, updateHabitStreak } = useHabitActions();
 

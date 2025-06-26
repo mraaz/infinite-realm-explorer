@@ -109,7 +109,7 @@ const QuestionInput = ({
   }
 };
 
-// This is the main QuestionBox component.
+// This is the main QuestionBox component - simplified to work with the current store
 const QuestionBox = ({
   question,
   value,
@@ -117,24 +117,14 @@ const QuestionBox = ({
   question: Question;
   value: any;
 }) => {
-  const { actions } = useOnboardingQuestionnaireStore();
+  const { submitAnswer } = useOnboardingQuestionnaireStore();
   const [internalValue, setInternalValue] = useState(value);
-  const currentQuestionIndex = useOnboardingQuestionnaireStore(
-    (state) => state.currentQuestionIndex
-  );
 
   const handleNext = () => {
-    actions.answerQuestion(question.id, internalValue);
-    actions.nextQuestion();
+    const token = localStorage.getItem("session_jwt");
+    submitAnswer(question.id, internalValue, token || undefined);
   };
 
-  const handlePrevious = () => {
-    actions.previousQuestion();
-  };
-
-  const pillarInfo =
-    question.pillar !== "Basics" ? pillarsInfo[question.pillar] : null;
-  const PillarIcon = pillarInfo?.icon;
   const isAnswered =
     internalValue !== undefined &&
     internalValue !== null &&
@@ -142,25 +132,6 @@ const QuestionBox = ({
 
   return (
     <div className="bg-[#1e1e24] p-6 sm:p-8 rounded-2xl shadow-2xl ring-1 ring-white/10 w-full max-w-2xl mx-auto">
-      <div className="flex items-center gap-2 mb-4">
-        {pillarInfo && PillarIcon && (
-          <Badge
-            variant="outline"
-            className={`border-${pillarInfo.color}-500/30 bg-${pillarInfo.color}-500/10 text-${pillarInfo.color}-400 font-medium`}
-          >
-            <PillarIcon className="h-4 w-4 mr-2" />
-            {question.pillar}
-          </Badge>
-        )}
-        {question.isOptional && (
-          <Badge
-            variant="secondary"
-            className="bg-gray-700 text-gray-300 border-gray-600"
-          >
-            Optional
-          </Badge>
-        )}
-      </div>
       <h2 className="text-xl font-semibold text-white mb-6">
         {question.question}
       </h2>
@@ -173,20 +144,11 @@ const QuestionBox = ({
         />
       </div>
 
-      <div className="flex justify-between items-center mt-8">
-        <Button
-          variant="outline"
-          onClick={handlePrevious}
-          disabled={currentQuestionIndex === 0}
-          className="bg-transparent hover:bg-gray-800 text-gray-300 border-gray-700 hover:border-gray-600 disabled:opacity-50 disabled:bg-transparent"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Previous
-        </Button>
+      <div className="flex justify-end items-center mt-8">
         <Button
           onClick={handleNext}
           disabled={!isAnswered}
-          className="bg-gradient-cta text-white font-bold disabled:opacity-50"
+          className="w-full sm:w-auto bg-gradient-cta text-white font-bold disabled:opacity-50"
         >
           Next
           <ArrowRight className="ml-2 h-4 w-4" />
