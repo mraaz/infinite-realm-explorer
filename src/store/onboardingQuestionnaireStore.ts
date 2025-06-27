@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-// Interfaces (Question, PillarProgress) remain the same...
+// Define the shape of a single question
 export interface Question {
   id: string;
   question: string;
@@ -10,6 +10,8 @@ export interface Question {
   sliderLabels?: { min: string; max: string };
   placeholder?: string;
 }
+
+// Define the shape of the progress object for the ClarityRings
 export interface PillarProgress {
   career: number;
   financials: number;
@@ -17,6 +19,8 @@ export interface PillarProgress {
   connections: number;
 }
 
+// Hardcode the first question for guest users.
+// This avoids an API call for non-logged-in users.
 const GUEST_USER_FIRST_QUESTION: Question = {
   id: "dob",
   question: "To personalize your timeline, what year were you born?",
@@ -24,6 +28,7 @@ const GUEST_USER_FIRST_QUESTION: Question = {
   section: "basics",
 };
 
+// Define the complete shape of our state and actions
 interface QuestionnaireState {
   currentQuestion: Question | null;
   answers: Record<string, any>;
@@ -40,24 +45,27 @@ interface QuestionnaireState {
   saveGuestProgressAfterLogin: (authToken: string) => Promise<void>;
 }
 
-// Updated to use API Gateway URL
-const API_BASE_URL = "https://ffwkwcix01.execute-api.us-east-1.amazonaws.com/prod";
+// Use the API Gateway URL
+const API_BASE_URL =
+  "https://ffwkwcix01.execute-api.us-east-1.amazonaws.com/prod";
 
 export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
   (set, get) => ({
-    // Initial state is unchanged...
+    // Initial State
     currentQuestion: null,
     answers: {},
-    isLoading: true,
+    isLoading: true, // Start in loading state until initialized
     isCompleted: false,
     finalScores: null,
     pillarProgress: { career: 0, financials: 0, health: 0, connections: 0 },
 
+    // ACTIONS
+
     initializeQuestionnaire: async (authToken) => {
+      // For a logged-in user, we fetch their state from the backend.
       if (authToken) {
         set({ isLoading: true });
         try {
-          // Changed to GET request to /questionnaire/state
           const response = await fetch(`${API_BASE_URL}/questionnaire/state`, {
             method: "GET",
             headers: {
@@ -82,7 +90,7 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
           set({ isLoading: false });
         }
       } else {
-        // Guest logic is unchanged and correct
+        // For a guest user, we simply set the hardcoded first question.
         set({
           currentQuestion: GUEST_USER_FIRST_QUESTION,
           answers: {},
@@ -100,9 +108,9 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
     },
 
     submitAnswer: async (questionId, answer, authToken) => {
-      set((state) => ({
-        answers: { ...state.answers, [questionId]: answer },
-      }));
+      // Optimistically update the local state first for a snappy UI
+      const updatedAnswers = { ...get().answers, [questionId]: answer };
+      set({ answers: updatedAnswers });
       set({ isLoading: true });
 
       const headers: HeadersInit = {
@@ -111,11 +119,14 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
       };
 
       try {
-        // Changed to POST request to /questionnaire/answer with direct payload
         const response = await fetch(`${API_BASE_URL}/questionnaire/answer`, {
           method: "POST",
           headers,
-          body: JSON.stringify({ questionId, answer }),
+          // We send the single new answer AND the full history of answers.
+          body: JSON.stringify({
+            newAnswer: { questionId, answer },
+            allAnswers: updatedAnswers,
+          }),
         });
         const data = await response.json();
 
@@ -145,7 +156,6 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
       if (Object.keys(answers).length === 0) return;
 
       try {
-        // Changed to POST request to /questionnaire/save-progress with direct payload
         await fetch(`${API_BASE_URL}/questionnaire/save-progress`, {
           method: "POST",
           headers: {
@@ -154,6 +164,7 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
           },
           body: JSON.stringify({ answers }),
         });
+        // After saving, we re-initialize to get the canonical server state.
         get().initializeQuestionnaire(authToken);
       } catch (error) {
         console.error("Failed to save guest progress:", error);

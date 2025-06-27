@@ -1,34 +1,46 @@
 import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import ClarityRings from "@/components/onboarding-questionnaire/ClarityRings";
 import QuestionBox from "@/components/onboarding-questionnaire/QuestionBox";
 import OverallProgressBar from "@/components/onboarding-questionnaire/OverallProgressBar";
 import { useOnboardingQuestionnaireStore } from "@/store/onboardingQuestionnaireStore";
 
-// A simple utility to get the token from localStorage.
-// You can replace this with your existing authentication context or hook.
 const getAuthToken = () => localStorage.getItem("session_jwt");
 
 const OnboardingQuestionnaire = () => {
-  // Select the new state and actions from our updated store
+  const navigate = useNavigate();
+
+  // Select state from the store
   const {
     currentQuestion,
     answers,
-    pillarProgress,
     isLoading,
     isCompleted,
     initializeQuestionnaire,
     submitAnswer,
   } = useOnboardingQuestionnaireStore();
 
-  // --- NEW --- Initialize the questionnaire on component mount
+  // --- THIS IS THE FIX ---
+  // We select pillarProgress separately and provide a fallback default object.
+  // This prevents the component from crashing if the state is ever inconsistent.
+  const pillarProgress = useOnboardingQuestionnaireStore(
+    (state) => state.pillarProgress
+  ) || { career: 0, financials: 0, health: 0, connections: 0 };
+
   useEffect(() => {
     const token = getAuthToken();
     initializeQuestionnaire(token || undefined);
   }, [initializeQuestionnaire]);
 
-  // --- REMOVED --- The complex useMemo for calculating progress is no longer needed.
-  // The backend now provides this data as `pillarProgress`.
+  useEffect(() => {
+    if (isCompleted) {
+      const redirectTimeout = setTimeout(() => {
+        navigate("/results");
+      }, 2000);
+      return () => clearTimeout(redirectTimeout);
+    }
+  }, [isCompleted, navigate]);
 
   const handleSubmitAnswer = (answer: any) => {
     if (currentQuestion) {
@@ -37,7 +49,7 @@ const OnboardingQuestionnaire = () => {
     }
   };
 
-  // The overall progress can now be an average of the pillar percentages
+  // This calculation is now safe because pillarProgress is guaranteed to be an object.
   const overallPercentage =
     (pillarProgress.career +
       pillarProgress.financials +
@@ -59,40 +71,33 @@ const OnboardingQuestionnaire = () => {
             </p>
           </div>
 
-          {/* --- MODIFIED --- Pass the new pillarProgress state from the store */}
           <ClarityRings progress={pillarProgress} threshold={80} />
 
           <div className="mt-12">
-            {/* --- NEW --- Handle loading and completed states */}
             {isLoading && (
               <div className="text-center text-white py-10">
                 <h2 className="text-2xl font-bold">Loading...</h2>
               </div>
             )}
-
             {isCompleted && (
               <div className="text-center text-white py-10">
                 <h2 className="text-2xl font-bold">Questionnaire Complete!</h2>
                 <p className="text-gray-400 mt-2">
-                  Calculating your results...
+                  Taking you to your results...
                 </p>
               </div>
             )}
-
-            {/* Render the question box only when not loading, not completed, and a question exists */}
             {!isLoading && !isCompleted && currentQuestion && (
               <QuestionBox
-                key={currentQuestion.id} // The key is crucial for React to remount the component
+                key={currentQuestion.id}
                 question={currentQuestion}
                 value={answers[currentQuestion.id]}
-                // --- MODIFIED --- Pass a single onSubmit handler
                 onSubmit={handleSubmitAnswer}
-                isSubmitting={isLoading} // Pass loading state to disable the button
+                isSubmitting={isLoading}
               />
             )}
           </div>
 
-          {/* Only show the progress bar while the questionnaire is active */}
           {!isCompleted && !isLoading && (
             <OverallProgressBar value={overallPercentage} />
           )}

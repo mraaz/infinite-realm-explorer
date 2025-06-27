@@ -91,11 +91,6 @@ function ClarityRing({
         >
           {label}
         </h3>
-        {isAboveThreshold && (
-          <div className="text-xs text-emerald-400 font-medium mt-1">
-            ✓ Clarity achieved
-          </div>
-        )}
       </div>
     </div>
   );

@@ -43,13 +43,7 @@ const PillarItem = ({
     </div>
     {/* Updated text color for readability */}
     <p className="font-semibold text-gray-300 text-sm mt-2">{name}</p>
-    {progress === 100 ? (
-      // Updated text color for readability
-      <div className="flex items-center justify-center gap-1 text-emerald-400">
-        <Check className="h-4 w-4" />
-        <p className="text-xs font-medium">Clarity achieved</p>
-      </div>
-    ) : (
+    {progress === 100 ? null : (
       // Placeholder to maintain layout consistency
       <div className="h-5" />
     )}
