@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { branding } from '@/config/branding';
 
 const AuthCallback = () => {
   const location = useLocation();
@@ -37,11 +38,11 @@ const AuthCallback = () => {
       <div className="text-center">
         <div className="flex items-center justify-center space-x-2 mb-4">
           <img 
-            src="/lovable-uploads/3ed0df40-9d9f-4016-bdba-991ba7a3468c.png" 
-            alt="Infinite Life Logo" 
+            src={branding.logo.url} 
+            alt={branding.logo.alt} 
             className="h-8 w-8"
           />
-          <span className="text-2xl font-semibold text-gray-900">Infinite Life</span>
+          <span className="text-2xl font-semibold text-gray-900">{branding.name}</span>
         </div>
         <p className="text-gray-600">Please wait while we complete your login...</p>
       </div>

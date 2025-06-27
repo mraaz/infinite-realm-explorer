@@ -1,3 +1,4 @@
+
 /*
 ================================================================================
 File: /components/Header.tsx
@@ -5,12 +6,14 @@ File: /components/Header.tsx
 - Updated to show profile icon dropdown for logged-in users
 - Kept Login button for logged-out users
 - Added dropdown menu with user email and logout option
+- Updated to use centralized logo configuration
 */
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Infinity, User } from "lucide-react";
+import { User } from "lucide-react";
 import SocialLoginModal from "@/components/SocialLoginModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { branding } from "@/config/branding";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,8 +35,12 @@ const Header = () => {
           to="/"
           className="flex items-center space-x-2 text-xl font-bold text-white hover:text-purple-400 transition-colors duration-200"
         >
-          <Infinity className="w-6 h-6" />
-          <span>Infinite Life</span>
+          <img 
+            src={branding.logo.url} 
+            alt={branding.logo.alt} 
+            className="w-6 h-6"
+          />
+          <span>{branding.name}</span>
         </Link>
 
         {isLoggedIn ? (

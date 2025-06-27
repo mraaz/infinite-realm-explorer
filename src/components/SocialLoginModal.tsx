@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import SocialLoginButtons from '@/components/SocialLoginButtons';
+import { branding } from '@/config/branding';
 
 interface SocialLoginModalProps {
   open: boolean;
@@ -26,8 +27,8 @@ const SocialLoginModal = ({ open, onOpenChange }: SocialLoginModalProps) => {
           <DialogTitle className="text-center">
             <div className="flex items-center justify-center space-x-2 mb-4">
               <img 
-                src="/lovable-uploads/3ed0df40-9d9f-4016-bdba-991ba7a3468c.png" 
-                alt="Infinite Life Logo" 
+                src={branding.logo.url} 
+                alt={branding.logo.alt} 
                 className="h-8 w-8"
               />
               <span className="text-2xl font-semibold text-white">Sign In</span>
