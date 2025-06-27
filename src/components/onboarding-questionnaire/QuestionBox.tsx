@@ -136,9 +136,8 @@ const QuestionInput = ({
         </p>
       );
   }
-}; // <-- This closing brace and semicolon is crucial and was likely the source of the error.
+};
 
-// --- This is the simplified component from our plan ---
 interface QuestionBoxProps {
   question: Question;
   value: any;
@@ -168,7 +167,7 @@ const QuestionBox = ({
     internalValue !== "";
 
   return (
-    <div className="bg-[#1e1e24] p-6 sm:p-8 rounded-2xl shadow-2xl ring-1 ring-white/10 w-full max-w-2xl mx-auto">
+    <div className="bg-[#1e1e24] p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto">
       <h2 className="text-xl font-semibold text-white mb-6 text-center">
         {question.question}
       </h2>
