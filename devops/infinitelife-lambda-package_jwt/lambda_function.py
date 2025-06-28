@@ -14,7 +14,6 @@ dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(DYNAMODB_TABLE_NAME)
 
 # --- CORS Headers ---
-# These are still useful to ensure our actual GET/POST responses include the correct headers.
 CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Requested-With',
@@ -28,7 +27,7 @@ try:
 except FileNotFoundError:
     QUESTIONS_CONFIG = {"questions": {}, "sections": {}, "question_flow": [], "section_flow": []}
 
-# --- Helper Functions (No changes needed) ---
+# --- Helper Functions ---
 def get_user_from_jwt(event):
     headers = event.get('headers') or {}
     auth_header = None
@@ -68,6 +67,8 @@ def get_next_question_id(current_question_id):
         return None
 
 def calculate_pillar_progress(user_state, questions_config):
+    # --- THIS IS THE FIX for the NaN error ---
+    # The dictionary key is now 'finances' to match the frontend chart component.
     pillars = {"career": {"earned": 0, "possible": 0}, "finances": {"earned": 0, "possible": 0}, "health": {"earned": 0, "possible": 0}, "connections": {"earned": 0, "possible": 0}}
     current_section_scores = user_state.get('section_scores', {})
     for section_id, section_data in questions_config.get('sections', {}).items():
@@ -81,7 +82,7 @@ def calculate_pillar_progress(user_state, questions_config):
         pillar_percentages[pillar_key] = round(percentage, 2)
     return pillar_percentages
 
-# --- Main Logic Handlers (No changes needed) ---
+# --- Main Logic Handlers ---
 def handle_answer(event_body, user):
     new_answer_data = event_body.get('newAnswer', {})
     question_id = new_answer_data.get('questionId')
@@ -138,6 +139,8 @@ def handle_answer(event_body, user):
         db_state['updatedAt'] = datetime.now(timezone.utc).isoformat()
         table.put_item(Item=db_state)
     
+    # --- THIS IS THE FIX for the rings not updating ---
+    # We calculate progress and add it to every response.
     progress = calculate_pillar_progress(user_state, QUESTIONS_CONFIG)
     
     if next_question_id:
@@ -158,38 +161,25 @@ def handle_get_state(user):
 
 # --- Lambda Entry Point (Corrected for API Gateway) ---
 def lambda_handler(event, context):
-    print("--- LAMBDA HANDLER START ---")
-    
-    # Get the path and method from the API Gateway event
+    print("Received event: " + json.dumps(event, indent=2))
     path = event.get('path', '')
     http_method = event.get('httpMethod', '')
     user = get_user_from_jwt(event)
-    
-    print(f"DEBUG: Routing request for path='{path}' and http_method='{http_method}'")
-    
     body = {}
     if event.get('body'):
         try:
             body = json.loads(event['body'])
         except json.JSONDecodeError:
-            print("ERROR: Invalid JSON in request body.")
             return {'statusCode': 400, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Invalid JSON body'})}
-
     try:
-        # This is the corrected routing logic for API Gateway
-        if path == '/questionnaire/answer' and http_method == 'POST':
-            print("DEBUG: Matched route for handle_answer.")
+        if path.endswith('/questionnaire/answer') and http_method == 'POST':
             return handle_answer(body, user)
-        elif path == '/questionnaire/save-progress' and http_method == 'POST':
-            print("DEBUG: Matched route for handle_save_progress.")
+        elif path.endswith('/questionnaire/save-progress') and http_method == 'POST':
             return handle_save_progress(body, user)
-        elif path == '/questionnaire/state' and http_method == 'GET':
-            print("DEBUG: Matched route for handle_get_state.")
+        elif path.endswith('/questionnaire/state') and http_method == 'GET':
             return handle_get_state(user)
         else:
-            # If the path doesn't match, return a 404
-            print(f"DEBUG: No route matched. Returning 404.")
             return {'statusCode': 404, 'headers': CORS_HEADERS, 'body': json.dumps({'error': f'Endpoint not found: {http_method} {path}'})}
     except Exception as e:
-        print(f"FATAL ERROR: An unexpected error occurred in the handler: {e}")
+        print(f"An unexpected error occurred in the handler: {e}")
         return {'statusCode': 500, 'headers': CORS_HEADERS, 'body': json.dumps({'error': f'Internal server error: {str(e)}'})}

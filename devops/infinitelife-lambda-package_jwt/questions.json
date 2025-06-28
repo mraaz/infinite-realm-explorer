@@ -30,33 +30,33 @@
     "career_growth_q5",
     "career_growth_q6",
     "career_growth_q7",
-    "financials_income_q1",
-    "financials_income_q2",
-    "financials_income_q3",
-    "financials_income_q4",
-    "financials_income_q5",
-    "financials_income_q6",
-    "financials_income_q7",
-    "financials_savings_q1",
-    "financials_savings_q2",
-    "financials_savings_q3",
-    "financials_savings_q4",
-    "financials_savings_q5",
-    "financials_savings_q6",
-    "financials_literacy_q1",
-    "financials_literacy_q2",
-    "financials_literacy_q3",
-    "financials_literacy_q4",
-    "financials_literacy_q5",
-    "financials_literacy_q6",
-    "financials_literacy_q7",
-    "financials_mindset_q1",
-    "financials_mindset_q2",
-    "financials_mindset_q3",
-    "financials_mindset_q4",
-    "financials_mindset_q5",
-    "financials_mindset_q6",
-    "financials_mindset_q7",
+    "finances_income_q1",
+    "finances_income_q2",
+    "finances_income_q3",
+    "finances_income_q4",
+    "finances_income_q5",
+    "finances_income_q6",
+    "finances_income_q7",
+    "finances_savings_q1",
+    "finances_savings_q2",
+    "finances_savings_q3",
+    "finances_savings_q4",
+    "finances_savings_q5",
+    "finances_savings_q6",
+    "finances_literacy_q1",
+    "finances_literacy_q2",
+    "finances_literacy_q3",
+    "finances_literacy_q4",
+    "finances_literacy_q5",
+    "finances_literacy_q6",
+    "finances_literacy_q7",
+    "finances_mindset_q1",
+    "finances_mindset_q2",
+    "finances_mindset_q3",
+    "finances_mindset_q4",
+    "finances_mindset_q5",
+    "finances_mindset_q6",
+    "finances_mindset_q7",
     "health_activity_q1",
     "health_activity_q2",
     "health_activity_q3",
@@ -119,10 +119,10 @@
     "career_balance",
     "career_salary",
     "career_growth",
-    "financials_income",
-    "financials_savings",
-    "financials_literacy",
-    "financials_mindset",
+    "finances_income",
+    "finances_savings",
+    "finances_literacy",
+    "finances_mindset",
     "health_activity",
     "health_nutrition",
     "health_sleep",
@@ -196,59 +196,59 @@
         "career_growth_q7"
       ]
     },
-    "financials_income": {
+    "finances_income": {
       "total_points": 25,
-      "adaptive_trigger_questions": ["financials_income_q4"],
+      "adaptive_trigger_questions": ["finances_income_q4"],
       "adaptive_max_score": 20,
       "questions": [
-        "financials_income_q1",
-        "financials_income_q2",
-        "financials_income_q3",
-        "financials_income_q4",
-        "financials_income_q5",
-        "financials_income_q6",
-        "financials_income_q7"
+        "finances_income_q1",
+        "finances_income_q2",
+        "finances_income_q3",
+        "finances_income_q4",
+        "finances_income_q5",
+        "finances_income_q6",
+        "finances_income_q7"
       ]
     },
-    "financials_savings": {
+    "finances_savings": {
       "total_points": 25,
-      "adaptive_trigger_questions": ["financials_savings_q4"],
+      "adaptive_trigger_questions": ["finances_savings_q4"],
       "adaptive_max_score": 20,
       "questions": [
-        "financials_savings_q1",
-        "financials_savings_q2",
-        "financials_savings_q3",
-        "financials_savings_q4",
-        "financials_savings_q5",
-        "financials_savings_q6"
+        "finances_savings_q1",
+        "finances_savings_q2",
+        "finances_savings_q3",
+        "finances_savings_q4",
+        "finances_savings_q5",
+        "finances_savings_q6"
       ]
     },
-    "financials_literacy": {
+    "finances_literacy": {
       "total_points": 25,
-      "adaptive_trigger_questions": ["financials_literacy_q4"],
+      "adaptive_trigger_questions": ["finances_literacy_q4"],
       "adaptive_max_score": 17,
       "questions": [
-        "financials_literacy_q1",
-        "financials_literacy_q2",
-        "financials_literacy_q3",
-        "financials_literacy_q4",
-        "financials_literacy_q5",
-        "financials_literacy_q6",
-        "financials_literacy_q7"
+        "finances_literacy_q1",
+        "finances_literacy_q2",
+        "finances_literacy_q3",
+        "finances_literacy_q4",
+        "finances_literacy_q5",
+        "finances_literacy_q6",
+        "finances_literacy_q7"
       ]
     },
-    "financials_mindset": {
+    "finances_mindset": {
       "total_points": 25,
-      "adaptive_trigger_questions": ["financials_mindset_q4"],
+      "adaptive_trigger_questions": ["finances_mindset_q4"],
       "adaptive_max_score": 17,
       "questions": [
-        "financials_mindset_q1",
-        "financials_mindset_q2",
-        "financials_mindset_q3",
-        "financials_mindset_q4",
-        "financials_mindset_q5",
-        "financials_mindset_q6",
-        "financials_mindset_q7"
+        "finances_mindset_q1",
+        "finances_mindset_q2",
+        "finances_mindset_q3",
+        "finances_mindset_q4",
+        "finances_mindset_q5",
+        "finances_mindset_q6",
+        "finances_mindset_q7"
       ]
     },
     "health_activity": {
@@ -627,11 +627,11 @@
       "sliderLabels": { "min": "Unhelpful", "max": "Highly valuable" },
       "scoring": { "points": 3 }
     },
-    "financials_income_q1": {
-      "id": "financials_income_q1",
+    "finances_income_q1": {
+      "id": "finances_income_q1",
       "question": "After covering all your essential monthly expenses (like housing, utilities, and debt payments), what is your typical financial situation?",
       "type": "multiple-choice",
-      "section": "financials_income",
+      "section": "finances_income",
       "options": [
         "I have a significant surplus that I can consistently save or invest.",
         "I have a comfortable surplus.",
@@ -647,11 +647,11 @@
         "I am usually short and struggle to cover essentials.": 0
       }
     },
-    "financials_income_q2": {
-      "id": "financials_income_q2",
+    "finances_income_q2": {
+      "id": "finances_income_q2",
       "question": "How confident are you that you know where your money is going each month?",
       "type": "multiple-choice",
-      "section": "financials_income",
+      "section": "finances_income",
       "options": [
         "Very confident - I can account for nearly every dollar.",
         "Fairly confident - I have a good general idea but don't track all the details.",
@@ -663,11 +663,11 @@
         "Not confident - I'm often surprised by my bank balance at the end of the month.": 0
       }
     },
-    "financials_income_q3": {
-      "id": "financials_income_q3",
+    "finances_income_q3": {
+      "id": "finances_income_q3",
       "question": "How often do unexpected expenses (e.g., car repairs, medical bills) cause you significant financial stress?",
       "type": "multiple-choice",
-      "section": "financials_income",
+      "section": "finances_income",
       "options": ["Never / Rarely", "Sometimes", "Often / Almost Always"],
       "scoring": {
         "Never / Rarely": 4,
@@ -675,11 +675,11 @@
         "Often / Almost Always": 0
       }
     },
-    "financials_income_q4": {
-      "id": "financials_income_q4",
+    "finances_income_q4": {
+      "id": "finances_income_q4",
       "question": "How would you describe the stability of your primary source of income?",
       "type": "multiple-choice",
-      "section": "financials_income",
+      "section": "finances_income",
       "options": [
         "Very stable and predictable from month to month.",
         "Mostly stable, with occasional minor fluctuations.",
@@ -691,33 +691,33 @@
         "Unstable and varies significantly.": 0
       }
     },
-    "financials_income_q5": {
-      "id": "financials_income_q5",
+    "finances_income_q5": {
+      "id": "finances_income_q5",
       "question": "Do you regularly review your recurring subscriptions and bills for opportunities to save?",
       "type": "yes-no",
-      "section": "financials_income",
+      "section": "finances_income",
       "scoring": { "points": 2, "target_answer": "yes" }
     },
-    "financials_income_q6": {
-      "id": "financials_income_q6",
+    "finances_income_q6": {
+      "id": "finances_income_q6",
       "question": "How often do you incur avoidable fees, such as late payment charges or overdraft fees?",
       "type": "multiple-choice",
-      "section": "financials_income",
+      "section": "finances_income",
       "options": ["Never / Rarely", "Sometimes / Often"],
       "scoring": { "Never / Rarely": 2, "Sometimes / Often": 0 }
     },
-    "financials_income_q7": {
-      "id": "financials_income_q7",
+    "finances_income_q7": {
+      "id": "finances_income_q7",
       "question": "Do you feel confident in your ability to articulate the value you provide in a way that could positively influence your income (e.g., in a performance review, to a client, or when setting prices)?",
       "type": "yes-no",
-      "section": "financials_income",
+      "section": "finances_income",
       "scoring": { "points": 1, "target_answer": "yes" }
     },
-    "financials_savings_q1": {
-      "id": "financials_savings_q1",
+    "finances_savings_q1": {
+      "id": "finances_savings_q1",
       "question": "On average, what percentage of your after-tax income do you purposefully save or invest each month?",
       "type": "multiple-choice",
-      "section": "financials_savings",
+      "section": "finances_savings",
       "options": [
         "20% or more",
         "10% to 19%",
@@ -733,11 +733,11 @@
         "0% / I'm not currently able to save.": 0
       }
     },
-    "financials_savings_q2": {
-      "id": "financials_savings_q2",
+    "finances_savings_q2": {
+      "id": "finances_savings_q2",
       "question": "How prepared are you for a major unexpected expense or loss of income with a dedicated emergency fund?",
       "type": "multiple-choice",
-      "section": "financials_savings",
+      "section": "finances_savings",
       "options": [
         "Very prepared: I have a fund that could cover 3+ months of essential living expenses.",
         "Somewhat prepared: I have some emergency savings, but it would cover less than 3 months of expenses.",
@@ -749,39 +749,39 @@
         "Not prepared: I do not have a dedicated emergency fund.": 0
       }
     },
-    "financials_savings_q3": {
-      "id": "financials_savings_q3",
+    "finances_savings_q3": {
+      "id": "finances_savings_q3",
       "question": "Are you actively making contributions to your retirement accounts (e.g., superannuation, 401(k), pension) beyond any mandatory employer contributions?",
       "type": "yes-no",
-      "section": "financials_savings",
+      "section": "finances_savings",
       "scoring": { "points": 4, "target_answer": "yes" }
     },
-    "financials_savings_q4": {
-      "id": "financials_savings_q4",
+    "finances_savings_q4": {
+      "id": "finances_savings_q4",
       "question": "Have you defined clear, long-term financial goals that guide your investment decisions?",
       "type": "yes-no",
-      "section": "financials_savings",
+      "section": "finances_savings",
       "scoring": { "points": 3, "target_answer": "yes" }
     },
-    "financials_savings_q5": {
-      "id": "financials_savings_q5",
+    "finances_savings_q5": {
+      "id": "finances_savings_q5",
       "question": "Are you building wealth in investments outside of your primary home and your retirement accounts (e.g., superannuation, 401(k), pension)?",
       "type": "yes-no",
-      "section": "financials_savings",
+      "section": "finances_savings",
       "scoring": { "points": 3, "target_answer": "yes" }
     },
-    "financials_savings_q6": {
-      "id": "financials_savings_q6",
+    "finances_savings_q6": {
+      "id": "finances_savings_q6",
       "question": "Do you have a basic understanding of the fees you are paying on your retirement accounts (e.g., superannuation, 401(k), pension) and other investments?",
       "type": "yes-no",
-      "section": "financials_savings",
+      "section": "finances_savings",
       "scoring": { "points": 2, "target_answer": "yes" }
     },
-    "financials_literacy_q1": {
-      "id": "financials_literacy_q1",
+    "finances_literacy_q1": {
+      "id": "finances_literacy_q1",
       "question": "Which statement best describes your primary approach to learning about personal finance?",
       "type": "multiple-choice",
-      "section": "financials_literacy",
+      "section": "finances_literacy",
       "options": [
         "I actively seek out and learn from a variety of reliable sources (e.g., books, reputable financial websites, specialist podcasts).",
         "I occasionally look up specific topics when I have a question.",
@@ -795,11 +795,11 @@
         "I don't actively try to learn about personal finance.": 0
       }
     },
-    "financials_literacy_q2": {
-      "id": "financials_literacy_q2",
+    "finances_literacy_q2": {
+      "id": "finances_literacy_q2",
       "question": "Which of the following statements about the relationship between investment risk and potential return is most accurate?",
       "type": "multiple-choice",
-      "section": "financials_literacy",
+      "section": "finances_literacy",
       "options": [
         "To get higher potential long-term returns, you usually have to accept a higher level of risk.",
         "To get higher potential long-term returns, you should always look for the lowest-risk investments.",
@@ -813,11 +813,11 @@
         "I am not sure.": 0
       }
     },
-    "financials_literacy_q3": {
-      "id": "financials_literacy_q3",
+    "finances_literacy_q3": {
+      "id": "finances_literacy_q3",
       "question": "Which of the following best describes the main purpose of investment diversification?",
       "type": "multiple-choice",
-      "section": "financials_literacy",
+      "section": "finances_literacy",
       "options": [
         "To try and pick the one single investment that will perform best.",
         "To reduce the overall risk of a portfolio by spreading investments across different assets and industries.",
@@ -831,11 +831,11 @@
         "I am not sure.": 0
       }
     },
-    "financials_literacy_q4": {
-      "id": "financials_literacy_q4",
+    "finances_literacy_q4": {
+      "id": "finances_literacy_q4",
       "question": "When you hear about major economic news (e.g., interest rate changes, market volatility, global events), how do you typically react?",
       "type": "multiple-choice",
-      "section": "financials_literacy",
+      "section": "finances_literacy",
       "options": [
         "I consider how it might impact my personal financial strategy and investments.",
         "I follow the news but am not sure how it connects to my personal finances.",
@@ -849,11 +849,11 @@
         "I generally don't follow economic news.": 0
       }
     },
-    "financials_literacy_q5": {
-      "id": "financials_literacy_q5",
+    "finances_literacy_q5": {
+      "id": "finances_literacy_q5",
       "question": "When it comes to your credit score or credit report...",
       "type": "multiple-choice",
-      "section": "financials_literacy",
+      "section": "finances_literacy",
       "options": [
         "I know my current score and have a good understanding of the key factors that influence it.",
         "I have checked it in the past, but I am not sure what it is now or what affects it.",
@@ -865,11 +865,11 @@
         "I have never checked my credit score or report.": 0
       }
     },
-    "financials_literacy_q6": {
-      "id": "financials_literacy_q6",
+    "finances_literacy_q6": {
+      "id": "finances_literacy_q6",
       "question": "When it comes to your primary retirement account (e.g., superannuation, 401(k)), do you know which investment option you're in?",
       "type": "multiple-choice",
-      "section": "financials_literacy",
+      "section": "finances_literacy",
       "options": [
         "Yes, I know my investment option (e.g., High Growth, Balanced, Conservative) and why I chose it.",
         "I might know my option, but I'm not sure if it's the right one for me.",
@@ -881,18 +881,18 @@
         "No, I am not sure what my investment option is.": 0
       }
     },
-    "financials_literacy_q7": {
-      "id": "financials_literacy_q7",
+    "finances_literacy_q7": {
+      "id": "finances_literacy_q7",
       "question": "Do you understand what 'compound interest' is and how it contributes to long-term wealth?",
       "type": "yes-no",
-      "section": "financials_literacy",
+      "section": "finances_literacy",
       "scoring": { "points": 2, "target_answer": "yes" }
     },
-    "financials_mindset_q1": {
-      "id": "financials_mindset_q1",
+    "finances_mindset_q1": {
+      "id": "finances_mindset_q1",
       "question": "When thinking about your finances, which statement best describes your typical emotional state?",
       "type": "multiple-choice",
-      "section": "financials_mindset",
+      "section": "finances_mindset",
       "options": [
         "I feel calm, confident, and in control.",
         "I feel a mix of confidence and occasional worry.",
@@ -906,11 +906,11 @@
         "I try to avoid thinking about my finances because it's too stressful.": 0
       }
     },
-    "financials_mindset_q2": {
-      "id": "financials_mindset_q2",
+    "finances_mindset_q2": {
+      "id": "finances_mindset_q2",
       "question": "Which of the following best describes your belief about your financial future?",
       "type": "multiple-choice",
-      "section": "financials_mindset",
+      "section": "finances_mindset",
       "options": [
         "I am confident that my actions today are building a better financial future.",
         "I am hopeful, but uncertain if what I'm doing is enough.",
@@ -924,11 +924,11 @@
         "I feel like my financial future is largely out of my control.": 0
       }
     },
-    "financials_mindset_q3": {
-      "id": "financials_mindset_q3",
+    "finances_mindset_q3": {
+      "id": "finances_mindset_q3",
       "question": "When you experience a financial setback (e.g., a bad investment, an unexpected bill), what is your typical response?",
       "type": "multiple-choice",
-      "section": "financials_mindset",
+      "section": "finances_mindset",
       "options": [
         "I view it as a learning experience and focus on what to do next.",
         "I feel discouraged for a while but eventually get back on track.",
@@ -940,25 +940,25 @@
         "I find it hard to recover and it often makes me afraid to take future risks.": 0
       }
     },
-    "financials_mindset_q4": {
-      "id": "financials_mindset_q4",
+    "finances_mindset_q4": {
+      "id": "finances_mindset_q4",
       "question": "Do you have a clear financial plan or a set of guiding principles that you trust to make decisions?",
       "type": "yes-no",
-      "section": "financials_mindset",
+      "section": "finances_mindset",
       "scoring": { "points": 3, "target_answer": "yes" }
     },
-    "financials_mindset_q5": {
-      "id": "financials_mindset_q5",
+    "finances_mindset_q5": {
+      "id": "finances_mindset_q5",
       "question": "Are you able to have constructive and calm conversations about money with important people in your life (e.g., a partner, family)?",
       "type": "yes-no",
-      "section": "financials_mindset",
+      "section": "finances_mindset",
       "scoring": { "points": 4, "target_answer": "yes" }
     },
-    "financials_mindset_q6": {
-      "id": "financials_mindset_q6",
+    "finances_mindset_q6": {
+      "id": "finances_mindset_q6",
       "question": "How do you perceive money in your life?",
       "type": "multiple-choice",
-      "section": "financials_mindset",
+      "section": "finances_mindset",
       "options": [
         "Primarily as a tool to achieve my goals and create opportunities.",
         "As a mix of a tool and a source of security.",
@@ -970,11 +970,11 @@
         "Primarily as a source of security and something to protect.": 0
       }
     },
-    "financials_mindset_q7": {
-      "id": "financials_mindset_q7",
+    "finances_mindset_q7": {
+      "id": "finances_mindset_q7",
       "question": "When you see others' financial success (e.g., on social media or in person), what is your typical reaction?",
       "type": "multiple-choice",
-      "section": "financials_mindset",
+      "section": "finances_mindset",
       "options": [
         "I feel motivated or inspired, or it doesn't affect me.",
         "I feel a mix of inspiration and envy or inadequacy.",
