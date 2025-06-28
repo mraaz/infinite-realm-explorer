@@ -13,9 +13,9 @@ export const useResultsData = () => {
   } = useResultsDataFetching();
 
   // --- FIX PART 2 ---
-  // We pass the `progress` data into the transformation hook.
+  // We pass the fetched `progress` data into the transformation hook.
   const {
-    progress: finalProgress, // Renaming to avoid conflict
+    progress: finalProgress, // Renaming to avoid variable shadowing
     futureProgress,
     isFutureQuestionnaireComplete,
     futureSelfArchitect,

@@ -2,21 +2,20 @@ import {
   FutureQuestionnaire,
   FutureSelfArchitect,
   PillarProgress,
-} from "@/types/results"; // Make sure PillarProgress is imported
+} from "@/types/results";
 import { useProgressCalculation } from "./useProgressCalculation";
 
-// --- THIS IS THE FIX ---
-// The hook now accepts `currentProgress` as its first argument.
 export const useResultsDataTransformation = (
-  currentProgress: PillarProgress,
+  currentProgress: PillarProgress, // It receives the correct data here...
   futureQuestionnaire: FutureQuestionnaire | undefined,
   locationFutureProgress: any
 ) => {
-  // We no longer need to calculate the current progress here.
   // We only need the calculator for the "Future Self" progress.
   const { calculateFutureProgress } = useProgressCalculation();
 
-  // The progress for the "Current Self" chart is now the data we passed in.
+  // --- THIS IS THE FIX ---
+  // We now use the `currentProgress` object that was passed in,
+  // instead of calling calculateCurrentProgress().
   const progress = currentProgress;
 
   const isFutureQuestionnaireComplete = !!futureQuestionnaire;
@@ -38,7 +37,6 @@ export const useResultsDataTransformation = (
           (arch as any).mainFocus ||
           futureQuestionnaire.priorities?.mainFocus ||
           "unknown",
-        // Preserve all streak-related properties
         streakWeeks: arch.streakWeeks || [],
         currentStreak: arch.currentStreak || 0,
         isCompleted: arch.isCompleted || false,
