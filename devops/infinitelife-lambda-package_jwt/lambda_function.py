@@ -158,33 +158,38 @@ def handle_get_state(user):
 
 # --- Lambda Entry Point (Corrected for API Gateway) ---
 def lambda_handler(event, context):
-    print("Received event: " + json.dumps(event, indent=2))
-
+    print("--- LAMBDA HANDLER START ---")
+    
     # Get the path and method from the API Gateway event
     path = event.get('path', '')
     http_method = event.get('httpMethod', '')
     user = get_user_from_jwt(event)
+    
+    print(f"DEBUG: Routing request for path='{path}' and http_method='{http_method}'")
     
     body = {}
     if event.get('body'):
         try:
             body = json.loads(event['body'])
         except json.JSONDecodeError:
+            print("ERROR: Invalid JSON in request body.")
             return {'statusCode': 400, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Invalid JSON body'})}
 
     try:
-        # --- THIS IS THE FIX ---
-        # This is the corrected routing logic for API Gateway.
-        # It uses the URL path to decide which function to call.
+        # This is the corrected routing logic for API Gateway
         if path == '/questionnaire/answer' and http_method == 'POST':
+            print("DEBUG: Matched route for handle_answer.")
             return handle_answer(body, user)
         elif path == '/questionnaire/save-progress' and http_method == 'POST':
+            print("DEBUG: Matched route for handle_save_progress.")
             return handle_save_progress(body, user)
         elif path == '/questionnaire/state' and http_method == 'GET':
+            print("DEBUG: Matched route for handle_get_state.")
             return handle_get_state(user)
         else:
             # If the path doesn't match, return a 404
+            print(f"DEBUG: No route matched. Returning 404.")
             return {'statusCode': 404, 'headers': CORS_HEADERS, 'body': json.dumps({'error': f'Endpoint not found: {http_method} {path}'})}
     except Exception as e:
-        print(f"An unexpected error occurred in the handler: {e}")
+        print(f"FATAL ERROR: An unexpected error occurred in the handler: {e}")
         return {'statusCode': 500, 'headers': CORS_HEADERS, 'body': json.dumps({'error': f'Internal server error: {str(e)}'})}
