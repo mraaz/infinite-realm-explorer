@@ -131,6 +131,17 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
         const data = await response.json();
 
         if (data.status === "completed") {
+          // If the user is a guest, save their final results to localStorage.
+          if (!authToken) {
+            console.log("Guest finished. Saving results to localStorage.");
+            const guestResults = {
+              finalScores: data.finalScores,
+              pillarProgress: data.pillarProgress,
+              answers: updatedAnswers,
+            };
+            localStorage.setItem("guestResults", JSON.stringify(guestResults));
+          }
+
           set({
             isCompleted: true,
             currentQuestion: null,
