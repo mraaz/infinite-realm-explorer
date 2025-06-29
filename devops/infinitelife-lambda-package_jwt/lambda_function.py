@@ -82,7 +82,7 @@ def calculate_pillar_progress(user_state, questions_config):
     current_section_scores = user_state.get('section_scores', {})
     for section_id, section_data in questions_config.get('sections', {}).items():
         pillar_key = section_id.split('_')[0]
-        if pillar_key == 'financials':
+        if pillar_key == 'financials': # Handle the naming inconsistency
             pillar_key = 'finances'
         if pillar_key in pillars:
             pillars[pillar_key]['possible'] += section_data.get('total_points', 0)
@@ -104,20 +104,16 @@ def handle_answer(event_body, user):
 
     user_state = {'answers': all_answers, 'section_scores': {}}
     
-    # If the user is logged in, fetch their existing state first
     if user:
         try:
             response = table.get_item(Key={'userId': user['sub']})
             if 'Item' in response:
-                # Start with the state from the DB
                 user_state = response['Item']
-                # Then update it with the latest full answer set from the frontend
                 user_state['answers'] = all_answers
         except Exception as e:
             print(f"Error fetching user state: {e}")
 
-    # Recalculate all scores from scratch based on the full answer history
-    user_state['section_scores'] = {} # Reset scores to recalculate
+    user_state['section_scores'] = {}
     for q_id, ans in all_answers.items():
         q_data = QUESTIONS_CONFIG['questions'].get(q_id)
         if q_data:
@@ -153,15 +149,13 @@ def handle_answer(event_body, user):
                 except (ValueError, IndexError):
                     pass
 
-    # --- THIS IS THE FIX ---
-    # Save the state for a logged-in user on every answer.
     if user:
-        user_state['userId'] = user['sub']
-        user_state['lastQuestionId'] = next_question_id if next_question_id else 'completed'
-        user_state['updatedAt'] = datetime.now(timezone.utc).isoformat()
+        db_state = {'userId': user['sub']}
+        db_state.update(user_state)
+        db_state['lastQuestionId'] = next_question_id if next_question_id else 'completed'
+        db_state['updatedAt'] = datetime.now(timezone.utc).isoformat()
         try:
-            # Convert floats to Decimals for DynamoDB
-            user_state_db = json.loads(json.dumps(user_state), parse_float=decimal.Decimal)
+            user_state_db = json.loads(json.dumps(user_state, cls=DecimalEncoder), parse_float=decimal.Decimal)
             table.put_item(Item=user_state_db)
             print(f"Successfully saved state for user {user['sub']}")
         except Exception as e:
@@ -178,34 +172,23 @@ def handle_answer(event_body, user):
         response_body = {'status': 'completed', 'finalScores': user_state['section_scores'], 'pillarProgress': final_progress}
         return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': json.dumps(response_body, cls=DecimalEncoder)}
 
-# --- THIS IS THE IMPLEMENTED FUNCTION ---
 def handle_save_progress(event_body, user):
     if not user:
         return {'statusCode': 401, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Authentication required'})}
-
     answers = event_body.get('answers', {})
     if not answers:
         return {'statusCode': 400, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'No answers provided to save.'})}
-
-    user_state = {
-        'userId': user['sub'],
-        'answers': answers,
-        'section_scores': {},
-        'createdAt': datetime.now(timezone.utc).isoformat()
-    }
-
+    user_state = {'userId': user['sub'], 'answers': answers, 'section_scores': {}, 'createdAt': datetime.now(timezone.utc).isoformat()}
     for q_id, ans in answers.items():
         question_data = QUESTIONS_CONFIG['questions'].get(q_id)
         if question_data:
             score = calculate_score(question_data, ans)
             section_id = question_data['section']
             user_state['section_scores'][section_id] = user_state['section_scores'].get(section_id, 0) + score
-
     last_question_answered = list(answers.keys())[-1]
     next_question_id = get_next_question_id(last_question_answered)
     user_state['lastQuestionId'] = next_question_id if next_question_id else 'completed'
     user_state['updatedAt'] = datetime.now(timezone.utc).isoformat()
-    
     try:
         user_state_db = json.loads(json.dumps(user_state), parse_float=decimal.Decimal)
         table.put_item(Item=user_state_db)
@@ -215,17 +198,26 @@ def handle_save_progress(event_body, user):
         print(f"Error saving guest progress for user {user['sub']}: {e}")
         return {'statusCode': 500, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Could not save progress'})}
 
-# --- THIS IS THE IMPLEMENTED FUNCTION ---
+# --- THIS IS THE CORRECTED FUNCTION ---
 def handle_get_state(user):
     if not user:
         return {'statusCode': 401, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Authentication required'})}
-
     try:
         response = table.get_item(Key={'userId': user['sub']})
         if 'Item' in response:
             user_state = response['Item']
             progress = calculate_pillar_progress(user_state, QUESTIONS_CONFIG)
             user_state['pillarProgress'] = progress
+            
+            # --- THIS IS THE FIX ---
+            # Get the ID of the next question from the saved state.
+            next_question_id = user_state.get('lastQuestionId')
+            if next_question_id and next_question_id != 'completed':
+                # Fetch the full question object from our config.
+                next_question_object = QUESTIONS_CONFIG['questions'].get(next_question_id)
+                # Add it to the response payload under the key the frontend expects.
+                user_state['nextQuestion'] = next_question_object
+            
             print(f"Successfully fetched state for user {user['sub']}")
             return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': json.dumps(user_state, cls=DecimalEncoder)}
         else:
