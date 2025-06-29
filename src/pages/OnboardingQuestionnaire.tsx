@@ -6,7 +6,7 @@ import QuestionBox from "@/components/onboarding-questionnaire/QuestionBox";
 import OverallProgressBar from "@/components/onboarding-questionnaire/OverallProgressBar";
 import { useOnboardingQuestionnaireStore } from "@/store/onboardingQuestionnaireStore";
 
-const getAuthToken = () => localStorage.getItem("session_jwt");
+const getAuthToken = () => localStorage.getItem("infinitelife_jwt");
 
 const OnboardingQuestionnaire = () => {
   const navigate = useNavigate();
