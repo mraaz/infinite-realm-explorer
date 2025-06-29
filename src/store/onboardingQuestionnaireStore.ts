@@ -1,3 +1,4 @@
+
 import { create } from "zustand";
 
 // Define the shape of a single question
@@ -14,7 +15,7 @@ export interface Question {
 // Define the shape of the progress object for the ClarityRings
 export interface PillarProgress {
   career: number;
-  financials: number;
+  finances: number;
   health: number;
   connections: number;
 }
@@ -57,7 +58,7 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
     isLoading: true, // Start in loading state until initialized
     isCompleted: false,
     finalScores: null,
-    pillarProgress: { career: 0, financials: 0, health: 0, connections: 0 },
+    pillarProgress: { career: 0, finances: 0, health: 0, connections: 0 },
 
     // ACTIONS
 
@@ -79,7 +80,7 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
             answers: data.answers || {},
             pillarProgress: data.pillarProgress || {
               career: 0,
-              financials: 0,
+              finances: 0,
               health: 0,
               connections: 0,
             },
@@ -96,7 +97,7 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
           answers: {},
           pillarProgress: {
             career: 0,
-            financials: 0,
+            finances: 0,
             health: 0,
             connections: 0,
           },

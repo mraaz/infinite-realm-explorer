@@ -1,3 +1,4 @@
+
 "use client";
 import type React from "react";
 import { Target, TrendingUp, Heart, Users } from "lucide-react";
@@ -5,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 interface PillarProgress {
   career: number;
-  financials: number;
+  finances: number;
   health: number;
   connections: number;
 }
@@ -107,8 +108,8 @@ export function ClarityRings({ progress, threshold }: ClarityRingsProps) {
       label: "Career",
     },
     {
-      key: "financials",
-      progress: progress.financials,
+      key: "finances",
+      progress: progress.finances,
       color: "#3b82f6",
       textColor: "text-blue-400",
       icon: <TrendingUp className="w-6 h-6" />,

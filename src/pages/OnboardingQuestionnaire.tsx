@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -26,7 +27,7 @@ const OnboardingQuestionnaire = () => {
   // This prevents the component from crashing if the state is ever inconsistent.
   const pillarProgress = useOnboardingQuestionnaireStore(
     (state) => state.pillarProgress
-  ) || { career: 0, financials: 0, health: 0, connections: 0 };
+  ) || { career: 0, finances: 0, health: 0, connections: 0 };
 
   useEffect(() => {
     const token = getAuthToken();
@@ -52,7 +53,7 @@ const OnboardingQuestionnaire = () => {
   // This calculation is now safe because pillarProgress is guaranteed to be an object.
   const overallPercentage =
     (pillarProgress.career +
-      pillarProgress.financials +
+      pillarProgress.finances +
       pillarProgress.health +
       pillarProgress.connections) /
     4;

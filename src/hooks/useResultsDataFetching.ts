@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,7 +20,7 @@ export const useResultsDataFetching = () => {
   const [currentProgress, setCurrentProgress] = useState<PillarProgress>({
     basics: 0,
     career: 0,
-    financials: 0,
+    finances: 0,
     health: 0,
     connections: 0,
   });
@@ -78,7 +79,7 @@ export const useResultsDataFetching = () => {
         const finalProgress: PillarProgress = {
           basics: Number(loadedProgress.basics) || 0,
           career: Number(loadedProgress.career) || 0,
-          financials: Number(loadedProgress.financials) || 0,
+          finances: Number(loadedProgress.finances) || 0,
           health: Number(loadedProgress.health) || 0,
           connections: Number(loadedProgress.connections) || 0,
         };
