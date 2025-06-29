@@ -27,7 +27,7 @@ try:
 except FileNotFoundError:
     QUESTIONS_CONFIG = {"questions": {}, "sections": {}, "question_flow": [], "section_flow": []}
 
-# --- Helper Functions ---
+# --- Helper Functions (No changes needed) ---
 def get_user_from_jwt(event):
     headers = event.get('headers') or {}
     auth_header = None
@@ -67,8 +67,6 @@ def get_next_question_id(current_question_id):
         return None
 
 def calculate_pillar_progress(user_state, questions_config):
-    # --- THIS IS THE FIX for the NaN error ---
-    # The dictionary key is now 'finances' to match the frontend chart component.
     pillars = {"career": {"earned": 0, "possible": 0}, "finances": {"earned": 0, "possible": 0}, "health": {"earned": 0, "possible": 0}, "connections": {"earned": 0, "possible": 0}}
     current_section_scores = user_state.get('section_scores', {})
     for section_id, section_data in questions_config.get('sections', {}).items():
@@ -83,6 +81,8 @@ def calculate_pillar_progress(user_state, questions_config):
     return pillar_percentages
 
 # --- Main Logic Handlers ---
+
+# --- THIS IS THE REFACTORED AND CORRECTED FUNCTION ---
 def handle_answer(event_body, user):
     new_answer_data = event_body.get('newAnswer', {})
     question_id = new_answer_data.get('questionId')
@@ -91,12 +91,8 @@ def handle_answer(event_body, user):
     if not question_id or not all_answers:
         return {'statusCode': 400, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Payload must include newAnswer and allAnswers'})}
 
-    question_data = QUESTIONS_CONFIG['questions'].get(question_id)
-    if not question_data:
-        return {'statusCode': 404, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Question not found'})}
-
+    # --- Step 1: Calculate raw scores for all sections based on the complete answer history
     user_state = {'answers': all_answers, 'section_scores': {}}
-    
     for q_id, ans in all_answers.items():
         q_data = QUESTIONS_CONFIG['questions'].get(q_id)
         if q_data:
@@ -104,23 +100,32 @@ def handle_answer(event_body, user):
             section_id = q_data.get('section', 'unknown')
             user_state['section_scores'][section_id] = user_state['section_scores'].get(section_id, 0) + score
 
+    # --- Step 2: Create a separate dictionary for the visual progress calculation
+    visual_scores = user_state['section_scores'].copy()
+
+    # --- Step 3: Retroactively "top up" the VISUAL scores for any section where the threshold was met
     for section_id, section_config in QUESTIONS_CONFIG.get('sections', {}).items():
         trigger_questions = section_config.get('adaptive_trigger_questions', [])
         if any(q in all_answers for q in trigger_questions):
             current_section_score = user_state['section_scores'].get(section_id, 0)
             max_score_so_far = section_config.get('adaptive_max_score', 1)
+            
             if (current_section_score / max_score_so_far) >= SCORING_THRESHOLD:
-                user_state['section_scores'][section_id] = section_config.get('total_points', current_section_score)
+                print(f"Topping up VISUAL score for completed section: {section_id}")
+                visual_scores[section_id] = section_config.get('total_points', current_section_score)
 
+    # --- Step 4: Determine the next question based on the last answer
     next_question_id = get_next_question_id(question_id)
     
+    # Check if we need to skip ahead based on the *most recent* answer
     last_question_data = QUESTIONS_CONFIG['questions'].get(question_id)
     if last_question_data:
         last_section_id = last_question_data.get('section')
         last_section_config = QUESTIONS_CONFIG['sections'].get(last_section_id)
+        # Use the topped-up visual score to check if we should skip
         if last_section_config and question_id in last_section_config.get('adaptive_trigger_questions', []):
-            last_section_score = user_state['section_scores'].get(last_section_id, 0)
-            if last_section_score == last_section_config.get('total_points'):
+            if visual_scores.get(last_section_id) == last_section_config.get('total_points'):
+                print(f"Threshold met for section {last_section_id}. Skipping to next section.")
                 section_flow = QUESTIONS_CONFIG.get('section_flow', [])
                 try:
                     current_section_index = section_flow.index(last_section_id)
@@ -132,24 +137,27 @@ def handle_answer(event_body, user):
                 except (ValueError, IndexError):
                     pass
 
+    # For logged-in users, save the state with the ACCURATE scores to DynamoDB
     if user:
         db_state = {'userId': user['sub']}
-        db_state.update(user_state)
+        db_state.update(user_state) # This uses the accurate, non-topped-up scores
         db_state['lastQuestionId'] = next_question_id if next_question_id else 'completed'
         db_state['updatedAt'] = datetime.now(timezone.utc).isoformat()
         table.put_item(Item=db_state)
     
-    # --- THIS IS THE FIX for the rings not updating ---
-    # We calculate progress and add it to every response.
-    progress = calculate_pillar_progress(user_state, QUESTIONS_CONFIG)
+    # --- Step 5: Calculate the final progress for the RINGS using the VISUAL scores
+    progress_for_rings = calculate_pillar_progress({'section_scores': visual_scores}, QUESTIONS_CONFIG)
     
     if next_question_id:
         next_question_data = QUESTIONS_CONFIG['questions'][next_question_id]
-        response_body = {'nextQuestion': next_question_data, 'pillarProgress': progress}
+        response_body = {'nextQuestion': next_question_data, 'pillarProgress': progress_for_rings}
         return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': json.dumps(response_body)}
     else:
-        response_body = {'status': 'completed', 'finalScores': user_state['section_scores'], 'pillarProgress': progress}
+        # For the final response, we can send the accurate scores
+        final_progress = calculate_pillar_progress(user_state, QUESTIONS_CONFIG)
+        response_body = {'status': 'completed', 'finalScores': user_state['section_scores'], 'pillarProgress': final_progress}
         return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': json.dumps(response_body)}
+
 
 def handle_save_progress(event_body, user):
     # This function is correct as is
@@ -159,7 +167,7 @@ def handle_get_state(user):
     # This function is correct as is
     pass
 
-# --- Lambda Entry Point (Corrected for API Gateway) ---
+# --- Lambda Entry Point (Correct for API Gateway) ---
 def lambda_handler(event, context):
     print("Received event: " + json.dumps(event, indent=2))
     path = event.get('path', '')
