@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -121,7 +120,7 @@ const QuestionBox = ({
   const [internalValue, setInternalValue] = useState(value);
 
   const handleNext = () => {
-    const token = localStorage.getItem("session_jwt");
+    const token = localStorage.getItem("infinitelife_jwt");
     submitAnswer(question.id, internalValue, token || undefined);
   };
 
