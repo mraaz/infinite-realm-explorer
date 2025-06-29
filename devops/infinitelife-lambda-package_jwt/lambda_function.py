@@ -3,6 +3,7 @@ import json
 import boto3
 import jwt
 from datetime import datetime, timezone
+import decimal
 
 # --- Configuration ---
 DYNAMODB_TABLE_NAME = os.environ.get('ANSWERS_TABLE_NAME', 'infinitelife-answers')
@@ -27,7 +28,17 @@ try:
 except FileNotFoundError:
     QUESTIONS_CONFIG = {"questions": {}, "sections": {}, "question_flow": [], "section_flow": []}
 
-# --- Helper Functions (No changes needed) ---
+# --- Helper Class for JSON serialization ---
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, decimal.Decimal):
+            if o % 1 > 0:
+                return float(o)
+            else:
+                return int(o)
+        return super(DecimalEncoder, self).default(o)
+
+# --- Helper Functions ---
 def get_user_from_jwt(event):
     headers = event.get('headers') or {}
     auth_header = None
@@ -71,6 +82,8 @@ def calculate_pillar_progress(user_state, questions_config):
     current_section_scores = user_state.get('section_scores', {})
     for section_id, section_data in questions_config.get('sections', {}).items():
         pillar_key = section_id.split('_')[0]
+        if pillar_key == 'financials':
+            pillar_key = 'finances'
         if pillar_key in pillars:
             pillars[pillar_key]['possible'] += section_data.get('total_points', 0)
             pillars[pillar_key]['earned'] += current_section_scores.get(section_id, 0)
@@ -81,8 +94,6 @@ def calculate_pillar_progress(user_state, questions_config):
     return pillar_percentages
 
 # --- Main Logic Handlers ---
-
-# --- THIS IS THE REFACTORED AND CORRECTED FUNCTION ---
 def handle_answer(event_body, user):
     new_answer_data = event_body.get('newAnswer', {})
     question_id = new_answer_data.get('questionId')
@@ -91,8 +102,22 @@ def handle_answer(event_body, user):
     if not question_id or not all_answers:
         return {'statusCode': 400, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Payload must include newAnswer and allAnswers'})}
 
-    # --- Step 1: Calculate raw scores for all sections based on the complete answer history
     user_state = {'answers': all_answers, 'section_scores': {}}
+    
+    # If the user is logged in, fetch their existing state first
+    if user:
+        try:
+            response = table.get_item(Key={'userId': user['sub']})
+            if 'Item' in response:
+                # Start with the state from the DB
+                user_state = response['Item']
+                # Then update it with the latest full answer set from the frontend
+                user_state['answers'] = all_answers
+        except Exception as e:
+            print(f"Error fetching user state: {e}")
+
+    # Recalculate all scores from scratch based on the full answer history
+    user_state['section_scores'] = {} # Reset scores to recalculate
     for q_id, ans in all_answers.items():
         q_data = QUESTIONS_CONFIG['questions'].get(q_id)
         if q_data:
@@ -100,32 +125,23 @@ def handle_answer(event_body, user):
             section_id = q_data.get('section', 'unknown')
             user_state['section_scores'][section_id] = user_state['section_scores'].get(section_id, 0) + score
 
-    # --- Step 2: Create a separate dictionary for the visual progress calculation
     visual_scores = user_state['section_scores'].copy()
-
-    # --- Step 3: Retroactively "top up" the VISUAL scores for any section where the threshold was met
     for section_id, section_config in QUESTIONS_CONFIG.get('sections', {}).items():
         trigger_questions = section_config.get('adaptive_trigger_questions', [])
         if any(q in all_answers for q in trigger_questions):
             current_section_score = user_state['section_scores'].get(section_id, 0)
             max_score_so_far = section_config.get('adaptive_max_score', 1)
-            
-            if (current_section_score / max_score_so_far) >= SCORING_THRESHOLD:
-                print(f"Topping up VISUAL score for completed section: {section_id}")
+            if max_score_so_far > 0 and (current_section_score / max_score_so_far) >= SCORING_THRESHOLD:
                 visual_scores[section_id] = section_config.get('total_points', current_section_score)
 
-    # --- Step 4: Determine the next question based on the last answer
     next_question_id = get_next_question_id(question_id)
     
-    # Check if we need to skip ahead based on the *most recent* answer
     last_question_data = QUESTIONS_CONFIG['questions'].get(question_id)
     if last_question_data:
         last_section_id = last_question_data.get('section')
         last_section_config = QUESTIONS_CONFIG['sections'].get(last_section_id)
-        # Use the topped-up visual score to check if we should skip
         if last_section_config and question_id in last_section_config.get('adaptive_trigger_questions', []):
             if visual_scores.get(last_section_id) == last_section_config.get('total_points'):
-                print(f"Threshold met for section {last_section_id}. Skipping to next section.")
                 section_flow = QUESTIONS_CONFIG.get('section_flow', [])
                 try:
                     current_section_index = section_flow.index(last_section_id)
@@ -137,15 +153,20 @@ def handle_answer(event_body, user):
                 except (ValueError, IndexError):
                     pass
 
-    # For logged-in users, save the state with the ACCURATE scores to DynamoDB
+    # --- THIS IS THE FIX ---
+    # Save the state for a logged-in user on every answer.
     if user:
-        db_state = {'userId': user['sub']}
-        db_state.update(user_state) # This uses the accurate, non-topped-up scores
-        db_state['lastQuestionId'] = next_question_id if next_question_id else 'completed'
-        db_state['updatedAt'] = datetime.now(timezone.utc).isoformat()
-        table.put_item(Item=db_state)
+        user_state['userId'] = user['sub']
+        user_state['lastQuestionId'] = next_question_id if next_question_id else 'completed'
+        user_state['updatedAt'] = datetime.now(timezone.utc).isoformat()
+        try:
+            # Convert floats to Decimals for DynamoDB
+            user_state_db = json.loads(json.dumps(user_state), parse_float=decimal.Decimal)
+            table.put_item(Item=user_state_db)
+            print(f"Successfully saved state for user {user['sub']}")
+        except Exception as e:
+            print(f"ERROR saving state for user {user['sub']}: {e}")
     
-    # --- Step 5: Calculate the final progress for the RINGS using the VISUAL scores
     progress_for_rings = calculate_pillar_progress({'section_scores': visual_scores}, QUESTIONS_CONFIG)
     
     if next_question_id:
@@ -153,19 +174,70 @@ def handle_answer(event_body, user):
         response_body = {'nextQuestion': next_question_data, 'pillarProgress': progress_for_rings}
         return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': json.dumps(response_body)}
     else:
-        # For the final response, we can send the accurate scores
         final_progress = calculate_pillar_progress(user_state, QUESTIONS_CONFIG)
         response_body = {'status': 'completed', 'finalScores': user_state['section_scores'], 'pillarProgress': final_progress}
-        return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': json.dumps(response_body)}
+        return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': json.dumps(response_body, cls=DecimalEncoder)}
 
-
+# --- THIS IS THE IMPLEMENTED FUNCTION ---
 def handle_save_progress(event_body, user):
-    # This function is correct as is
-    pass
+    if not user:
+        return {'statusCode': 401, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Authentication required'})}
 
+    answers = event_body.get('answers', {})
+    if not answers:
+        return {'statusCode': 400, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'No answers provided to save.'})}
+
+    user_state = {
+        'userId': user['sub'],
+        'answers': answers,
+        'section_scores': {},
+        'createdAt': datetime.now(timezone.utc).isoformat()
+    }
+
+    for q_id, ans in answers.items():
+        question_data = QUESTIONS_CONFIG['questions'].get(q_id)
+        if question_data:
+            score = calculate_score(question_data, ans)
+            section_id = question_data['section']
+            user_state['section_scores'][section_id] = user_state['section_scores'].get(section_id, 0) + score
+
+    last_question_answered = list(answers.keys())[-1]
+    next_question_id = get_next_question_id(last_question_answered)
+    user_state['lastQuestionId'] = next_question_id if next_question_id else 'completed'
+    user_state['updatedAt'] = datetime.now(timezone.utc).isoformat()
+    
+    try:
+        user_state_db = json.loads(json.dumps(user_state), parse_float=decimal.Decimal)
+        table.put_item(Item=user_state_db)
+        print(f"Successfully saved GUEST progress for user {user['sub']}")
+        return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': json.dumps({'message': 'Progress saved successfully'})}
+    except Exception as e:
+        print(f"Error saving guest progress for user {user['sub']}: {e}")
+        return {'statusCode': 500, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Could not save progress'})}
+
+# --- THIS IS THE IMPLEMENTED FUNCTION ---
 def handle_get_state(user):
-    # This function is correct as is
-    pass
+    if not user:
+        return {'statusCode': 401, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Authentication required'})}
+
+    try:
+        response = table.get_item(Key={'userId': user['sub']})
+        if 'Item' in response:
+            user_state = response['Item']
+            progress = calculate_pillar_progress(user_state, QUESTIONS_CONFIG)
+            user_state['pillarProgress'] = progress
+            print(f"Successfully fetched state for user {user['sub']}")
+            return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': json.dumps(user_state, cls=DecimalEncoder)}
+        else:
+            print(f"No state found for user {user['sub']}. Sending first question.")
+            first_question_id = QUESTIONS_CONFIG['question_flow'][0]
+            first_question = QUESTIONS_CONFIG['questions'][first_question_id]
+            initial_progress = calculate_pillar_progress({}, QUESTIONS_CONFIG)
+            response_body = {'nextQuestion': first_question, 'pillarProgress': initial_progress}
+            return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': json.dumps(response_body)}
+    except Exception as e:
+        print(f"Error getting state for user {user['sub']}: {e}")
+        return {'statusCode': 500, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Could not retrieve state'})}
 
 # --- Lambda Entry Point (Correct for API Gateway) ---
 def lambda_handler(event, context):
@@ -180,11 +252,11 @@ def lambda_handler(event, context):
         except json.JSONDecodeError:
             return {'statusCode': 400, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Invalid JSON body'})}
     try:
-        if path.endswith('/questionnaire/answer') and http_method == 'POST':
+        if path.endswith('/questionnaire/answer'):
             return handle_answer(body, user)
-        elif path.endswith('/questionnaire/save-progress') and http_method == 'POST':
+        elif path.endswith('/questionnaire/save-progress'):
             return handle_save_progress(body, user)
-        elif path.endswith('/questionnaire/state') and http_method == 'GET':
+        elif path.endswith('/questionnaire/state'):
             return handle_get_state(user)
         else:
             return {'statusCode': 404, 'headers': CORS_HEADERS, 'body': json.dumps({'error': f'Endpoint not found: {http_method} {path}'})}
