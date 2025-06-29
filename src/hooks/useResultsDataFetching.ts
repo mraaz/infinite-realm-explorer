@@ -1,8 +1,16 @@
-
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { FutureQuestionnaire, PillarProgress } from "@/types/results"; // Assuming types are here
+import { FutureQuestionnaire } from "@/types/results"; // Only import what we need
+
+// Define PillarProgress locally for onboarding isolation
+interface PillarProgress {
+  basics: number;
+  career: number;
+  finances: number;
+  health: number;
+  connections: number;
+}
 
 // Define the shape of the results data we expect from localStorage or API
 interface ResultsData {
@@ -13,7 +21,7 @@ interface ResultsData {
 export const useResultsDataFetching = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isLoggedIn, token } = useAuth();
+  const { isLoggedIn } = useAuth(); // Remove token from destructuring
 
   // State to hold the fetched/retrieved data
   const [answers, setAnswers] = useState<Record<string, any>>({});
@@ -30,6 +38,9 @@ export const useResultsDataFetching = () => {
     const fetchResults = async () => {
       setIsLoading(true);
       let data: ResultsData | null = null;
+
+      // Get token directly from localStorage
+      const token = localStorage.getItem("infinitelife_jwt");
 
       if (isLoggedIn && token) {
         // LOGGED-IN USER LOGIC
@@ -94,7 +105,7 @@ export const useResultsDataFetching = () => {
     };
 
     fetchResults();
-  }, [isLoggedIn, token, navigate]);
+  }, [isLoggedIn, navigate]);
 
   // Keep your existing logic for the "Future Self" questionnaire
   const {

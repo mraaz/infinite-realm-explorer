@@ -1,9 +1,18 @@
+
 import {
   FutureQuestionnaire,
   FutureSelfArchitect,
-  PillarProgress,
 } from "@/types/results";
 import { useProgressCalculation } from "./useProgressCalculation";
+
+// Define PillarProgress locally for onboarding isolation
+interface PillarProgress {
+  basics: number;
+  career: number;
+  finances: number;
+  health: number;
+  connections: number;
+}
 
 export const useResultsDataTransformation = (
   currentProgress: PillarProgress, // It receives the correct data here...
