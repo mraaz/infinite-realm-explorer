@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -68,7 +67,7 @@ const OnboardingQuestionnaire = () => {
               Building Your 5-Year Snapshot
             </h1>
             <p className="text-base sm:text-lg text-gray-400">
-              Complete each area to unlock your personalized insights.
+              Complete each area to unlock your personalised insights.
             </p>
           </div>
 

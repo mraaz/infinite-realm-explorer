@@ -1,4 +1,3 @@
-
 import { create } from "zustand";
 
 // Define the shape of a single question
@@ -24,7 +23,7 @@ export interface PillarProgress {
 // This avoids an API call for non-logged-in users.
 const GUEST_USER_FIRST_QUESTION: Question = {
   id: "dob",
-  question: "To personalize your timeline, what year were you born?",
+  question: "To personalise your timeline, what year were you born?",
   type: "year",
   section: "basics",
 };

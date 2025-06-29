@@ -366,7 +366,7 @@
   "questions": {
     "dob": {
       "id": "dob",
-      "question": "To personalize your timeline, what year were you born?",
+      "question": "To personalise your timeline, what year were you born?",
       "type": "year",
       "section": "basics",
       "scoring": { "points": 0 }
