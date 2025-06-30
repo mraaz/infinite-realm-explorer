@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -20,13 +19,10 @@ const OnboardingQuestionnaire = () => {
     isCompleted,
     initializeQuestionnaire,
     submitAnswer,
-    goToPreviousQuestion,
+    previousQuestion, // --- UPDATED --- Use the new async action
     currentQuestionIndex,
   } = useOnboardingQuestionnaireStore();
 
-  // --- THIS IS THE FIX ---
-  // We select pillarProgress separately and provide a fallback default object.
-  // This prevents the component from crashing if the state is ever inconsistent.
   const pillarProgress = useOnboardingQuestionnaireStore(
     (state) => state.pillarProgress
   ) || { career: 0, finances: 0, health: 0, connections: 0 };
@@ -52,11 +48,12 @@ const OnboardingQuestionnaire = () => {
     }
   };
 
+  // --- UPDATED --- This now calls the async action
   const handlePrevious = () => {
-    goToPreviousQuestion();
+    const token = getAuthToken();
+    previousQuestion(token || undefined);
   };
 
-  // This calculation is now safe because pillarProgress is guaranteed to be an object.
   const overallPercentage =
     (pillarProgress.career +
       pillarProgress.finances +

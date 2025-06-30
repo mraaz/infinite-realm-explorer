@@ -1,4 +1,3 @@
-
 import { create } from "zustand";
 
 // Define the shape of a single question
@@ -21,7 +20,6 @@ export interface PillarProgress {
 }
 
 // Hardcode the first question for guest users.
-// This avoids an API call for non-logged-in users.
 const GUEST_USER_FIRST_QUESTION: Question = {
   id: "dob",
   question: "To personalise your timeline, what year were you born?",
@@ -44,7 +42,8 @@ interface QuestionnaireState {
     answer: any,
     authToken?: string
   ) => Promise<void>;
-  goToPreviousQuestion: () => void;
+  // --- UPDATED --- Renamed for clarity and made async
+  previousQuestion: (authToken?: string) => Promise<void>;
   saveGuestProgressAfterLogin: (authToken: string) => Promise<void>;
 }
 
@@ -57,7 +56,7 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
     // Initial State
     currentQuestion: null,
     answers: {},
-    isLoading: true, // Start in loading state until initialized
+    isLoading: true,
     isCompleted: false,
     finalScores: null,
     pillarProgress: { career: 0, finances: 0, health: 0, connections: 0 },
@@ -66,7 +65,6 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
     // ACTIONS
 
     initializeQuestionnaire: async (authToken) => {
-      // For a logged-in user, we fetch their state from the backend.
       if (authToken) {
         set({ isLoading: true });
         try {
@@ -95,16 +93,10 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
           set({ isLoading: false });
         }
       } else {
-        // For a guest user, we simply set the hardcoded first question.
         set({
           currentQuestion: GUEST_USER_FIRST_QUESTION,
           answers: {},
-          pillarProgress: {
-            career: 0,
-            finances: 0,
-            health: 0,
-            connections: 0,
-          },
+          pillarProgress: { career: 0, finances: 0, health: 0, connections: 0 },
           currentQuestionIndex: 0,
           isLoading: false,
           isCompleted: false,
@@ -114,7 +106,6 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
     },
 
     submitAnswer: async (questionId, answer, authToken) => {
-      // Optimistically update the local state first for a snappy UI
       const updatedAnswers = { ...get().answers, [questionId]: answer };
       set({ answers: updatedAnswers });
       set({ isLoading: true });
@@ -128,7 +119,6 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
         const response = await fetch(`${API_BASE_URL}/questionnaire/answer`, {
           method: "POST",
           headers,
-          // We send the single new answer AND the full history of answers.
           body: JSON.stringify({
             newAnswer: { questionId, answer },
             allAnswers: updatedAnswers,
@@ -137,17 +127,16 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
         const data = await response.json();
 
         if (data.status === "completed") {
-          // If the user is a guest, save their final results to localStorage.
           if (!authToken) {
-            console.log("Guest finished. Saving results to localStorage.");
-            const guestResults = {
-              finalScores: data.finalScores,
-              pillarProgress: data.pillarProgress,
-              answers: updatedAnswers,
-            };
-            localStorage.setItem("guestResults", JSON.stringify(guestResults));
+            localStorage.setItem(
+              "guestResults",
+              JSON.stringify({
+                finalScores: data.finalScores,
+                pillarProgress: data.pillarProgress,
+                answers: updatedAnswers,
+              })
+            );
           }
-
           set({
             isCompleted: true,
             currentQuestion: null,
@@ -169,13 +158,44 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
       }
     },
 
-    goToPreviousQuestion: () => {
-      const currentIndex = get().currentQuestionIndex;
-      if (currentIndex > 0) {
-        // For now, we'll just decrement the index
-        // In a real implementation, you'd need to track question history
-        set({ currentQuestionIndex: currentIndex - 1 });
-        console.log("Going to previous question - this is a simplified implementation");
+    // --- THIS REPLACES your old goToPreviousQuestion function ---
+    previousQuestion: async (authToken) => {
+      const { currentQuestion, answers, currentQuestionIndex } = get();
+      if (!currentQuestion || currentQuestionIndex === 0) return;
+
+      set({ isLoading: true });
+
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+        ...(authToken && { Authorization: `Bearer ${authToken}` }),
+      };
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/questionnaire/previous`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            currentQuestionId: currentQuestion.id,
+            allAnswers: answers,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to go to previous question");
+        }
+
+        const data = await response.json();
+
+        set({
+          currentQuestion: data.previousQuestion,
+          pillarProgress: data.pillarProgress,
+          answers: data.updatedAnswers,
+          currentQuestionIndex: currentQuestionIndex - 1,
+          isLoading: false,
+        });
+      } catch (error) {
+        console.error("Failed to go to previous question:", error);
+        set({ isLoading: false });
       }
     },
 
@@ -192,7 +212,6 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
           },
           body: JSON.stringify({ answers }),
         });
-        // After saving, we re-initialize to get the canonical server state.
         get().initializeQuestionnaire(authToken);
       } catch (error) {
         console.error("Failed to save guest progress:", error);
