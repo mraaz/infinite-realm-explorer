@@ -5,6 +5,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import compression from "vite-plugin-compression";
 import { visualizer } from "rollup-plugin-visualizer";
+import { viteImagemin } from "vite-plugin-imagemin";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -15,6 +16,30 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
+    // Image optimization - only in production builds
+    mode === 'production' && viteImagemin({
+      // PNG optimization
+      pngquant: {
+        quality: [0.8, 0.9],
+        speed: 4,
+      },
+      // JPEG optimization
+      mozjpeg: {
+        quality: 85,
+        progressive: true,
+      },
+      // SVG optimization
+      svgo: {
+        plugins: [
+          { name: 'removeViewBox', active: false },
+          { name: 'removeEmptyAttrs', active: false },
+        ],
+      },
+      // WebP conversion for better compression
+      webp: {
+        quality: 85,
+      },
+    }),
     // Bundle analyzer - generates stats.html in dist folder
     visualizer({
       filename: 'dist/stats.html',
@@ -91,9 +116,25 @@ export default defineConfig(({ mode }) => ({
             : 'chunk';
           return `js/${facadeModuleId}-[hash].js`;
         },
+        // Optimize asset naming for better caching
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name?.split('.') ?? [];
+          const ext = info[info.length - 1];
+          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext ?? '')) {
+            return `images/[name]-[hash][extname]`;
+          }
+          if (/css/i.test(ext ?? '')) {
+            return `css/[name]-[hash][extname]`;
+          }
+          return `assets/[name]-[hash][extname]`;
+        },
       },
     },
     // Increase chunk size warning limit
     chunkSizeWarningLimit: 1000,
+    // Optimize asset handling
+    assetsInlineLimit: 4096, // Inline assets smaller than 4kb as base64
   },
+  // Optimize asset serving in development
+  assetsInclude: ['**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.gif', '**/*.svg', '**/*.webp'],
 }));
