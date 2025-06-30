@@ -1,5 +1,6 @@
 
 import React from 'react';
+import Index from '@/pages/Index';
 import OnboardingQuestionnaire from '@/pages/OnboardingQuestionnaire';
 
 export const navItems = [
@@ -11,6 +12,6 @@ export const navItems = [
   {
     title: "Home",
     to: "/",
-    page: <OnboardingQuestionnaire />, // Default to questionnaire for now
+    page: <Index />,
   },
 ];
