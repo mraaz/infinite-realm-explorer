@@ -32,10 +32,7 @@ except FileNotFoundError:
 class DecimalEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, decimal.Decimal):
-            if o % 1 > 0:
-                return float(o)
-            else:
-                return int(o)
+            return float(o) if o % 1 > 0 else int(o)
         return super(DecimalEncoder, self).default(o)
 
 # --- Helper Functions ---
@@ -82,7 +79,7 @@ def calculate_pillar_progress(user_state, questions_config):
     current_section_scores = user_state.get('section_scores', {})
     for section_id, section_data in questions_config.get('sections', {}).items():
         pillar_key = section_id.split('_')[0]
-        if pillar_key == 'financials': # Handle the naming inconsistency
+        if pillar_key == 'financials':
             pillar_key = 'finances'
         if pillar_key in pillars:
             pillars[pillar_key]['possible'] += section_data.get('total_points', 0)
@@ -150,13 +147,19 @@ def handle_answer(event_body, user):
                     pass
 
     if user:
-        db_state = {'userId': user['sub']}
-        db_state.update(user_state)
-        db_state['lastQuestionId'] = next_question_id if next_question_id else 'completed'
-        db_state['updatedAt'] = datetime.now(timezone.utc).isoformat()
+        # --- THIS IS THE FIX ---
+        # Create a clean db_state object to ensure we only save what's needed.
+        db_state = {
+            'userId': user['sub'],
+            'answers': user_state['answers'],
+            'section_scores': user_state['section_scores'],
+            'lastQuestionId': next_question_id if next_question_id else 'completed',
+            'updatedAt': datetime.now(timezone.utc).isoformat()
+        }
         try:
-            user_state_db = json.loads(json.dumps(user_state, cls=DecimalEncoder), parse_float=decimal.Decimal)
-            table.put_item(Item=user_state_db)
+            # Convert floats to Decimals for DynamoDB and save the correct object.
+            db_state_to_save = json.loads(json.dumps(db_state, cls=DecimalEncoder), parse_float=decimal.Decimal)
+            table.put_item(Item=db_state_to_save)
             print(f"Successfully saved state for user {user['sub']}")
         except Exception as e:
             print(f"ERROR saving state for user {user['sub']}: {e}")
@@ -198,7 +201,6 @@ def handle_save_progress(event_body, user):
         print(f"Error saving guest progress for user {user['sub']}: {e}")
         return {'statusCode': 500, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Could not save progress'})}
 
-# --- THIS IS THE CORRECTED FUNCTION ---
 def handle_get_state(user):
     if not user:
         return {'statusCode': 401, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Authentication required'})}
@@ -209,13 +211,9 @@ def handle_get_state(user):
             progress = calculate_pillar_progress(user_state, QUESTIONS_CONFIG)
             user_state['pillarProgress'] = progress
             
-            # --- THIS IS THE FIX ---
-            # Get the ID of the next question from the saved state.
             next_question_id = user_state.get('lastQuestionId')
             if next_question_id and next_question_id != 'completed':
-                # Fetch the full question object from our config.
                 next_question_object = QUESTIONS_CONFIG['questions'].get(next_question_id)
-                # Add it to the response payload under the key the frontend expects.
                 user_state['nextQuestion'] = next_question_object
             
             print(f"Successfully fetched state for user {user['sub']}")
@@ -231,7 +229,7 @@ def handle_get_state(user):
         print(f"Error getting state for user {user['sub']}: {e}")
         return {'statusCode': 500, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Could not retrieve state'})}
 
-# --- Lambda Entry Point (Correct for API Gateway) ---
+# --- Lambda Entry Point ---
 def lambda_handler(event, context):
     print("Received event: " + json.dumps(event, indent=2))
     path = event.get('path', '')

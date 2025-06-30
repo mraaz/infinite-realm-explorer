@@ -2,13 +2,20 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { YearPicker } from "@/components/ui/year-picker";
 import { Question } from "@/store/onboardingQuestionnaireStore";
 import { cn } from "@/lib/utils";
 
-// This first component, QuestionInput, is complex but its logic does not need to change.
-// The syntax error likely came from an accidentally deleted brace here.
+interface QuestionBoxProps {
+  question: Question;
+  value: any;
+  onSubmit: (answer: any) => void;
+  isSubmitting: boolean;
+  onPrevious: () => void; // Assuming you have a way to go back
+  isFirstQuestion: boolean;
+}
+
 const QuestionInput = ({
   question,
   value,
@@ -18,17 +25,12 @@ const QuestionInput = ({
   value: any;
   onChange: (value: any) => void;
 }) => {
-  const [sliderValue, setSliderValue] = useState(value);
+  // This component no longer needs its own internal state for the slider.
+  // It will be fully controlled by the parent `QuestionBox`.
 
   const handleSliderChange = (values: number[]) => {
-    const newValue = values[0];
-    setSliderValue(newValue);
-    onChange(newValue);
+    onChange(values[0]);
   };
-
-  useEffect(() => {
-    setSliderValue(value);
-  }, [value, question.id]);
 
   switch (question.type) {
     case "year":
@@ -40,17 +42,15 @@ const QuestionInput = ({
           yearRange={80}
         />
       );
-
     case "text":
       return (
         <Input
           placeholder={question.placeholder || "Type your answer..."}
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}
-          className="bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:ring-purple-500 focus:border-purple-500"
+          className="bg-gray-800 border-gray-700 text-white"
         />
       );
-
     case "yes-no":
       return (
         <div className="flex gap-4 justify-center">
@@ -59,9 +59,7 @@ const QuestionInput = ({
             variant={value === "Yes" ? "default" : "outline"}
             className={cn(
               "w-32",
-              value === "Yes"
-                ? "bg-purple-600 hover:bg-purple-700"
-                : "bg-gray-800 hover:bg-gray-700 border-gray-700"
+              value === "Yes" ? "bg-purple-600" : "bg-gray-800"
             )}
           >
             Yes
@@ -71,16 +69,13 @@ const QuestionInput = ({
             variant={value === "No" ? "default" : "outline"}
             className={cn(
               "w-32",
-              value === "No"
-                ? "bg-purple-600 hover:bg-purple-700"
-                : "bg-gray-800 hover:bg-gray-700 border-gray-700"
+              value === "No" ? "bg-purple-600" : "bg-gray-800"
             )}
           >
             No
           </Button>
         </div>
       );
-
     case "multiple-choice":
       return (
         <div className="flex flex-col gap-3 w-full max-w-sm mx-auto">
@@ -89,10 +84,8 @@ const QuestionInput = ({
               key={option}
               variant={value === option ? "default" : "outline"}
               className={cn(
-                "w-full justify-start text-left py-4 text-base transition-all h-auto whitespace-normal",
-                value === option
-                  ? "bg-purple-600 hover:bg-purple-700 text-white border-purple-500"
-                  : "bg-gray-800 hover:bg-gray-700 border-gray-700 text-gray-300 hover:border-purple-500"
+                "w-full justify-start text-left py-4 h-auto",
+                value === option ? "bg-purple-600" : "bg-gray-800"
               )}
               onClick={() => onChange(option)}
             >
@@ -101,26 +94,24 @@ const QuestionInput = ({
           ))}
         </div>
       );
-
     case "slider":
-      const sliderPosition = sliderValue ? ((sliderValue - 1) / 9) * 100 : 50;
+      const sliderPosition = value ? ((value - 1) / 9) * 100 : 50;
       return (
         <div className="w-full max-w-sm mx-auto pt-2 relative">
-          {sliderValue && (
+          {value && (
             <div
               className="absolute -top-8 bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded-md"
               style={{ left: `calc(${sliderPosition}% - 16px)` }}
             >
-              {sliderValue}
+              {value}
             </div>
           )}
           <Slider
-            value={sliderValue ? [sliderValue] : undefined}
+            value={value ? [value] : [5]}
             min={1}
             max={10}
             step={1}
             onValueChange={handleSliderChange}
-            className="[&>span:first-child]:bg-purple-500 [&>span]:bg-gray-700"
           />
           <div className="flex justify-between text-sm text-gray-400 mt-2">
             <span>{question.sliderLabels?.min}</span>
@@ -128,7 +119,6 @@ const QuestionInput = ({
           </div>
         </div>
       );
-
     default:
       return (
         <p className="text-red-500">
@@ -138,24 +128,25 @@ const QuestionInput = ({
   }
 };
 
-interface QuestionBoxProps {
-  question: Question;
-  value: any;
-  onSubmit: (answer: any) => void;
-  isSubmitting: boolean;
-}
-
 const QuestionBox = ({
   question,
   value,
   onSubmit,
   isSubmitting,
+  onPrevious,
+  isFirstQuestion,
 }: QuestionBoxProps) => {
   const [internalValue, setInternalValue] = useState(value);
 
   useEffect(() => {
-    setInternalValue(value);
-  }, [value, question.id]);
+    // When the question changes, reset the internal value.
+    // For sliders, we can default to 5 if no value exists.
+    if (question.type === "slider" && value === undefined) {
+      setInternalValue(5);
+    } else {
+      setInternalValue(value);
+    }
+  }, [value, question.id, question.type]);
 
   const handleNext = () => {
     onSubmit(internalValue);
@@ -167,25 +158,30 @@ const QuestionBox = ({
     internalValue !== "";
 
   return (
-    <div className="bg-[#1e1e24] p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto">
+    <div className="bg-[#1e1e24] p-8 rounded-2xl w-full max-w-2xl mx-auto">
       <h2 className="text-xl font-semibold text-white mb-6 text-center">
         {question.question}
       </h2>
-
       <div className="mb-6 min-h-[5rem] flex justify-center items-center">
+        {/* --- THIS IS THE FIX --- */}
+        {/* We add the question.id as a key to force a full remount on every question change. */}
         <QuestionInput
+          key={question.id}
           question={question}
           value={internalValue}
           onChange={setInternalValue}
         />
       </div>
-
-      <div className="flex justify-end items-center mt-8">
+      <div className="flex justify-between items-center mt-8">
         <Button
-          onClick={handleNext}
-          disabled={!isAnswered || isSubmitting}
-          className="w-full sm:w-auto bg-gradient-cta text-white font-bold disabled:opacity-50"
+          variant="outline"
+          onClick={onPrevious}
+          disabled={isFirstQuestion || isSubmitting}
         >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Previous
+        </Button>
+        <Button onClick={handleNext} disabled={!isAnswered || isSubmitting}>
           {isSubmitting ? "Submitting..." : "Next"}
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
