@@ -174,8 +174,8 @@ const Index = () => {
               Ready to begin?
             </h3>
             <p className="text-gray-400 mb-6">
-              Take our quick assessment and unlock your personalised life
-              insights.
+              Take our assessment and unlock your personalised life insights.
+              This usually takes 5mins to complete.
             </p>
 
             <button
