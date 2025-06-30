@@ -6,7 +6,6 @@ import { componentTagger } from "lovable-tagger";
 import compression from "vite-plugin-compression";
 import { visualizer } from "rollup-plugin-visualizer";
 import viteImagemin from "vite-plugin-imagemin";
-import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -17,110 +16,6 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
-    // PWA Configuration
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
-      manifest: {
-        name: 'Infinite Game Life',
-        short_name: 'InfiniteLife',
-        description: 'AI-powered application designed to help people visualize the long-term impact of their daily decisions',
-        theme_color: '#16161a',
-        background_color: '#16161a',
-        display: 'standalone',
-        orientation: 'portrait',
-        scope: '/',
-        start_url: '/',
-        categories: ['lifestyle', 'productivity', 'education'],
-        icons: [
-          {
-            src: '/lovable-uploads/f3233eb2-372b-4870-b906-f27353494ceb.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: '/lovable-uploads/f3233eb2-372b-4870-b906-f27353494ceb.png',
-            sizes: '512x512',
-            type: 'image/png'
-          },
-          {
-            src: '/lovable-uploads/f3233eb2-372b-4870-b906-f27353494ceb.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
-        ],
-        shortcuts: [
-          {
-            name: 'Take Questionnaire',
-            short_name: 'Questionnaire',
-            description: 'Start the onboarding questionnaire',
-            url: '/questionnaire',
-            icons: [{ src: '/lovable-uploads/f3233eb2-372b-4870-b906-f27353494ceb.png', sizes: '96x96' }]
-          },
-          {
-            name: 'View Profile',
-            short_name: 'Profile',
-            description: 'View your life dashboard',
-            url: '/profile',
-            icons: [{ src: '/lovable-uploads/f3233eb2-372b-4870-b906-f27353494ceb.png', sizes: '96x96' }]
-          }
-        ]
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'gstatic-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/.*\.execute-api\..*\.amazonaws\.com\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 5 // 5 minutes
-              },
-              networkTimeoutSeconds: 10
-            }
-          },
-          {
-            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'images-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
-              }
-            }
-          }
-        ]
-      },
-      devOptions: {
-        enabled: false
-      }
-    }),
     // Image optimization - only in production builds
     mode === 'production' && viteImagemin({
       // PNG optimization
