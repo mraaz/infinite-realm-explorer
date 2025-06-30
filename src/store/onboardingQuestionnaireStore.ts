@@ -1,3 +1,4 @@
+
 import { create } from "zustand";
 
 // Define the shape of a single question
@@ -36,12 +37,14 @@ interface QuestionnaireState {
   isCompleted: boolean;
   finalScores: Record<string, any> | null;
   pillarProgress: PillarProgress;
+  currentQuestionIndex: number;
   initializeQuestionnaire: (authToken?: string) => Promise<void>;
   submitAnswer: (
     questionId: string,
     answer: any,
     authToken?: string
   ) => Promise<void>;
+  goToPreviousQuestion: () => void;
   saveGuestProgressAfterLogin: (authToken: string) => Promise<void>;
 }
 
@@ -58,6 +61,7 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
     isCompleted: false,
     finalScores: null,
     pillarProgress: { career: 0, finances: 0, health: 0, connections: 0 },
+    currentQuestionIndex: 0,
 
     // ACTIONS
 
@@ -83,6 +87,7 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
               health: 0,
               connections: 0,
             },
+            currentQuestionIndex: Object.keys(data.answers || {}).length,
             isLoading: false,
           });
         } catch (error) {
@@ -100,6 +105,7 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
             health: 0,
             connections: 0,
           },
+          currentQuestionIndex: 0,
           isLoading: false,
           isCompleted: false,
           finalScores: null,
@@ -153,12 +159,23 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
           set({
             currentQuestion: data.nextQuestion,
             pillarProgress: data.pillarProgress,
+            currentQuestionIndex: get().currentQuestionIndex + 1,
             isLoading: false,
           });
         }
       } catch (error) {
         console.error("Failed to submit answer:", error);
         set({ isLoading: false });
+      }
+    },
+
+    goToPreviousQuestion: () => {
+      const currentIndex = get().currentQuestionIndex;
+      if (currentIndex > 0) {
+        // For now, we'll just decrement the index
+        // In a real implementation, you'd need to track question history
+        set({ currentQuestionIndex: currentIndex - 1 });
+        console.log("Going to previous question - this is a simplified implementation");
       }
     },
 
