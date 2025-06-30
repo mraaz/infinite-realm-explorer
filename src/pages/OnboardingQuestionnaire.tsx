@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -19,6 +20,8 @@ const OnboardingQuestionnaire = () => {
     isCompleted,
     initializeQuestionnaire,
     submitAnswer,
+    goToPreviousQuestion,
+    currentQuestionIndex,
   } = useOnboardingQuestionnaireStore();
 
   // --- THIS IS THE FIX ---
@@ -47,6 +50,10 @@ const OnboardingQuestionnaire = () => {
       const token = getAuthToken();
       submitAnswer(currentQuestion.id, answer, token || undefined);
     }
+  };
+
+  const handlePrevious = () => {
+    goToPreviousQuestion();
   };
 
   // This calculation is now safe because pillarProgress is guaranteed to be an object.
@@ -94,6 +101,8 @@ const OnboardingQuestionnaire = () => {
                 value={answers[currentQuestion.id]}
                 onSubmit={handleSubmitAnswer}
                 isSubmitting={isLoading}
+                onPrevious={handlePrevious}
+                isFirstQuestion={currentQuestionIndex === 0}
               />
             )}
           </div>
