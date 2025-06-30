@@ -112,6 +112,7 @@ const QuestionInput = ({
             max={10}
             step={1}
             onValueChange={handleSliderChange}
+            className="[&>span:first-child]:bg-purple-500 [&>span]:bg-gray-700 [&>span>span]:bg-white"
           />
           <div className="flex justify-between text-sm text-gray-400 mt-2">
             <span>{question.sliderLabels?.min}</span>
@@ -177,6 +178,7 @@ const QuestionBox = ({
           variant="outline"
           onClick={onPrevious}
           disabled={isFirstQuestion || isSubmitting}
+          className="w-full sm:w-auto bg-transparent hover:bg-gray-800 text-gray-300 border-gray-700 hover:border-gray-600 disabled:opacity-50"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Previous
