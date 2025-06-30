@@ -125,7 +125,10 @@ def handle_answer(event_body, user):
             current_section_score = user_state['section_scores'].get(section_id, 0)
             max_score_so_far = section_config.get('adaptive_max_score', 1)
             if max_score_so_far > 0 and (current_section_score / max_score_so_far) >= SCORING_THRESHOLD:
-                visual_scores[section_id] = section_config.get('total_points', current_section_score)
+                performance_percentage = current_section_score / max_score_so_far
+                extrapolated_score = performance_percentage * section_config.get('total_points', 0)
+                user_state['section_scores'][section_id] = extrapolated_score # Save accurate score
+                visual_scores[section_id] = section_config.get('total_points', 0) # Top up visual score
 
     next_question_id = get_next_question_id(question_id)
     
@@ -165,7 +168,9 @@ def handle_answer(event_body, user):
     
     if next_question_id:
         next_question_data = QUESTIONS_CONFIG['questions'][next_question_id]
-        response_body = {'nextQuestion': next_question_data, 'pillarProgress': progress_for_rings}
+        question_flow = QUESTIONS_CONFIG.get('question_flow', [])
+        next_question_index = question_flow.index(next_question_id) if next_question_id in question_flow else 0
+        response_body = {'nextQuestion': next_question_data, 'pillarProgress': progress_for_rings, 'currentQuestionIndex': next_question_index}
         return {'statusCode': 200, 'body': json.dumps(response_body)}
     else:
         final_progress = calculate_pillar_progress(user_state, QUESTIONS_CONFIG)
@@ -196,8 +201,10 @@ def handle_previous(event_body, user):
     
     progress = calculate_pillar_progress(user_state, QUESTIONS_CONFIG)
     previous_question_data = QUESTIONS_CONFIG['questions'].get(previous_question_id)
+    question_flow = QUESTIONS_CONFIG.get('question_flow', [])
+    previous_question_index = question_flow.index(previous_question_id) if previous_question_id in question_flow else 0
 
-    response_body = {'previousQuestion': previous_question_data, 'pillarProgress': progress, 'updatedAnswers': all_answers}
+    response_body = {'previousQuestion': previous_question_data, 'pillarProgress': progress, 'updatedAnswers': all_answers, 'currentQuestionIndex': previous_question_index}
     return {'statusCode': 200, 'body': json.dumps(response_body, cls=DecimalEncoder)}
 
 def handle_save_progress(event_body, user):
@@ -256,8 +263,6 @@ def handle_get_state(user):
 def lambda_handler(event, context):
     print("Received event: " + json.dumps(event, indent=2))
 
-    # --- THIS IS THE FIX ---
-    # Define your allowed origins, including your new domains.
     allowed_origins = [
         "http://localhost:8080",
         "https://infinitegame.live",
@@ -266,17 +271,14 @@ def lambda_handler(event, context):
     
     origin = event.get('headers', {}).get('origin')
     
-    # Default CORS headers
     cors_headers = {
         'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Requested-With',
         'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
     }
     
-    # If the origin is in our whitelist, add it to the response header
     if origin in allowed_origins:
         cors_headers['Access-Control-Allow-Origin'] = origin
 
-    # Handle preflight OPTIONS request
     if event.get('httpMethod') == 'OPTIONS':
         print("Handling CORS preflight request")
         return {
@@ -285,7 +287,6 @@ def lambda_handler(event, context):
             'body': ''
         }
 
-    # Process the actual request
     try:
         path = event.get('path', '')
         http_method = event.get('httpMethod', '')
@@ -303,7 +304,6 @@ def lambda_handler(event, context):
         else:
             response = {'statusCode': 404, 'body': json.dumps({'error': f'Endpoint not found: {http_method} {path}'})}
         
-        # Add CORS headers to every response
         if 'headers' not in response:
             response['headers'] = {}
         response['headers'].update(cors_headers)

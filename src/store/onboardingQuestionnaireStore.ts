@@ -85,7 +85,10 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
               health: 0,
               connections: 0,
             },
-            currentQuestionIndex: Object.keys(data.answers || {}).length,
+            // --- FIX --- Set index from the backend's response
+            currentQuestionIndex:
+              data.currentQuestionIndex ||
+              Object.keys(data.answers || {}).length,
             isLoading: false,
           });
         } catch (error) {
@@ -107,8 +110,7 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
 
     submitAnswer: async (questionId, answer, authToken) => {
       const updatedAnswers = { ...get().answers, [questionId]: answer };
-      set({ answers: updatedAnswers });
-      set({ isLoading: true });
+      set({ answers: updatedAnswers, isLoading: true });
 
       const headers: HeadersInit = {
         "Content-Type": "application/json",
@@ -148,7 +150,8 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
           set({
             currentQuestion: data.nextQuestion,
             pillarProgress: data.pillarProgress,
-            currentQuestionIndex: get().currentQuestionIndex + 1,
+            // --- FIX --- Set the index from the backend's response
+            currentQuestionIndex: data.currentQuestionIndex,
             isLoading: false,
           });
         }
@@ -190,7 +193,8 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
           currentQuestion: data.previousQuestion,
           pillarProgress: data.pillarProgress,
           answers: data.updatedAnswers,
-          currentQuestionIndex: currentQuestionIndex - 1,
+          // --- FIX --- Set the index from the backend's response
+          currentQuestionIndex: data.currentQuestionIndex,
           isLoading: false,
         });
       } catch (error) {
