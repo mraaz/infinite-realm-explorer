@@ -1,8 +1,9 @@
 
-import * as confetti from 'canvas-confetti';
-
 export const useFireworks = () => {
-  const fire = () => {
+  const fire = async () => {
+    // Dynamically import confetti
+    const confetti = (await import('canvas-confetti')).default;
+    
     const duration = 5 * 1000;
     const animationEnd = Date.now() + duration;
     const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
