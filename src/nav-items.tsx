@@ -5,13 +5,13 @@ import OnboardingQuestionnaire from '@/pages/OnboardingQuestionnaire';
 
 export const navItems = [
   {
-    title: "Questionnaire",
-    to: "/questionnaire",
-    page: <OnboardingQuestionnaire />,
-  },
-  {
     title: "Home",
     to: "/",
     page: <Index />,
+  },
+  {
+    title: "Questionnaire",
+    to: "/questionnaire",
+    page: <OnboardingQuestionnaire />,
   },
 ];
