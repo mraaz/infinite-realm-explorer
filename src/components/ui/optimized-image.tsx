@@ -1,93 +1,129 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { 
+  getOptimizedImageUrl, 
+  generateResponsiveSrcSet, 
+  generateSizesAttribute,
+  trackImagePerformance,
+  createLazyLoadObserver
+} from '@/utils/imageOptimization';
 
 interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
   alt: string;
-  webpSrc?: string;
-  className?: string;
-  lazy?: boolean;
   priority?: boolean;
+  quality?: number;
   sizes?: string;
+  className?: string;
+  loading?: 'lazy' | 'eager';
+  webp?: boolean;
+  responsive?: boolean;
 }
 
 export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   src,
   alt,
-  webpSrc,
-  className,
-  lazy = true,
   priority = false,
+  quality = 85,
   sizes,
+  className,
+  loading = 'lazy',
+  webp = true,
+  responsive = true,
   ...props
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [hasError, setHasError] = useState(false);
+  const [error, setError] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const startTime = useRef<number>(performance.now());
+
+  useEffect(() => {
+    if (!priority || loading === 'eager') return;
+
+    const observer = createLazyLoadObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const img = entry.target as HTMLImageElement;
+          if (img.dataset.src) {
+            img.src = img.dataset.src;
+            img.removeAttribute('data-src');
+          }
+          observer.unobserve(img);
+        }
+      });
+    });
+
+    if (imgRef.current) {
+      observer.observe(imgRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [priority, loading]);
 
   const handleLoad = () => {
     setIsLoaded(true);
+    trackImagePerformance(src, startTime.current);
   };
 
   const handleError = () => {
-    setHasError(true);
-    setIsLoaded(true);
+    setError(true);
   };
 
-  // Generate WebP source if not provided
-  const generatedWebpSrc = webpSrc || src.replace(/\.(png|jpg|jpeg)$/i, '.webp');
+  const optimizedSrc = getOptimizedImageUrl(src, { quality, format: webp ? 'webp' : 'jpeg' });
+  const responsiveSrcSet = responsive ? generateResponsiveSrcSet(src) : undefined;
+  const responsiveSizes = sizes || (responsive ? generateSizesAttribute() : undefined);
+
+  // For lazy loading with intersection observer
+  const shouldUseLazyLoading = loading === 'lazy' && !priority;
+
+  if (webp && responsive) {
+    return (
+      <picture className={cn('block', className)}>
+        <source
+          srcSet={generateResponsiveSrcSet(src)}
+          sizes={responsiveSizes}
+          type="image/webp"
+        />
+        <img
+          ref={imgRef}
+          src={shouldUseLazyLoading ? undefined : optimizedSrc}
+          data-src={shouldUseLazyLoading ? optimizedSrc : undefined}
+          srcSet={!shouldUseLazyLoading ? responsiveSrcSet : undefined}
+          sizes={!shouldUseLazyLoading ? responsiveSizes : undefined}
+          alt={alt}
+          loading={loading}
+          onLoad={handleLoad}
+          onError={handleError}
+          className={cn(
+            'transition-opacity duration-300',
+            isLoaded ? 'opacity-100' : 'opacity-0',
+            error && 'opacity-50'
+          )}
+          {...props}
+        />
+      </picture>
+    );
+  }
 
   return (
-    <picture className={cn('block', className)}>
-      {/* WebP source for modern browsers */}
-      <source
-        srcSet={generatedWebpSrc}
-        type="image/webp"
-        sizes={sizes}
-      />
-      
-      {/* Fallback to original format */}
-      <img
-        src={src}
-        alt={alt}
-        loading={priority ? 'eager' : lazy ? 'lazy' : 'auto'}
-        onLoad={handleLoad}
-        onError={handleError}
-        className={cn(
-          'transition-opacity duration-300',
-          !isLoaded && 'opacity-0',
-          isLoaded && 'opacity-100',
-          hasError && 'opacity-50'
-        )}
-        sizes={sizes}
-        {...props}
-      />
-    </picture>
+    <img
+      ref={imgRef}
+      src={shouldUseLazyLoading ? undefined : optimizedSrc}
+      data-src={shouldUseLazyLoading ? optimizedSrc : undefined}
+      srcSet={!shouldUseLazyLoading ? responsiveSrcSet : undefined}
+      sizes={!shouldUseLazyLoading ? responsiveSizes : undefined}
+      alt={alt}
+      loading={loading}
+      onLoad={handleLoad}
+      onError={handleError}
+      className={cn(
+        'transition-opacity duration-300',
+        isLoaded ? 'opacity-100' : 'opacity-0',
+        error && 'opacity-50',
+        className
+      )}
+      {...props}
+    />
   );
-};
-
-// Utility function to generate srcset for responsive images
-export const generateSrcSet = (baseSrc: string, widths: number[] = [320, 640, 768, 1024, 1280]) => {
-  return widths
-    .map(width => {
-      const ext = baseSrc.split('.').pop();
-      const base = baseSrc.replace(`.${ext}`, '');
-      return `${base}-${width}w.${ext} ${width}w`;
-    })
-    .join(', ');
-};
-
-// Utility function to generate sizes attribute
-export const generateSizes = (breakpoints: { [key: string]: string } = {}) => {
-  const defaultBreakpoints = {
-    '(max-width: 320px)': '320px',
-    '(max-width: 640px)': '640px',
-    '(max-width: 768px)': '768px',
-    '(max-width: 1024px)': '1024px',
-    ...breakpoints,
-  };
-
-  return Object.entries(defaultBreakpoints)
-    .map(([media, size]) => `${media} ${size}`)
-    .join(', ') + ', 100vw';
 };
