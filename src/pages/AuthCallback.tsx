@@ -10,14 +10,24 @@ const AuthCallback = () => {
   const { login } = useAuth();
 
   useEffect(() => {
+    console.log('[AuthCallback] Component mounted');
+    console.log('[AuthCallback] Current URL:', window.location.href);
+    console.log('[AuthCallback] Search params:', location.search);
+    
     // Get the token from the URL query parameter.
     const searchParams = new URLSearchParams(location.search);
     const token = searchParams.get('token');
+    const error = searchParams.get('error');
+
+    console.log('[AuthCallback] Token received:', !!token);
+    console.log('[AuthCallback] Error received:', error);
 
     // Find out where the user was before they logged in.
     const preLoginPath = localStorage.getItem('preLoginPath') || '/'; // Default to the homepage if not found.
+    console.log('[AuthCallback] PreLoginPath:', preLoginPath);
 
     if (token) {
+      console.log('[AuthCallback] Processing login with token');
       // 1. Use the auth context to handle login (this updates global state)
       login(token);
       
@@ -25,10 +35,15 @@ const AuthCallback = () => {
       localStorage.removeItem('preLoginPath');
       
       // 3. Send the user back to where they came from.
+      console.log('[AuthCallback] Redirecting to:', preLoginPath);
       navigate(preLoginPath, { replace: true });
+    } else if (error) {
+      console.error('[AuthCallback] OAuth error:', error);
+      navigate('/?error=' + encodeURIComponent(error), { replace: true });
     } else {
+      console.error('[AuthCallback] No token or error found in callback');
       // If login failed for some reason, send them to a login error page or the homepage.
-      navigate('/?error=true', { replace: true });
+      navigate('/?error=no_token', { replace: true });
     }
   }, [location, navigate, login]);
 

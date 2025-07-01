@@ -1,10 +1,8 @@
 
-
 export const branding = {
+  name: 'Infinite Life',
   logo: {
-    url: "/lovable-uploads/8132280e-afeb-4018-90e8-ca1ba4c3b326.png",
-    alt: "Infinite Life Logo",
-  },
-  name: "Infinite Life",
+    url: '/lovable-uploads/f3233eb2-372b-4870-b906-f27353494ceb.png',
+    alt: 'Infinite Life Logo'
+  }
 };
-

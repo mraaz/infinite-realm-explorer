@@ -6,6 +6,7 @@ export const useSocialAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLoginClick = (provider: 'google' | 'facebook' | 'discord') => {
+    console.log(`[OAuth] Starting ${provider} login flow`);
     setIsLoading(true);
     
     // --- Configuration ---
@@ -24,8 +25,10 @@ export const useSocialAuth = () => {
     }
 
     if (loginUrl) {
+      console.log(`[OAuth] Redirect URL: ${loginUrl}`);
       // Save the user's current page path so we can return them here after login.
       localStorage.setItem('preLoginPath', window.location.pathname);
+      console.log(`[OAuth] Saved preLoginPath: ${window.location.pathname}`);
       // Redirect the user to the AWS authentication endpoint.
       window.location.href = loginUrl;
     }
