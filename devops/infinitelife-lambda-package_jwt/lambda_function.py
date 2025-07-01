@@ -266,14 +266,16 @@ def lambda_handler(event, context):
     allowed_origins = [
         "http://localhost:8080",
         "https://infinitegame.live",
-        "https://infinite-game-live.lovable.app"
+        "https://infinite-game-live.lovable.app",
+        "https://997cdcc2-64fd-4803-ba8b-2c36d9d662b3.lovableproject.com"
     ]
     
-    origin = event.get('headers', {}).get('origin')
+    origin = event.get('headers', {}).get('origin') or event.get('headers', {}).get('Origin')
     
     cors_headers = {
-        'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Requested-With',
-        'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+        'Access-Control-Allow-Origin': origin if origin in allowed_origins else allowed_origins[0],
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+        'Access-Control-Allow-Methods': 'POST,GET,OPTIONS'
     }
     
     if origin in allowed_origins:
