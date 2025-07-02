@@ -186,11 +186,18 @@ export function ClarityRings({ progress, threshold }: ClarityRingsProps) {
           "transition-all duration-300 ease-out overflow-hidden",
           shouldShowRings ? "opacity-100 max-h-none" : "opacity-0 max-h-0"
         )}
+        onClick={isMobile && isExpanded ? toggleExpanded : undefined}
+        style={{
+          cursor: isMobile && isExpanded ? 'pointer' : 'default'
+        }}
       >
-        <div className={cn(
-          "grid gap-6 justify-items-center",
-          isMobile ? "grid-cols-2 gap-4" : "grid-cols-2 md:grid-cols-4 gap-8"
-        )}>
+        <div 
+          className={cn(
+            "grid gap-6 justify-items-center",
+            isMobile ? "grid-cols-2 gap-4" : "grid-cols-2 md:grid-cols-4 gap-8",
+            isMobile && isExpanded && "hover:bg-gray-900/20 rounded-lg p-2 transition-colors"
+          )}
+        >
           {rings.map((ring) => (
             <ClarityRing
               key={ring.key}
