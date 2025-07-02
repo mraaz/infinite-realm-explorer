@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -19,7 +20,7 @@ const OnboardingQuestionnaire = () => {
     isCompleted,
     initializeQuestionnaire,
     submitAnswer,
-    previousQuestion, // --- UPDATED --- Use the new async action
+    previousQuestion,
     currentQuestionIndex,
   } = useOnboardingQuestionnaireStore();
 
@@ -48,7 +49,6 @@ const OnboardingQuestionnaire = () => {
     }
   };
 
-  // --- UPDATED --- This now calls the async action
   const handlePrevious = () => {
     const token = getAuthToken();
     previousQuestion(token || undefined);
@@ -64,20 +64,20 @@ const OnboardingQuestionnaire = () => {
   return (
     <div className="min-h-screen flex flex-col bg-[#16161a]">
       <Header />
-      <main className="flex-grow flex flex-col items-center px-4 py-8 md:py-12">
+      <main className="flex-grow flex flex-col items-center px-4 py-4 md:py-8 lg:py-12">
         <div className="w-full max-w-5xl">
-          <div className="text-center mb-12">
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">
+          <div className="text-center mb-6 md:mb-12">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white mb-2 tracking-tight">
               Building Your 5-Year Snapshot
             </h1>
-            <p className="text-base sm:text-lg text-gray-400">
+            <p className="text-sm sm:text-base md:text-lg text-gray-400">
               Complete each area to unlock your personalised insights.
             </p>
           </div>
 
           <ClarityRings progress={pillarProgress} threshold={80} />
 
-          <div className="mt-12">
+          <div className="mt-6 md:mt-12">
             {isLoading && (
               <div className="text-center text-white py-10">
                 <h2 className="text-2xl font-bold">Loading...</h2>
