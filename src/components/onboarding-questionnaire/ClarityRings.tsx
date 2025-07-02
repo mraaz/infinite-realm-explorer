@@ -110,9 +110,8 @@ function CompactProgressBar({ progress }: { progress: PillarProgress }) {
     <div className="flex items-center justify-between space-x-2 bg-gray-900/50 rounded-lg p-3">
       {rings.map((ring, index) => (
         <div key={ring.key} className="flex-1">
-          <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center justify-center mb-1">
             <span className="text-xs text-gray-400 truncate">{ring.label}</span>
-            <span className="text-xs text-white font-medium">{Math.round(ring.progress)}%</span>
           </div>
           <div className="w-full bg-gray-700 rounded-full h-2">
             <div
@@ -169,14 +168,13 @@ export function ClarityRings({ progress, threshold }: ClarityRingsProps) {
 
   return (
     <div className="w-full">
-      {/* Mobile Toggle Button and Compact View */}
+      {/* Mobile Toggle Button */}
       {isMobile && (
         <div className="mb-4">
           <button
             onClick={toggleExpanded}
-            className="w-full flex items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors"
+            className="w-full flex items-center justify-center p-2 bg-gray-900/50 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors"
           >
-            <span className="text-white font-medium">Progress Overview</span>
             {isExpanded ? (
               <ChevronUp className="w-5 h-5 text-gray-400" />
             ) : (
