@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -6,11 +5,14 @@ import ClarityRings from "@/components/onboarding-questionnaire/ClarityRings";
 import QuestionBox from "@/components/onboarding-questionnaire/QuestionBox";
 import OverallProgressBar from "@/components/onboarding-questionnaire/OverallProgressBar";
 import { useOnboardingQuestionnaireStore } from "@/store/onboardingQuestionnaireStore";
+import { useMobileRings } from "@/hooks/use-mobile-rings";
+import { cn } from "@/lib/utils";
 
 const getAuthToken = () => localStorage.getItem("infinitelife_jwt");
 
 const OnboardingQuestionnaire = () => {
   const navigate = useNavigate();
+  const { isMobile, isExpanded } = useMobileRings();
 
   // Select state from the store
   const {
@@ -61,6 +63,13 @@ const OnboardingQuestionnaire = () => {
       pillarProgress.connections) /
     4;
 
+  // Dynamic spacing based on mobile state
+  const getQuestionSpacing = () => {
+    if (!isMobile) return "mt-12"; // Desktop: original spacing
+    if (isExpanded) return "mt-4"; // Mobile expanded: moderate spacing
+    return "mt-2"; // Mobile collapsed: minimal spacing
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#16161a]">
       <Header />
@@ -77,7 +86,7 @@ const OnboardingQuestionnaire = () => {
 
           <ClarityRings progress={pillarProgress} threshold={80} />
 
-          <div className="mt-6 md:mt-12">
+          <div className={cn("transition-all duration-300", getQuestionSpacing())}>
             {isLoading && (
               <div className="text-center text-white py-10">
                 <h2 className="text-2xl font-bold">Loading...</h2>
