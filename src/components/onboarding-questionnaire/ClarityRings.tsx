@@ -1,7 +1,7 @@
 
 "use client";
 import type React from "react";
-import { Target, TrendingUp, Heart, Users, ChevronDown, ChevronUp } from "lucide-react";
+import { Target, TrendingUp, Heart, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMobileRings } from "@/hooks/use-mobile-rings";
 
@@ -98,7 +98,7 @@ function ClarityRing({
   );
 }
 
-function CompactProgressBar({ progress }: { progress: PillarProgress }) {
+function CompactProgressBar({ progress, onClick }: { progress: PillarProgress; onClick: () => void }) {
   const rings = [
     { key: "career", progress: progress.career, color: "#a855f7", label: "Career" },
     { key: "finances", progress: progress.finances, color: "#3b82f6", label: "Financials" },
@@ -107,7 +107,10 @@ function CompactProgressBar({ progress }: { progress: PillarProgress }) {
   ];
 
   return (
-    <div className="flex items-center justify-between space-x-2 bg-gray-900/50 rounded-lg p-3">
+    <div 
+      onClick={onClick}
+      className="flex items-center justify-between space-x-2 bg-gray-900/50 rounded-lg p-3 cursor-pointer hover:bg-gray-900/70 transition-colors"
+    >
       {rings.map((ring, index) => (
         <div key={ring.key} className="flex-1">
           <div className="flex items-center justify-center mb-1">
@@ -168,24 +171,11 @@ export function ClarityRings({ progress, threshold }: ClarityRingsProps) {
 
   return (
     <div className="w-full">
-      {/* Mobile Toggle Button */}
+      {/* Mobile Compact Progress Bar */}
       {isMobile && (
         <div className="mb-4">
-          <button
-            onClick={toggleExpanded}
-            className="w-full flex items-center justify-center p-2 bg-gray-900/50 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors"
-          >
-            {isExpanded ? (
-              <ChevronUp className="w-5 h-5 text-gray-400" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-gray-400" />
-            )}
-          </button>
-          
           {!isExpanded && (
-            <div className="mt-3">
-              <CompactProgressBar progress={progress} />
-            </div>
+            <CompactProgressBar progress={progress} onClick={toggleExpanded} />
           )}
         </div>
       )}
