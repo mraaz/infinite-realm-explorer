@@ -3,6 +3,7 @@
 import type React from "react";
 import { Target, TrendingUp, Heart, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useMobileRings } from "@/hooks/use-mobile-rings";
 
 interface PillarProgress {
   career: number;
@@ -86,7 +87,7 @@ function ClarityRing({
       <div className="text-center">
         <h3
           className={cn(
-            "font-semibold transition-colors",
+            "font-semibold transition-colors text-sm md:text-base",
             isAboveThreshold ? "text-white" : "text-gray-400"
           )}
         >
@@ -97,7 +98,42 @@ function ClarityRing({
   );
 }
 
+function CompactProgressBar({ progress, onClick }: { progress: PillarProgress; onClick: () => void }) {
+  const rings = [
+    { key: "career", progress: progress.career, color: "#a855f7", label: "Career" },
+    { key: "finances", progress: progress.finances, color: "#3b82f6", label: "Financials" },
+    { key: "health", progress: progress.health, color: "#22c55e", label: "Health" },
+    { key: "connections", progress: progress.connections, color: "#f97316", label: "Connections" },
+  ];
+
+  return (
+    <div 
+      onClick={onClick}
+      className="flex items-center justify-between space-x-2 bg-gray-900/50 rounded-lg p-3 cursor-pointer hover:bg-gray-900/70 transition-colors"
+    >
+      {rings.map((ring, index) => (
+        <div key={ring.key} className="flex-1">
+          <div className="flex items-center justify-center mb-1">
+            <span className="text-xs text-gray-400 truncate">{ring.label}</span>
+          </div>
+          <div className="w-full bg-gray-700 rounded-full h-2">
+            <div
+              className="h-2 rounded-full transition-all duration-500"
+              style={{
+                width: `${ring.progress}%`,
+                backgroundColor: ring.color,
+              }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ClarityRings({ progress, threshold }: ClarityRingsProps) {
+  const { isMobile, isExpanded, toggleExpanded, shouldShowRings } = useMobileRings();
+
   const rings = [
     {
       key: "career",
@@ -134,18 +170,48 @@ export function ClarityRings({ progress, threshold }: ClarityRingsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-8 justify-items-center">
-      {rings.map((ring) => (
-        <ClarityRing
-          key={ring.key}
-          progress={ring.progress}
-          threshold={threshold}
-          color={ring.color}
-          textColor={ring.textColor}
-          icon={ring.icon}
-          label={ring.label}
-        />
-      ))}
+    <div className="w-full">
+      {/* Mobile Compact Progress Bar */}
+      {isMobile && (
+        <div className="mb-4">
+          {!isExpanded && (
+            <CompactProgressBar progress={progress} onClick={toggleExpanded} />
+          )}
+        </div>
+      )}
+
+      {/* Rings Display */}
+      <div
+        className={cn(
+          "transition-all duration-300 ease-out overflow-hidden",
+          shouldShowRings ? "opacity-100 max-h-none" : "opacity-0 max-h-0"
+        )}
+        onClick={isMobile && isExpanded ? toggleExpanded : undefined}
+        style={{
+          cursor: isMobile && isExpanded ? 'pointer' : 'default'
+        }}
+      >
+        <div 
+          className={cn(
+            "grid gap-6 justify-items-center",
+            isMobile ? "grid-cols-2 gap-4" : "grid-cols-2 md:grid-cols-4 gap-8",
+            isMobile && isExpanded && "hover:bg-gray-900/20 rounded-lg p-2 transition-colors"
+          )}
+        >
+          {rings.map((ring) => (
+            <ClarityRing
+              key={ring.key}
+              progress={ring.progress}
+              threshold={threshold}
+              color={ring.color}
+              textColor={ring.textColor}
+              icon={ring.icon}
+              label={ring.label}
+              size={isMobile ? 80 : 120}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

@@ -5,11 +5,14 @@ import ClarityRings from "@/components/onboarding-questionnaire/ClarityRings";
 import QuestionBox from "@/components/onboarding-questionnaire/QuestionBox";
 import OverallProgressBar from "@/components/onboarding-questionnaire/OverallProgressBar";
 import { useOnboardingQuestionnaireStore } from "@/store/onboardingQuestionnaireStore";
+import { useMobileRings } from "@/hooks/use-mobile-rings";
+import { cn } from "@/lib/utils";
 
 const getAuthToken = () => localStorage.getItem("infinitelife_jwt");
 
 const OnboardingQuestionnaire = () => {
   const navigate = useNavigate();
+  const { isMobile, isExpanded } = useMobileRings();
 
   // Select state from the store
   const {
@@ -19,7 +22,7 @@ const OnboardingQuestionnaire = () => {
     isCompleted,
     initializeQuestionnaire,
     submitAnswer,
-    previousQuestion, // --- UPDATED --- Use the new async action
+    previousQuestion,
     currentQuestionIndex,
   } = useOnboardingQuestionnaireStore();
 
@@ -48,7 +51,6 @@ const OnboardingQuestionnaire = () => {
     }
   };
 
-  // --- UPDATED --- This now calls the async action
   const handlePrevious = () => {
     const token = getAuthToken();
     previousQuestion(token || undefined);
@@ -61,23 +63,30 @@ const OnboardingQuestionnaire = () => {
       pillarProgress.connections) /
     4;
 
+  // Dynamic spacing based on mobile state
+  const getQuestionSpacing = () => {
+    if (!isMobile) return "mt-12"; // Desktop: original spacing
+    if (isExpanded) return "mt-4"; // Mobile expanded: moderate spacing
+    return "mt-2"; // Mobile collapsed: minimal spacing
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#16161a]">
       <Header />
-      <main className="flex-grow flex flex-col items-center px-4 py-8 md:py-12">
+      <main className="flex-grow flex flex-col items-center px-4 py-4 md:py-8 lg:py-12">
         <div className="w-full max-w-5xl">
-          <div className="text-center mb-12">
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">
+          <div className="text-center mb-6 md:mb-12">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white mb-2 tracking-tight">
               Building Your 5-Year Snapshot
             </h1>
-            <p className="text-base sm:text-lg text-gray-400">
+            <p className="text-sm sm:text-base md:text-lg text-gray-400">
               Complete each area to unlock your personalised insights.
             </p>
           </div>
 
           <ClarityRings progress={pillarProgress} threshold={80} />
 
-          <div className="mt-12">
+          <div className={cn("transition-all duration-300", getQuestionSpacing())}>
             {isLoading && (
               <div className="text-center text-white py-10">
                 <h2 className="text-2xl font-bold">Loading...</h2>
