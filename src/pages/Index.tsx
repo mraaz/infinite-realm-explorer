@@ -6,23 +6,15 @@ import QuestionnaireLoginModal from "@/components/QuestionnaireLoginModal";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import careerIcon from '@/assets/career-icon.png';
+import financeIcon from '@/assets/finance-icon.png';
+import healthIcon from '@/assets/health-icon.png';
+import connectionsIcon from '@/assets/connections-icon.png';
 
 const pillars = [
   {
     icon: (
-      <svg
-        className="w-7 h-7 text-purple-400"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2 2v10a2 2 0 002 2z"
-        ></path>
-      </svg>
+      <img src={careerIcon} alt="Career" className="w-7 h-7" />
     ),
     title: "Career",
     description: "Professional growth & goals",
@@ -35,19 +27,7 @@ const pillars = [
   },
   {
     icon: (
-      <svg
-        className="w-7 h-7 text-blue-400"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01M12 6v-1m0-1V4m0 2.01M18 10a6 6 0 11-12 0 6 6 0 0112 0z"
-        ></path>
-      </svg>
+      <img src={financeIcon} alt="Finances" className="w-7 h-7" />
     ),
     title: "Finances",
     description: "Wealth & financial security",
@@ -60,19 +40,7 @@ const pillars = [
   },
   {
     icon: (
-      <svg
-        className="w-7 h-7 text-emerald-400"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-        ></path>
-      </svg>
+      <img src={healthIcon} alt="Health" className="w-7 h-7" />
     ),
     title: "Health",
     description: "Physical & mental wellbeing",
@@ -85,18 +53,7 @@ const pillars = [
   },
   {
     icon: (
-      <svg
-        className="w-7 h-7 text-amber-400"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-        ></path>
-      </svg>
+      <img src={connectionsIcon} alt="Connections" className="w-7 h-7" />
     ),
     title: "Connections",
     description: "Relationships & community",
