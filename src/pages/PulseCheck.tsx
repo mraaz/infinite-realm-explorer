@@ -6,13 +6,20 @@ import SwipeCard from '@/components/pulse-check/SwipeCard';
 import { pulseCheckCards } from '@/data/pulseCheckCards';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, RotateCcw } from 'lucide-react';
+import { ChevronLeft, RotateCcw, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PulseCheckResult {
   cardId: number;
   decision: 'keep' | 'pass';
   card_data: any;
+}
+
+interface CategoryProgress {
+  Career: number;
+  Finances: number;
+  Health: number;
+  Connections: number;
 }
 
 export default function PulseCheck() {
@@ -26,11 +33,11 @@ export default function PulseCheck() {
   const [sessionId, setSessionId] = useState<string>('');
   const [isComplete, setIsComplete] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showResultsButton, setShowResultsButton] = useState(false);
 
-  // Shuffle cards for variety
+  // Use ALL cards, shuffled for variety
   const [shuffledCards] = useState(() => {
-    const shuffled = [...pulseCheckCards].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 12); // Use 12 cards for a quick pulse check
+    return [...pulseCheckCards].sort(() => Math.random() - 0.5);
   });
 
   // Redirect unauthenticated users (unless they're guests)
@@ -48,6 +55,25 @@ export default function PulseCheck() {
       return () => clearTimeout(timer);
     }
   }, [isLoggedIn, isGuest, navigate]);
+
+  // Check if minimum requirements are met (1 keep per category)
+  const checkMinimumRequirements = (resultsToCheck: PulseCheckResult[]) => {
+    const categories = ['Career', 'Finances', 'Health', 'Connections'];
+    const categoryKeeps = categories.map(category => {
+      return resultsToCheck.filter(r => r.card_data.category === category && r.decision === 'keep').length;
+    });
+    return categoryKeeps.every(count => count >= 1);
+  };
+
+  // Get category progress for display
+  const getCategoryProgress = () => {
+    const categories = ['Career', 'Finances', 'Health', 'Connections'];
+    return categories.reduce((acc, category) => {
+      const keeps = results.filter(r => r.card_data.category === category && r.decision === 'keep').length;
+      acc[category as keyof CategoryProgress] = keeps;
+      return acc;
+    }, {} as CategoryProgress);
+  };
 
   const handleSwipe = async (cardId: number, decision: 'keep' | 'pass') => {
     const card = shuffledCards.find(c => c.id === cardId);
@@ -80,13 +106,17 @@ export default function PulseCheck() {
       }
     }
 
+    // Check if minimum requirements are now met
+    const meetsRequirements = checkMinimumRequirements(updatedResults);
+    setShowResultsButton(meetsRequirements);
+
     // Move to next card or complete
     if (currentCardIndex < shuffledCards.length - 1) {
       setCurrentCardIndex(currentCardIndex + 1);
     } else {
       setIsComplete(true);
       if (isLoggedIn) {
-        toast.success('Pulse check completed! Results saved to your profile.');
+        toast.success('All cards completed! Results saved to your profile.');
       }
     }
   };
@@ -95,6 +125,7 @@ export default function PulseCheck() {
     setCurrentCardIndex(0);
     setResults([]);
     setIsComplete(false);
+    setShowResultsButton(false);
     setSessionId(crypto.randomUUID());
   };
 
@@ -207,6 +238,40 @@ export default function PulseCheck() {
             />
           ))}
         </div>
+
+        {/* Category Progress */}
+        <div className="mt-6 mb-4">
+          <div className="grid grid-cols-4 gap-2 max-w-md mx-auto">
+            {Object.entries(getCategoryProgress()).map(([category, count]) => (
+              <div key={category} className="text-center">
+                <div className={`w-8 h-8 mx-auto rounded-full border-2 flex items-center justify-center text-xs font-bold ${
+                  count >= 1 
+                    ? 'bg-purple-500 border-purple-500 text-white' 
+                    : 'bg-transparent border-gray-600 text-gray-400'
+                }`}>
+                  {count}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">{category}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-xs text-muted-foreground mt-2">
+            Keep at least 1 from each category to unlock results
+          </p>
+        </div>
+
+        {/* Get Results Button */}
+        {showResultsButton && (
+          <div className="text-center mb-6">
+            <Button 
+              onClick={() => setIsComplete(true)} 
+              className="gap-2 bg-gradient-to-r from-primary to-primary-glow hover:from-primary-glow hover:to-secondary"
+            >
+              <ArrowRight className="w-4 h-4" />
+              Get Your Results
+            </Button>
+          </div>
+        )}
 
         {/* Instructions */}
         <div className="text-center mt-8 space-y-2">
