@@ -1,9 +1,7 @@
 /*
 ================================================================================
-File: /components/priority-ranking/DropZone.tsx (Child Component)
+File: /components/priority-ranking/DropZone.tsx (Child Component) - CORRECTED
 ================================================================================
-- Corrected missing import for PillarCard.
-- Updated placeholder text color for readability.
 */
 import React from "react";
 import { Droppable, Draggable } from "@hello-pangea/dnd";
@@ -11,19 +9,14 @@ import PillarCard from "./PillarCard";
 import { PillarInfo } from "./types";
 import { cn } from "@/lib/utils";
 
+// The props are simplified, removing `recommendedPillars`.
 interface DropZoneProps {
   title: string;
   droppableId: string;
   pillars: PillarInfo[];
-  recommendedPillars: string[];
 }
 
-const DropZone = ({
-  title,
-  droppableId,
-  pillars,
-  recommendedPillars,
-}: DropZoneProps) => {
+const DropZone = ({ title, droppableId, pillars }: DropZoneProps) => {
   return (
     <div>
       <h3 className="font-semibold text-gray-300 mb-2">{title}</h3>
@@ -52,7 +45,7 @@ const DropZone = ({
                       {...providedDraggable.draggableProps}
                       {...providedDraggable.dragHandleProps}
                       pillar={pillar}
-                      recommendedPillars={recommendedPillars}
+                      // The `recommendedPillars` prop is no longer passed.
                     />
                   )}
                 </Draggable>

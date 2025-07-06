@@ -1,11 +1,3 @@
-/*
-================================================================================
-File: /components/PriorityRanking.tsx (The main component)
-================================================================================
-- This is the updated main component.
-- The import paths for PillarCard and DropZone have been corrected.
-- The onDragEnd logic has been rewritten to be more robust and fix dragging.
-*/
 import { useState, useMemo, useEffect } from "react";
 import { Target, PiggyBank, Heart, Users } from "lucide-react";
 import {
@@ -21,7 +13,10 @@ import {
 } from "./priority-ranking/types";
 import PillarCard from "./priority-ranking/PillarCard";
 import DropZone from "./priority-ranking/DropZone";
-import { PillarProgress } from "./NewQuadrantChart";
+
+// Note: The `PillarInfo` type in `types.ts` should be updated
+// to remove the optional `score` property.
+// export type PillarInfo = { id: Pillar; name: Pillar; icon: React.ReactNode; };
 
 const pillarDetails: Record<Pillar, { icon: React.ReactNode }> = {
   Career: { icon: <Target className="h-6 w-6 text-purple-400" /> },
@@ -31,25 +26,19 @@ const pillarDetails: Record<Pillar, { icon: React.ReactNode }> = {
 };
 
 export const PriorityRanking = ({
-  progress,
   onComplete,
   value,
 }: PriorityRankingProps) => {
+  // `initialPillars` no longer depends on `progress` or `score`
   const initialPillars = useMemo(() => {
     return (["Career", "Financials", "Health", "Connections"] as Pillar[]).map(
-      (p) => {
-        const progressKey = (
-          p === "Financials" ? "finances" : p.toLowerCase()
-        ) as keyof PillarProgress;
-        return {
-          id: p,
-          name: p,
-          score: progress[progressKey] ?? 0,
-          icon: pillarDetails[p].icon,
-        };
-      }
+      (p) => ({
+        id: p,
+        name: p,
+        icon: pillarDetails[p].icon,
+      })
     );
-  }, [progress]);
+  }, []);
 
   const [unassigned, setUnassigned] = useState<PillarInfo[]>(initialPillars);
   const [mainFocus, setMainFocus] = useState<PillarInfo[]>([]);
@@ -84,66 +73,53 @@ export const PriorityRanking = ({
     }
   }, [initialPillars, value]);
 
-  const recommendedPillars = useMemo(() => {
-    const sorted = [...initialPillars].sort((a, b) => a.score - b.score);
-    return sorted.slice(0, 2).map((p) => p.id);
-  }, [initialPillars]);
-
   const onDragEnd: OnDragEndResponder = (result) => {
     const { source, destination } = result;
 
     if (!destination) return;
 
-    const sourceId = source.droppableId as keyof typeof lists;
-    const destId = destination.droppableId as keyof typeof lists;
-
     const lists = {
-      unassigned: unassigned,
+      unassigned,
       main: mainFocus,
       secondary: secondaryFocus,
-      maintenance: maintenance,
+      maintenance,
     };
+    const sourceId = source.droppableId as keyof typeof lists;
+    const destId = destination.droppableId as keyof typeof lists;
 
     const sourceList = [...lists[sourceId]];
     const destList = sourceId === destId ? sourceList : [...lists[destId]];
     const [draggedItem] = sourceList.splice(source.index, 1);
 
-    // Enforce destination list limits
-    if (destId === "main" && destList.length >= 1) {
-      sourceList.splice(source.index, 0, draggedItem); // Put it back if drop is invalid
-      return;
-    }
-    if (destId === "secondary" && destList.length >= 1) {
-      sourceList.splice(source.index, 0, draggedItem);
-      return;
-    }
-    if (destId === "maintenance" && destList.length >= 2) {
-      sourceList.splice(source.index, 0, draggedItem);
-      return;
+    // Enforce destination list limits before adding the new item
+    if (
+      (destId === "main" && destList.length >= 1) ||
+      (destId === "secondary" && destList.length >= 1) ||
+      (destId === "maintenance" && destList.length >= 2)
+    ) {
+      return; // Prevents dropping into a full category
     }
 
     destList.splice(destination.index, 0, draggedItem);
 
-    const newLists = {
-      ...lists,
-      [sourceId]: sourceList,
-      [destId]: destList,
-    };
+    const newState = { ...lists };
+    newState[sourceId] = sourceList;
+    newState[destId] = destList;
 
-    setUnassigned(newLists.unassigned);
-    setMainFocus(newLists.main);
-    setSecondaryFocus(newLists.secondary);
-    setMaintenance(newLists.maintenance);
+    setUnassigned(newState.unassigned);
+    setMainFocus(newState.main);
+    setSecondaryFocus(newState.secondary);
+    setMaintenance(newState.maintenance);
 
     if (
-      newLists.main.length === 1 &&
-      newLists.secondary.length === 1 &&
-      newLists.maintenance.length === 2
+      newState.main.length === 1 &&
+      newState.secondary.length === 1 &&
+      newState.maintenance.length === 2
     ) {
       onComplete({
-        mainFocus: newLists.main[0]!.id,
-        secondaryFocus: newLists.secondary[0]!.id,
-        maintenance: newLists.maintenance.map((p) => p.id),
+        mainFocus: newState.main[0]!.id,
+        secondaryFocus: newState.secondary[0]!.id,
+        maintenance: newState.maintenance.map((p) => p.id),
       });
     } else {
       onComplete(null);
@@ -188,7 +164,7 @@ export const PriorityRanking = ({
                           {...providedDraggable.draggableProps}
                           {...providedDraggable.dragHandleProps}
                           pillar={pillar}
-                          recommendedPillars={recommendedPillars}
+                          // `recommendedPillars` prop is removed
                         />
                       )}
                     </Draggable>
@@ -203,19 +179,19 @@ export const PriorityRanking = ({
               title="Main Focus (1 pillar)"
               droppableId="main"
               pillars={mainFocus}
-              recommendedPillars={recommendedPillars}
+              // `recommendedPillars` prop is removed
             />
             <DropZone
               title="Secondary Focus (1 pillar)"
               droppableId="secondary"
               pillars={secondaryFocus}
-              recommendedPillars={recommendedPillars}
+              // `recommendedPillars` prop is removed
             />
             <DropZone
               title="Maintenance Mode (2 pillars)"
               droppableId="maintenance"
               pillars={maintenance}
-              recommendedPillars={recommendedPillars}
+              // `recommendedPillars` prop is removed
             />
           </div>
         </div>
