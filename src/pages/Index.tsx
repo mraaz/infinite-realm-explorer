@@ -4,8 +4,13 @@ import Header from "@/components/Header";
 import PillarCardWithPopover from "@/components/PillarCardWithPopover"; // Correctly import the new component
 import QuestionnaireLoginModal from "@/components/QuestionnaireLoginModal";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useChangelog } from "@/hooks/useChangelog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { Plus, Edit, AlertTriangle, Trash2, Bug, Shield } from "lucide-react";
 import careerIcon from '@/assets/career-icon.png';
 import financeIcon from '@/assets/finance-icon.png';
 import healthIcon from '@/assets/health-icon.png';
@@ -86,6 +91,25 @@ const Index = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
+  const { changelog, loading: changelogLoading } = useChangelog(3);
+
+  const typeIcons = {
+    added: Plus,
+    changed: Edit,
+    deprecated: AlertTriangle,
+    removed: Trash2,
+    fixed: Bug,
+    security: Shield,
+  };
+
+  const typeColors = {
+    added: 'bg-green-500/10 text-green-400 border-green-500/20',
+    changed: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    deprecated: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+    removed: 'bg-red-500/10 text-red-400 border-red-500/20',
+    fixed: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+    security: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+  };
 
   const handleGetSnapshotClick = () => {
     if (isLoggedIn) {
@@ -169,9 +193,80 @@ const Index = () => {
         </section>
       </main>
 
+      {/* Changelog Preview Section */}
+      {!changelogLoading && changelog.length > 0 && (
+        <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-gray-800">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-primary via-primary-glow to-secondary bg-clip-text text-transparent mb-4">
+              What's New
+            </h2>
+            <p className="text-gray-400">
+              Latest updates and improvements to Infinite Game
+            </p>
+          </div>
+          
+          <div className="space-y-6 max-w-4xl mx-auto">
+            {changelog.map((entry) => {
+              const Icon = typeIcons[entry.type];
+              return (
+                <Card key={entry.id} className="border-gray-800 bg-gray-900/50 backdrop-blur-sm">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-xl text-white">{entry.version}</CardTitle>
+                      <time className="text-sm text-gray-400">
+                        {format(new Date(entry.release_date), 'MMM dd, yyyy')}
+                      </time>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Badge className={`${typeColors[entry.type]} capitalize text-xs`}>
+                        <Icon className="h-3 w-3 mr-1" />
+                        {entry.type}
+                      </Badge>
+                      <h3 className="font-semibold text-gray-200">{entry.title}</h3>
+                    </div>
+                    <p className="text-gray-400 text-sm">{entry.content}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+          
+          <div className="text-center mt-8">
+            <Link 
+              to="/changelog" 
+              className="inline-flex items-center text-primary hover:text-primary-glow transition-colors"
+            >
+              View Full Changelog
+              <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+        </section>
+      )}
+
       {/* Footer */}
-      <footer className="text-center py-6 text-sm text-gray-600 border-t border-gray-800">
-        © {new Date().getFullYear()} Infinite Life. All rights reserved.
+      <footer className="text-center py-8 text-sm text-gray-600 border-t border-gray-800">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+            <div>
+              © {new Date().getFullYear()} Infinite Game. All rights reserved.
+            </div>
+            <div className="flex space-x-6">
+              <Link to="/changelog" className="hover:text-gray-400 transition-colors">
+                Changelog
+              </Link>
+              <Link to="/privacy" className="hover:text-gray-400 transition-colors">
+                Privacy Policy
+              </Link>
+              <Link to="/terms" className="hover:text-gray-400 transition-colors">
+                Terms of Use
+              </Link>
+            </div>
+          </div>
+        </div>
       </footer>
 
       <QuestionnaireLoginModal

@@ -15,6 +15,9 @@ const FutureQuestionnaire = lazy(() => import("./pages/FutureQuestionnaire"));
 const HabitBuilder = lazy(() => import("./pages/HabitBuilder"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const PulseCheck = lazy(() => import("./pages/PulseCheck"));
+const Changelog = lazy(() => import("./pages/Changelog"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -33,6 +36,9 @@ const App = () => (
               <Route path="/future-questionnaire" element={<FutureQuestionnaire />} />
               <Route path="/habit-builder" element={<HabitBuilder />} />
               <Route path="/pulse-check" element={<PulseCheck />} />
+              <Route path="/changelog" element={<Changelog />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
