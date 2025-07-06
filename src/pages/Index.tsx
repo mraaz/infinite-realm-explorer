@@ -89,6 +89,7 @@ const pillars = [
 
 const Index = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [modalSource, setModalSource] = useState<'snapshot' | 'pulse'>('snapshot');
   const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
   const { changelog, loading: changelogLoading } = useChangelog(1);
@@ -115,13 +116,27 @@ const Index = () => {
     if (isLoggedIn) {
       navigate("/onboarding-questionnaire");
     } else {
+      setModalSource('snapshot');
+      setShowLoginModal(true);
+    }
+  };
+
+  const handlePulseCheckClick = () => {
+    if (isLoggedIn) {
+      navigate("/pulse-check");
+    } else {
+      setModalSource('pulse');
       setShowLoginModal(true);
     }
   };
 
   const handleContinueAsGuest = () => {
     setShowLoginModal(false);
-    navigate("/onboarding-questionnaire?guest=true");
+    if (modalSource === 'pulse') {
+      navigate("/pulse-check?guest=true");
+    } else {
+      navigate("/onboarding-questionnaire?guest=true");
+    }
   };
 
   const handleModalOpenChange = (open: boolean) => {
@@ -167,7 +182,7 @@ const Index = () => {
         <section className="flex justify-center">
           <div className="bg-gray-900/50 backdrop-blur-sm p-8 rounded-2xl shadow-2xl ring-1 ring-white/10 text-center max-w-md">
             <h3 className="text-2xl font-bold text-white mb-4">
-              Ready to begin?
+              Get your Life Snapshot
             </h3>
             <p className="text-gray-400 mb-6">
               Take our assessment and unlock your personalised life insights.
@@ -179,6 +194,17 @@ const Index = () => {
               className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 px-8 rounded-lg hover:opacity-90 transition-opacity duration-200 w-full mb-4"
             >
               Get Your Life Snapshot
+            </button>
+
+            <p className="text-gray-400 text-sm mb-4">
+              Short on time? Start with a quick check-in instead.
+            </p>
+
+            <button
+              onClick={handlePulseCheckClick}
+              className="bg-transparent border border-purple-500/50 text-purple-400 font-semibold py-3 px-8 rounded-lg hover:border-purple-400 hover:text-purple-300 transition-all duration-200 w-full mb-4"
+            >
+              Take a 60-Second Pulse Check
             </button>
 
             <div className="flex justify-center space-x-4">
