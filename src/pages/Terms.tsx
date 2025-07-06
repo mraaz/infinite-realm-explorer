@@ -1,21 +1,21 @@
 export default function Terms() {
   return (
-    <div className="min-h-screen bg-background py-12">
+    <div className="min-h-screen bg-[#16161a] py-12">
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="space-y-8">
           <div className="text-center space-y-4">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary-glow to-secondary bg-clip-text text-transparent">
               Terms of Use
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-gray-400">
               Last updated: {new Date().toLocaleDateString()}
             </p>
           </div>
 
-          <div className="prose prose-invert max-w-none space-y-6">
+          <div className="max-w-none space-y-6">
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold text-primary">1. Acceptance of Terms</h2>
-              <div className="text-muted-foreground space-y-3">
+              <div className="text-gray-400 space-y-3">
                 <p>
                   By accessing and using Infinite Game ("the Service"), you accept and agree to be bound by the 
                   terms and provision of this agreement.
@@ -25,7 +25,7 @@ export default function Terms() {
 
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold text-primary">2. Description of Service</h2>
-              <div className="text-muted-foreground space-y-3">
+              <div className="text-gray-400 space-y-3">
                 <p>
                   Infinite Game is a platform designed to help users visualize the long-term impact of their 
                   daily decisions through strategic life planning and habit tracking.
@@ -42,7 +42,7 @@ export default function Terms() {
 
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold text-primary">3. User Accounts</h2>
-              <div className="text-muted-foreground space-y-3">
+              <div className="text-gray-400 space-y-3">
                 <p>
                   To access certain features of the Service, you must register for an account. You agree to:
                 </p>
@@ -57,7 +57,7 @@ export default function Terms() {
 
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold text-primary">4. User Conduct</h2>
-              <div className="text-muted-foreground space-y-3">
+              <div className="text-gray-400 space-y-3">
                 <p>You agree not to:</p>
                 <ul className="list-disc pl-6 space-y-1">
                   <li>Use the Service for any unlawful purpose</li>
@@ -70,8 +70,8 @@ export default function Terms() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibent text-primary">5. Intellectual Property</h2>
-              <div className="text-muted-foreground space-y-3">
+              <h2 className="text-2xl font-semibold text-primary">5. Intellectual Property</h2>
+              <div className="text-gray-400 space-y-3">
                 <p>
                   The Service and its original content, features, and functionality are owned by Infinite Game 
                   and are protected by international copyright, trademark, patent, trade secret, and other 
@@ -86,7 +86,7 @@ export default function Terms() {
 
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold text-primary">6. Privacy</h2>
-              <div className="text-muted-foreground space-y-3">
+              <div className="text-gray-400 space-y-3">
                 <p>
                   Your privacy is important to us. Please review our Privacy Policy, which also governs your 
                   use of the Service, to understand our practices.
@@ -96,7 +96,7 @@ export default function Terms() {
 
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold text-primary">7. Disclaimers</h2>
-              <div className="text-muted-foreground space-y-3">
+              <div className="text-gray-400 space-y-3">
                 <p>
                   The Service is provided "as is" without warranties of any kind. We do not guarantee that 
                   the Service will be uninterrupted, secure, or error-free.
@@ -110,7 +110,7 @@ export default function Terms() {
 
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold text-primary">8. Limitation of Liability</h2>
-              <div className="text-muted-foreground space-y-3">
+              <div className="text-gray-400 space-y-3">
                 <p>
                   In no event shall Infinite Game be liable for any indirect, incidental, special, 
                   consequential, or punitive damages arising out of your use of the Service.
@@ -124,7 +124,7 @@ export default function Terms() {
 
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold text-primary">9. Termination</h2>
-              <div className="text-muted-foreground space-y-3">
+              <div className="text-gray-400 space-y-3">
                 <p>
                   We may terminate or suspend your account and access to the Service immediately, without 
                   prior notice, for conduct that we believe violates these Terms or is harmful to other 
@@ -139,7 +139,7 @@ export default function Terms() {
 
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold text-primary">10. Changes to Terms</h2>
-              <div className="text-muted-foreground space-y-3">
+              <div className="text-gray-400 space-y-3">
                 <p>
                   We reserve the right to modify these Terms at any time. We will notify users of material 
                   changes by email or through the Service.
@@ -153,7 +153,7 @@ export default function Terms() {
 
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold text-primary">11. Governing Law</h2>
-              <div className="text-muted-foreground space-y-3">
+              <div className="text-gray-400 space-y-3">
                 <p>
                   These Terms shall be governed by and construed in accordance with the laws of Australia, 
                   without regard to conflict of law principles.
@@ -163,7 +163,7 @@ export default function Terms() {
 
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold text-primary">12. Contact Information</h2>
-              <div className="text-muted-foreground space-y-3">
+              <div className="text-gray-400 space-y-3">
                 <p>
                   If you have any questions about these Terms, please contact us at:
                 </p>

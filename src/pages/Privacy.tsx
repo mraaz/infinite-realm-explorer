@@ -1,21 +1,21 @@
 export default function Privacy() {
   return (
-    <div className="min-h-screen bg-background py-12">
+    <div className="min-h-screen bg-[#16161a] py-12">
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="space-y-8">
           <div className="text-center space-y-4">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary-glow to-secondary bg-clip-text text-transparent">
               Privacy Policy
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-gray-400">
               Last updated: {new Date().toLocaleDateString()}
             </p>
           </div>
 
-          <div className="prose prose-invert max-w-none space-y-6">
+          <div className="max-w-none space-y-6">
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold text-primary">1. Information We Collect</h2>
-              <div className="text-muted-foreground space-y-3">
+              <div className="text-gray-400 space-y-3">
                 <p>
                   We collect information you provide directly to us, such as when you create an account, 
                   complete our surveys, or contact us for support.
@@ -38,7 +38,7 @@ export default function Privacy() {
 
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold text-primary">2. How We Use Your Information</h2>
-              <div className="text-muted-foreground space-y-3">
+              <div className="text-gray-400 space-y-3">
                 <p>We use the information we collect to:</p>
                 <ul className="list-disc pl-6 space-y-1">
                   <li>Provide, maintain, and improve our services</li>
@@ -52,7 +52,7 @@ export default function Privacy() {
 
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold text-primary">3. Information Sharing</h2>
-              <div className="text-muted-foreground space-y-3">
+              <div className="text-gray-400 space-y-3">
                 <p>
                   We do not sell, trade, or otherwise transfer your personal information to third parties 
                   without your consent, except as described in this policy.
@@ -69,7 +69,7 @@ export default function Privacy() {
 
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold text-primary">4. Data Security</h2>
-              <div className="text-muted-foreground space-y-3">
+              <div className="text-gray-400 space-y-3">
                 <p>
                   We implement appropriate technical and organizational measures to protect your personal 
                   information against unauthorized access, alteration, disclosure, or destruction.
@@ -86,7 +86,7 @@ export default function Privacy() {
 
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold text-primary">5. Your Rights</h2>
-              <div className="text-muted-foreground space-y-3">
+              <div className="text-gray-400 space-y-3">
                 <p>You have the right to:</p>
                 <ul className="list-disc pl-6 space-y-1">
                   <li>Access your personal information</li>
@@ -103,7 +103,7 @@ export default function Privacy() {
 
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold text-primary">6. Cookies and Tracking</h2>
-              <div className="text-muted-foreground space-y-3">
+              <div className="text-gray-400 space-y-3">
                 <p>
                   We use cookies and similar technologies to enhance your experience, analyze usage, 
                   and provide personalized content.
@@ -119,7 +119,7 @@ export default function Privacy() {
 
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold text-primary">7. Changes to This Policy</h2>
-              <div className="text-muted-foreground space-y-3">
+              <div className="text-gray-400 space-y-3">
                 <p>
                   We may update this privacy policy from time to time. We will notify you of any 
                   changes by posting the new policy on this page and updating the "Last updated" date.
@@ -129,7 +129,7 @@ export default function Privacy() {
 
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold text-primary">8. Contact Us</h2>
-              <div className="text-muted-foreground space-y-3">
+              <div className="text-gray-400 space-y-3">
                 <p>
                   If you have any questions about this privacy policy, please contact us at:
                 </p>

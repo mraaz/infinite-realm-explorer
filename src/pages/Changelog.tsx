@@ -28,19 +28,19 @@ export default function Changelog() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background py-12">
+      <div className="min-h-screen bg-[#16161a] py-12">
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="space-y-6">
-            <Skeleton className="h-12 w-64" />
-            <Skeleton className="h-4 w-96" />
+            <Skeleton className="h-12 w-64 bg-gray-800" />
+            <Skeleton className="h-4 w-96 bg-gray-800" />
             {[...Array(3)].map((_, i) => (
-              <Card key={i} className="border-border">
+              <Card key={i} className="border-gray-800 bg-gray-900/50">
                 <CardHeader>
-                  <Skeleton className="h-6 w-32" />
-                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-6 w-32 bg-gray-700" />
+                  <Skeleton className="h-4 w-48 bg-gray-700" />
                 </CardHeader>
                 <CardContent>
-                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-20 w-full bg-gray-700" />
                 </CardContent>
               </Card>
             ))}
@@ -52,12 +52,12 @@ export default function Changelog() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background py-12">
+      <div className="min-h-screen bg-[#16161a] py-12">
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="flex items-center justify-center">
-            <Card className="border-destructive/50">
+            <Card className="border-red-500/50 bg-gray-900/50">
               <CardContent className="pt-6">
-                <div className="flex items-center space-x-2 text-destructive">
+                <div className="flex items-center space-x-2 text-red-400">
                   <AlertCircle className="h-5 w-5" />
                   <p>Failed to load changelog: {error}</p>
                 </div>
@@ -87,18 +87,18 @@ export default function Changelog() {
   );
 
   return (
-    <div className="min-h-screen bg-background py-12">
+    <div className="min-h-screen bg-[#16161a] py-12">
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="space-y-8">
           {/* Header */}
           <div className="text-center space-y-4">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary-glow to-secondary bg-clip-text text-transparent">
-              Changelog
+              What's New
             </h1>
-            <p className="text-muted-foreground text-lg">
-              All notable changes to Infinite Game will be documented here.
+            <p className="text-gray-400 text-lg">
+              Latest updates and improvements to Infinite Game
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-gray-400">
               The format is based on{' '}
               <a 
                 href="https://keepachangelog.com/en/1.0.0/" 
@@ -124,14 +124,14 @@ export default function Changelog() {
           {/* Changelog Entries */}
           <div className="space-y-8">
             {versions.map(({ version, release_date, entries }) => (
-              <Card key={version} className="border-border backdrop-blur-sm">
+              <Card key={version} className="border-gray-800 bg-gray-900/50 backdrop-blur-sm">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-2xl font-bold text-primary">
+                    <CardTitle className="text-2xl font-bold text-white">
                       {version}
                     </CardTitle>
-                    <time className="text-sm text-muted-foreground">
-                      {format(new Date(release_date), 'MMMM dd, yyyy')}
+                    <time className="text-sm text-gray-400">
+                      {format(new Date(release_date), 'MMM dd, yyyy')}
                     </time>
                   </div>
                 </CardHeader>
@@ -145,9 +145,9 @@ export default function Changelog() {
                             <Icon className="h-3 w-3 mr-1" />
                             {entry.type}
                           </Badge>
-                          <h3 className="font-semibold text-foreground">{entry.title}</h3>
+                          <h3 className="font-semibold text-gray-200">{entry.title}</h3>
                         </div>
-                        <div className="text-muted-foreground pl-6">
+                        <div className="text-gray-400 pl-6">
                           <p>{entry.content}</p>
                         </div>
                       </div>
@@ -160,7 +160,7 @@ export default function Changelog() {
 
           {changelog.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">No changelog entries found.</p>
+              <p className="text-gray-400">No changelog entries found.</p>
             </div>
           )}
         </div>

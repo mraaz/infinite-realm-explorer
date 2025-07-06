@@ -91,7 +91,7 @@ const Index = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
-  const { changelog, loading: changelogLoading } = useChangelog(3);
+  const { changelog, loading: changelogLoading } = useChangelog(1);
 
   const typeIcons = {
     added: Plus,
