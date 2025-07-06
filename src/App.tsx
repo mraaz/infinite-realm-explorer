@@ -14,6 +14,7 @@ const Results = lazy(() => import("./pages/Results"));
 const FutureQuestionnaire = lazy(() => import("./pages/FutureQuestionnaire"));
 const HabitBuilder = lazy(() => import("./pages/HabitBuilder"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
+const PulseCheck = lazy(() => import("./pages/PulseCheck"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
               <Route path="/results" element={<Results />} />
               <Route path="/future-questionnaire" element={<FutureQuestionnaire />} />
               <Route path="/habit-builder" element={<HabitBuilder />} />
+              <Route path="/pulse-check" element={<PulseCheck />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

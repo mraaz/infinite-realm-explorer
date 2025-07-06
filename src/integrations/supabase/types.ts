@@ -117,6 +117,39 @@ export type Database = {
           },
         ]
       }
+      pulse_check_results: {
+        Row: {
+          card_data: Json
+          category: string
+          created_at: string
+          id: string
+          session_id: string
+          swipe_decision: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          card_data: Json
+          category: string
+          created_at?: string
+          id?: string
+          session_id?: string
+          swipe_decision: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          card_data?: Json
+          category?: string
+          created_at?: string
+          id?: string
+          session_id?: string
+          swipe_decision?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       surveys: {
         Row: {
           answers: Json | null
