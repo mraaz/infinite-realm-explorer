@@ -103,6 +103,7 @@ const PulseCheck: React.FC = () => {
     
     if (!user) {
       toast.error('Please sign in to get your results.');
+      navigate('/auth');
       return;
     }
 
@@ -327,7 +328,7 @@ const PulseCheck: React.FC = () => {
                 {isGeneratingResults ? 'Generating...' : 'Get Your Results'}
               </button>
               <p className="text-xs text-gray-400 mt-2">
-                You can get results early since you have cards from each category
+                Keep answering to make results more insightful.
               </p>
             </div>
           )}
