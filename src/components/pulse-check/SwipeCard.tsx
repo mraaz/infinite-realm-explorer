@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useSwipeable } from 'react-swipeable';
 import { PulseCheckCard, categoryColors, categoryIconPaths, keepMessages, passMessages } from '@/data/pulseCheckCards';
 import { Eye } from 'lucide-react';
 
@@ -11,11 +12,9 @@ interface SwipeCardProps {
 
 const SwipeCard: React.FC<SwipeCardProps> = ({ card, onSwipe, isActive, zIndex }) => {
   const [isRevealed, setIsRevealed] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
-  const dragStartRef = useRef({ x: 0, y: 0 });
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const categoryColor = categoryColors[card.category as keyof typeof categoryColors];
   const iconPath = categoryIconPaths[card.category as keyof typeof categoryIconPaths];
@@ -29,102 +28,73 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ card, onSwipe, isActive, zIndex }
     setIsRevealed(true);
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isRevealed || !isActive) return;
-    setIsDragging(true);
-    dragStartRef.current = { x: e.clientX, y: e.clientY };
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !isActive) return;
-    const deltaX = e.clientX - dragStartRef.current.x;
-    const deltaY = e.clientY - dragStartRef.current.y;
-    setDragOffset({ x: deltaX, y: deltaY });
-
-    // Determine swipe direction
-    if (Math.abs(deltaX) > 50) {
-      setSwipeDirection(deltaX > 0 ? 'right' : 'left');
-    } else {
-      setSwipeDirection(null);
-    }
-  };
-
-  const handleMouseUp = () => {
-    if (!isDragging || !isActive) return;
-    setIsDragging(false);
-
-    // Check if swipe threshold is met
-    if (Math.abs(dragOffset.x) > 100) {
-      const decision = dragOffset.x > 0 ? 'keep' : 'pass';
-      onSwipe(card.id, decision);
-    } else {
-      // Snap back to center
-      setDragOffset({ x: 0, y: 0 });
-      setSwipeDirection(null);
-    }
-  };
-
   const handleButtonClick = (decision: 'keep' | 'pass') => {
     if (!isRevealed || !isActive) return;
-    onSwipe(card.id, decision);
+    handleSwipeAction(decision);
   };
 
-  // Touch events for mobile
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (!isRevealed || !isActive) return;
-    setIsDragging(true);
-    const touch = e.touches[0];
-    dragStartRef.current = { x: touch.clientX, y: touch.clientY };
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || !isActive) return;
-    const touch = e.touches[0];
-    const deltaX = touch.clientX - dragStartRef.current.x;
-    const deltaY = touch.clientY - dragStartRef.current.y;
-    setDragOffset({ x: deltaX, y: deltaY });
-
-    if (Math.abs(deltaX) > 50) {
-      setSwipeDirection(deltaX > 0 ? 'right' : 'left');
-    } else {
-      setSwipeDirection(null);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (!isDragging || !isActive) return;
-    setIsDragging(false);
-
-    if (Math.abs(dragOffset.x) > 100) {
-      const decision = dragOffset.x > 0 ? 'keep' : 'pass';
+  const handleSwipeAction = (decision: 'keep' | 'pass') => {
+    setIsAnimating(true);
+    setSwipeDirection(decision === 'keep' ? 'right' : 'left');
+    setSwipeOffset(decision === 'keep' ? 300 : -300);
+    
+    setTimeout(() => {
       onSwipe(card.id, decision);
-    } else {
-      setDragOffset({ x: 0, y: 0 });
-      setSwipeDirection(null);
-    }
+    }, 300);
   };
 
-  const cardTransform = `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${dragOffset.x * 0.1}deg)`;
-  const cardOpacity = Math.max(0.3, 1 - Math.abs(dragOffset.x) / 300);
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => {
+      if (isRevealed && isActive && !isAnimating) {
+        handleSwipeAction('pass');
+      }
+    },
+    onSwipedRight: () => {
+      if (isRevealed && isActive && !isAnimating) {
+        handleSwipeAction('keep');
+      }
+    },
+    onSwiping: (eventData) => {
+      if (isRevealed && isActive && !isAnimating) {
+        const { deltaX } = eventData;
+        setSwipeOffset(deltaX);
+        if (Math.abs(deltaX) > 50) {
+          setSwipeDirection(deltaX > 0 ? 'right' : 'left');
+        } else {
+          setSwipeDirection(null);
+        }
+      }
+    },
+    onSwipeStart: () => {
+      if (isRevealed && isActive) {
+        setSwipeDirection(null);
+        setSwipeOffset(0);
+      }
+    },
+    trackMouse: true,
+    preventScrollOnSwipe: true,
+    delta: 10
+  });
+
+  const cardTransform = isAnimating 
+    ? `translateX(${swipeOffset}px) rotate(${swipeOffset * 0.1}deg)`
+    : `translateX(${Math.min(Math.max(swipeOffset, -150), 150)}px) rotate(${Math.min(Math.max(swipeOffset, -150), 150) * 0.1}deg)`;
+  
+  const cardOpacity = isAnimating 
+    ? Math.max(0, 1 - Math.abs(swipeOffset) / 300)
+    : Math.max(0.7, 1 - Math.abs(swipeOffset) / 200);
 
   return (
     <div
-      ref={cardRef}
-      className={`absolute inset-0 w-full h-full transition-all duration-300 ${
+      {...swipeHandlers}
+      className={`absolute inset-0 w-full h-full ${
         isActive ? 'cursor-pointer' : 'pointer-events-none'
-      }`}
+      } ${isAnimating ? 'transition-all duration-300 ease-out' : 'transition-transform duration-200'}`}
       style={{
         zIndex,
         transform: cardTransform,
         opacity: cardOpacity,
       }}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
     >
       <div className="flip-card w-full h-full">
         <div className={`flip-card-inner ${isRevealed ? 'flipped' : ''}`}>
