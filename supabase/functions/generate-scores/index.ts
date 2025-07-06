@@ -1,11 +1,32 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+interface PulseCheckResult {
+  id: string;
+  user_id: string;
+  session_id: string;
+  card_data: {
+    id: number;
+    category: string;
+    text: string;
+  };
+  swipe_decision: 'keep' | 'pass';
+  category: string;
+  created_at: string;
+}
+
+interface CategoryScores {
+  Career: number;
+  Finances: number;
+  Health: number;
+  Connections: number;
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -14,121 +35,132 @@ serve(async (req) => {
   }
 
   try {
-    const { answers } = await req.json();
-    
-    if (!answers) {
-      throw new Error('Answers are required');
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { sessionId, userId } = await req.json();
+
+    if (!sessionId || !userId) {
+      throw new Error('Session ID and User ID are required');
     }
 
-    console.log('Received answers:', answers);
+    console.log('Processing pulse check results for session:', sessionId);
 
-    // Get the OpenRouter API key from Supabase secrets
-    const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
-    
-    if (!openRouterApiKey) {
-      throw new Error('OpenRouter API key not configured');
+    // Fetch all pulse check results for this session
+    const { data: results, error } = await supabase
+      .from('pulse_check_results')
+      .select('*')
+      .eq('session_id', sessionId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error fetching pulse check results:', error);
+      throw error;
     }
 
-    // Prepare the prompt for analyzing the questionnaire answers
-    const systemPrompt = `You are an expert life coach and analyst. Based on the questionnaire answers provided, analyze the user's responses and provide scores for four key life pillars:
-
-1. Career (0-100): Based on career situation, fulfillment, hours worked, and goals
-2. Finances (0-100): Based on financial situation, confidence, savings, and goals  
-3. Health (0-100): Based on activity levels, sleep, energy, barriers, and goals
-4. Connections (0-100): Based on sense of belonging, time spent, relationships, and goals
-
-Return your response as a JSON object with this exact structure:
-{
-  "career_score": 75,
-  "financial_score": 60,
-  "health_score": 85,
-  "connections_score": 70,
-  "insights": [
-    {
-      "title": "Career Growth Focus",
-      "description": "Your career fulfillment score suggests room for growth...",
-      "pillar": "career",
-      "priority": "high"
+    if (!results || results.length === 0) {
+      throw new Error('No pulse check results found for this session');
     }
-  ]
-}
 
-Provide 2-4 insights based on the analysis. Each insight should identify patterns or areas for improvement.`;
+    console.log('Found', results.length, 'pulse check results');
 
-    const userPrompt = `Please analyze these questionnaire answers and provide scores and insights:
+    // Calculate scores for each category
+    const categoryScores: CategoryScores = {
+      Career: 0,
+      Finances: 0,
+      Health: 0,
+      Connections: 0
+    };
 
-${JSON.stringify(answers, null, 2)}`;
+    const categoryCounts = {
+      Career: { kept: 0, total: 0 },
+      Finances: { kept: 0, total: 0 },
+      Health: { kept: 0, total: 0 },
+      Connections: { kept: 0, total: 0 }
+    };
 
-    // Call OpenRouter API using their documentation format
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openRouterApiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://infinitegame.life',
-        'X-Title': 'Infinite Game Life Analysis'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user', 
-            content: userPrompt
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 2000
-      })
+    // Process each result
+    results.forEach((result: PulseCheckResult) => {
+      const category = result.category as keyof CategoryScores;
+      categoryCounts[category].total++;
+      
+      if (result.swipe_decision === 'keep') {
+        categoryCounts[category].kept++;
+      }
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenRouter API error:', errorText);
-      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
-    }
+    // Calculate percentage scores for each category
+    Object.keys(categoryCounts).forEach(category => {
+      const cat = category as keyof CategoryScores;
+      const { kept, total } = categoryCounts[cat];
+      categoryScores[cat] = total > 0 ? Math.round((kept / total) * 100) : 0;
+    });
 
-    const data = await response.json();
-    console.log('OpenRouter response:', data);
+    console.log('Calculated category scores:', categoryScores);
 
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      throw new Error('Invalid response format from OpenRouter');
-    }
+    // Generate insights based on scores
+    const insights = generateInsights(categoryScores, results);
 
-    const aiResponse = data.choices[0].message.content;
-    
-    // Parse the JSON response from the AI
-    let parsedResponse;
-    try {
-      parsedResponse = JSON.parse(aiResponse);
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', aiResponse);
-      throw new Error('AI returned invalid JSON format');
-    }
+    const response = {
+      sessionId,
+      scores: categoryScores,
+      insights,
+      totalCards: results.length,
+      timestamp: new Date().toISOString()
+    };
 
-    // Validate the response structure
-    if (!parsedResponse.career_score || !parsedResponse.financial_score || 
-        !parsedResponse.health_score || !parsedResponse.connections_score) {
-      throw new Error('AI response missing required score fields');
-    }
+    console.log('Returning pulse check analysis:', response);
 
-    console.log('Successfully generated scores:', parsedResponse);
-
-    return new Response(JSON.stringify(parsedResponse), {
+    return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Error in generate-scores function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
-      details: 'Check function logs for more information'
+      error: error.message || 'An unexpected error occurred'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
+
+function generateInsights(scores: CategoryScores, results: PulseCheckResult[]) {
+  const insights: string[] = [];
+  
+  // Find highest and lowest scoring categories
+  const sortedCategories = Object.entries(scores).sort(([,a], [,b]) => b - a);
+  const highestCategory = sortedCategories[0];
+  const lowestCategory = sortedCategories[sortedCategories.length - 1];
+  
+  // Generate insights based on patterns
+  if (highestCategory[1] >= 75) {
+    insights.push(`You show strong alignment in ${highestCategory[0]} with ${highestCategory[1]}% resonance.`);
+  }
+  
+  if (lowestCategory[1] <= 25) {
+    insights.push(`${lowestCategory[0]} might need more attention in your life planning.`);
+  }
+  
+  // Check for balance
+  const scoreValues = Object.values(scores);
+  const average = scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length;
+  const variance = scoreValues.reduce((sum, score) => sum + Math.pow(score - average, 2), 0) / scoreValues.length;
+  
+  if (variance < 200) { // Low variance means balanced
+    insights.push("You show a balanced approach across all life areas.");
+  } else {
+    insights.push("There's room to create more balance between different life areas.");
+  }
+  
+  // Add specific insights based on kept cards
+  const keptCards = results.filter(r => r.swipe_decision === 'keep');
+  if (keptCards.length >= 8) {
+    insights.push("You're open to growth and new perspectives across multiple areas.");
+  }
+  
+  return insights;
+}

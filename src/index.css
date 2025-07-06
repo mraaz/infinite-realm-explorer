@@ -29,10 +29,20 @@
   height: 100%;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
+  /* Ensure solid background to prevent text bleeding through */
+  background-color: rgba(22, 22, 26, 0.95);
+  backdrop-filter: blur(10px);
 }
 
 .flip-card-back {
   transform: rotateY(180deg);
+}
+
+/* Prevent text mirroring during flip animation */
+.flip-card-front > *,
+.flip-card-back > * {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 @layer base {
