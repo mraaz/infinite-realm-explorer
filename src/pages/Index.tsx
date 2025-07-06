@@ -14,7 +14,11 @@ import connectionsIcon from '@/assets/connections-icon.png';
 const pillars = [
   {
     icon: (
-      <img src={careerIcon} alt="Career" className="w-7 h-7" />
+      <img 
+        src={careerIcon} 
+        alt="Career" 
+        className="w-7 h-7 object-contain filter brightness-110 contrast-110" 
+      />
     ),
     title: "Career",
     description: "Professional growth & goals",
@@ -27,7 +31,11 @@ const pillars = [
   },
   {
     icon: (
-      <img src={financeIcon} alt="Finances" className="w-7 h-7" />
+      <img 
+        src={financeIcon} 
+        alt="Finances" 
+        className="w-7 h-7 object-contain filter brightness-110 contrast-110" 
+      />
     ),
     title: "Finances",
     description: "Wealth & financial security",
@@ -40,7 +48,11 @@ const pillars = [
   },
   {
     icon: (
-      <img src={healthIcon} alt="Health" className="w-7 h-7" />
+      <img 
+        src={healthIcon} 
+        alt="Health" 
+        className="w-7 h-7 object-contain filter brightness-110 contrast-110" 
+      />
     ),
     title: "Health",
     description: "Physical & mental wellbeing",
@@ -53,7 +65,11 @@ const pillars = [
   },
   {
     icon: (
-      <img src={connectionsIcon} alt="Connections" className="w-7 h-7" />
+      <img 
+        src={connectionsIcon} 
+        alt="Connections" 
+        className="w-7 h-7 object-contain filter brightness-110 contrast-110" 
+      />
     ),
     title: "Connections",
     description: "Relationships & community",
