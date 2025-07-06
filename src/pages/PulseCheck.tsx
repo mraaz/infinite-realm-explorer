@@ -215,11 +215,11 @@ export default function PulseCheck() {
 
   if (isComplete) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-12">
+      <div className="min-h-screen bg-[#16161a] py-12">
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="space-y-8">
             <div className="text-center space-y-4">
-              <h1 className="text-3xl font-bold text-white">
+              <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                 AI-powered insights from your pulse check
               </h1>
             </div>
@@ -249,15 +249,15 @@ export default function PulseCheck() {
                 {/* Category Cards */}
                 <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
                   {(['Career', 'Finances', 'Health', 'Connections'] as const).map((category) => (
-                    <div key={category} className="bg-gray-700/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-600/30">
+                    <div key={category} className="bg-gray-900/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/50 ring-1 ring-white/10">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-3 h-3 bg-primary rounded-full"></div>
+                          <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
                           <h3 className="text-lg font-semibold text-white">{category}</h3>
                         </div>
-                        <span className="text-3xl font-bold text-white">{radarData[category]}</span>
+                        <span className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">{radarData[category]}</span>
                       </div>
-                      <p className="text-gray-300 leading-relaxed">
+                      <p className="text-gray-400 leading-relaxed">
                         {radarData.insights?.[category] || 
                          `Your ${category.toLowerCase()} score reflects your current alignment and satisfaction in this area.`}
                       </p>
@@ -275,21 +275,22 @@ export default function PulseCheck() {
                 <Button 
                   onClick={restartPulseCheck} 
                   variant="outline" 
-                  className="gap-2 bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800"
+                  className="gap-2 bg-transparent border border-purple-500/50 text-purple-400 hover:border-purple-400 hover:text-purple-300"
                 >
                   <RotateCcw className="w-4 h-4" />
                   Take Another Pulse Check
                 </Button>
                 <Button 
-                  onClick={() => navigate('/future-questionnaire')} 
-                  className="gap-2 bg-gradient-to-r from-primary to-primary-glow hover:from-primary-glow hover:to-secondary px-8"
+                  onClick={() => navigate('/onboarding-questionnaire')} 
+                  className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 px-8"
                 >
                   <ArrowRight className="w-4 h-4" />
                   Get your Life Snapshot
                 </Button>
                 <Button 
                   onClick={handleGoBack} 
-                  className="gap-2 bg-gradient-to-r from-primary to-primary-glow hover:from-primary-glow hover:to-secondary"
+                  variant="outline"
+                  className="gap-2 bg-transparent border border-purple-500/50 text-purple-400 hover:border-purple-400 hover:text-purple-300"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   Back to Home
@@ -298,7 +299,7 @@ export default function PulseCheck() {
                   <Button 
                     onClick={() => navigate('/?signup=true')} 
                     variant="outline"
-                    className="bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800"
+                    className="bg-transparent border border-purple-500/50 text-purple-400 hover:border-purple-400 hover:text-purple-300"
                   >
                     Sign Up to Save Results
                   </Button>
@@ -315,7 +316,7 @@ export default function PulseCheck() {
   const currentCard = shuffledCards[currentCardIndex];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-8">
+    <div className="min-h-screen bg-[#16161a] py-8">
       <div className="container mx-auto px-4 max-w-2xl">
         {/* Header */}
         <div className="text-center space-y-4 mb-8">
@@ -329,7 +330,7 @@ export default function PulseCheck() {
             </span>
           </div>
           
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-primary-glow to-secondary bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
             60-Second Pulse Check
           </h1>
           
@@ -375,7 +376,7 @@ export default function PulseCheck() {
           <div className="text-center mb-6">
             <Button 
               onClick={() => setIsComplete(true)} 
-              className="gap-2 bg-gradient-to-r from-primary to-primary-glow hover:from-primary-glow hover:to-secondary"
+              className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90"
             >
               <ArrowRight className="w-4 h-4" />
               Get Your Results

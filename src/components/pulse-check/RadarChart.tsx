@@ -89,6 +89,10 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
             <stop offset="50%" stopColor="rgba(168, 85, 247, 0.6)" />
             <stop offset="100%" stopColor="rgba(196, 181, 253, 0.4)" />
           </linearGradient>
+          <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="rgb(168, 85, 247)" />
+            <stop offset="100%" stopColor="rgb(236, 72, 153)" />
+          </linearGradient>
         </defs>
         
         <g transform="translate(50, 50)">
@@ -163,18 +167,29 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
                 {/* Category name */}
                 <text
                   x={label.x}
-                  y={label.y - 8}
+                  y={label.y - 10}
                   textAnchor={isLeft ? "end" : isRight ? "start" : "middle"}
-                  className="text-sm font-semibold fill-white"
+                  className="text-base font-bold fill-white"
+                  style={{ 
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.8))'
+                  }}
                 >
                   {label.category}
                 </text>
                 {/* Score */}
                 <text
                   x={label.x}
-                  y={label.y + 8}
+                  y={label.y + 10}
                   textAnchor={isLeft ? "end" : isRight ? "start" : "middle"}
-                  className="text-lg font-bold fill-primary"
+                  className="text-xl font-bold"
+                  style={{ 
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    fill: 'url(#scoreGradient)',
+                    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.8))'
+                  }}
                 >
                   {label.value}
                 </text>
