@@ -15,13 +15,11 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ card, onSwipe, isActive, zIndex }
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [passMessage] = useState(() => passMessages[Math.floor(Math.random() * passMessages.length)]);
+  const [keepMessage] = useState(() => keepMessages[Math.floor(Math.random() * keepMessages.length)]);
 
   const categoryColor = categoryColors[card.category as keyof typeof categoryColors];
   const iconPath = categoryIconPaths[card.category as keyof typeof categoryIconPaths];
-
-  const getRandomMessage = (messages: string[]) => {
-    return messages[Math.floor(Math.random() * messages.length)];
-  };
 
   const handleReveal = () => {
     if (!isActive) return;
@@ -152,13 +150,13 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ card, onSwipe, isActive, zIndex }
                   onClick={() => handleButtonClick('pass')}
                   className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-4 py-3 rounded-xl font-medium transition-all duration-200 hover:scale-105"
                 >
-                  {getRandomMessage(passMessages)}
+                  {passMessage}
                 </button>
                 <button
                   onClick={() => handleButtonClick('keep')}
                   className="flex-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 px-4 py-3 rounded-xl font-medium transition-all duration-200 hover:scale-105"
                 >
-                  {getRandomMessage(keepMessages)}
+                  {keepMessage}
                 </button>
               </div>
             </div>
