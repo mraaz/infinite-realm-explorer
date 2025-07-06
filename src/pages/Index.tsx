@@ -11,10 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Plus, Edit, AlertTriangle, Trash2, Bug, Shield } from "lucide-react";
-import careerIcon from '@/assets/career-icon.png';
-import financeIcon from '@/assets/finance-icon.png';
-import healthIcon from '@/assets/health-icon.png';
-import connectionsIcon from '@/assets/connections-icon.png';
+import careerIcon from '/lovable-uploads/17c46b5d-39d7-4366-a2b1-0ca119060118.png';
+import financeIcon from '/lovable-uploads/093d4b1c-b1c4-428b-8c8e-304488447147.png';
+import healthIcon from '/lovable-uploads/80bdf94e-e50a-400d-a2aa-1923772a5201.png';
+import connectionsIcon from '/lovable-uploads/3167f89f-9cfc-4372-8b99-7c2474932863.png';
 
 const pillars = [
   {
