@@ -104,9 +104,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ card, onSwipe, isActive, zIndex }
             >
               {/* Category indicator */}
               <div className={`absolute top-4 left-4 flex items-center gap-2 ${categoryColor.bg} px-3 py-1 rounded-full`}>
-                <svg className={`w-4 h-4 ${categoryColor.text}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={iconPath} />
-                </svg>
+                <img src={iconPath} alt={card.category} className="w-4 h-4" />
                 <span className={`text-sm font-medium ${categoryColor.text}`}>{card.category}</span>
               </div>
 
@@ -131,9 +129,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ card, onSwipe, isActive, zIndex }
             <div className={`w-full h-full rounded-2xl border ${categoryColor.border} bg-gradient-to-br ${categoryColor.gradient} backdrop-blur-sm p-6 flex flex-col justify-between relative overflow-hidden`}>
               {/* Category indicator */}
               <div className={`flex items-center gap-2 ${categoryColor.bg} px-3 py-1 rounded-full w-fit`}>
-                <svg className={`w-4 h-4 ${categoryColor.text}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={iconPath} />
-                </svg>
+                <img src={iconPath} alt={card.category} className="w-4 h-4" />
                 <span className={`text-sm font-medium ${categoryColor.text}`}>{card.category}</span>
               </div>
 

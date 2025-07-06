@@ -4,6 +4,10 @@ import type React from "react";
 import { Target, TrendingUp, Heart, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMobileRings } from "@/hooks/use-mobile-rings";
+import careerIcon from '@/assets/career-icon.png';
+import financeIcon from '@/assets/finance-icon.png';
+import healthIcon from '@/assets/health-icon.png';
+import connectionsIcon from '@/assets/connections-icon.png';
 
 interface PillarProgress {
   career: number;
@@ -140,7 +144,7 @@ export function ClarityRings({ progress, threshold }: ClarityRingsProps) {
       progress: progress.career,
       color: "#a855f7",
       textColor: "text-purple-400",
-      icon: <Target className="w-6 h-6" />,
+      icon: <img src={careerIcon} alt="Career" className="w-6 h-6" />,
       label: "Career",
     },
     {
@@ -148,7 +152,7 @@ export function ClarityRings({ progress, threshold }: ClarityRingsProps) {
       progress: progress.finances,
       color: "#3b82f6",
       textColor: "text-blue-400",
-      icon: <TrendingUp className="w-6 h-6" />,
+      icon: <img src={financeIcon} alt="Finances" className="w-6 h-6" />,
       label: "Financials",
     },
     {
@@ -156,7 +160,7 @@ export function ClarityRings({ progress, threshold }: ClarityRingsProps) {
       progress: progress.health,
       color: "#22c55e",
       textColor: "text-green-400",
-      icon: <Heart className="w-6 h-6" />,
+      icon: <img src={healthIcon} alt="Health" className="w-6 h-6" />,
       label: "Health",
     },
     {
@@ -164,7 +168,7 @@ export function ClarityRings({ progress, threshold }: ClarityRingsProps) {
       progress: progress.connections,
       color: "#f97316",
       textColor: "text-orange-400",
-      icon: <Users className="w-6 h-6" />,
+      icon: <img src={connectionsIcon} alt="Connections" className="w-6 h-6" />,
       label: "Connections",
     },
   ];
