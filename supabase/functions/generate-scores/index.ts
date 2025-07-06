@@ -1,6 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,17 +7,13 @@ const corsHeaders = {
 };
 
 interface PulseCheckResult {
-  id: string;
-  user_id: string;
-  session_id: string;
+  cardId: number;
+  decision: 'keep' | 'pass';
   card_data: {
-    id: number;
     category: string;
+    tone: 'positive' | 'negative';
     text: string;
   };
-  swipe_decision: 'keep' | 'pass';
-  category: string;
-  created_at: string;
 }
 
 interface CategoryScores {
@@ -35,132 +30,176 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    const { sessionId, userId } = await req.json();
-
-    if (!sessionId || !userId) {
-      throw new Error('Session ID and User ID are required');
+    const { results } = await req.json() as { results: PulseCheckResult[] };
+    
+    if (!results || !Array.isArray(results)) {
+      throw new Error('Invalid results data provided');
     }
 
-    console.log('Processing pulse check results for session:', sessionId);
+    console.log('Processing pulse check results:', results.length, 'results');
 
-    // Fetch all pulse check results for this session
-    const { data: results, error } = await supabase
-      .from('pulse_check_results')
-      .select('*')
-      .eq('session_id', sessionId)
-      .eq('user_id', userId);
-
-    if (error) {
-      console.error('Error fetching pulse check results:', error);
-      throw error;
-    }
-
-    if (!results || results.length === 0) {
-      throw new Error('No pulse check results found for this session');
-    }
-
-    console.log('Found', results.length, 'pulse check results');
-
-    // Calculate scores for each category
-    const categoryScores: CategoryScores = {
-      Career: 0,
-      Finances: 0,
-      Health: 0,
-      Connections: 0
+    // Prepare data for AI analysis
+    const categoryData = {
+      Career: { kept: [], passed: [] },
+      Finances: { kept: [], passed: [] },
+      Health: { kept: [], passed: [] },
+      Connections: { kept: [], passed: [] }
     };
 
-    const categoryCounts = {
-      Career: { kept: 0, total: 0 },
-      Finances: { kept: 0, total: 0 },
-      Health: { kept: 0, total: 0 },
-      Connections: { kept: 0, total: 0 }
-    };
-
-    // Process each result
-    results.forEach((result: PulseCheckResult) => {
-      const category = result.category as keyof CategoryScores;
-      categoryCounts[category].total++;
-      
-      if (result.swipe_decision === 'keep') {
-        categoryCounts[category].kept++;
+    // Organize results by category and decision
+    results.forEach(result => {
+      const category = result.card_data.category as keyof typeof categoryData;
+      if (categoryData[category]) {
+        if (result.decision === 'keep') {
+          categoryData[category].kept.push({
+            text: result.card_data.text,
+            tone: result.card_data.tone
+          });
+        } else {
+          categoryData[category].passed.push({
+            text: result.card_data.text,
+            tone: result.card_data.tone
+          });
+        }
       }
     });
 
-    // Calculate percentage scores for each category
-    Object.keys(categoryCounts).forEach(category => {
-      const cat = category as keyof CategoryScores;
-      const { kept, total } = categoryCounts[cat];
-      categoryScores[cat] = total > 0 ? Math.round((kept / total) * 100) : 0;
+    const prompt = `
+You are an expert life coach analyzing pulse check results. Based on the user's responses to various life statements, provide a numerical score (0-100) for each of the four life categories.
+
+Here's what the user kept vs passed for each category:
+
+**Career:**
+Kept: ${JSON.stringify(categoryData.Career.kept)}
+Passed: ${JSON.stringify(categoryData.Career.passed)}
+
+**Finances:**
+Kept: ${JSON.stringify(categoryData.Finances.kept)}
+Passed: ${JSON.stringify(categoryData.Finances.passed)}
+
+**Health:**
+Kept: ${JSON.stringify(categoryData.Health.kept)}
+Passed: ${JSON.stringify(categoryData.Health.passed)}
+
+**Connections:**
+Kept: ${JSON.stringify(categoryData.Connections.kept)}
+Passed: ${JSON.stringify(categoryData.Connections.passed)}
+
+Scoring Guidelines:
+- 0-30: Significant challenges, needs immediate attention
+- 31-60: Some progress but room for improvement
+- 61-80: Good foundation with areas to optimize
+- 81-100: Thriving and well-balanced
+
+Consider:
+- Positive statements kept = higher scores
+- Negative statements kept = areas of concern
+- Balance of kept vs passed items
+- Tone and content of statements
+
+Respond with ONLY a JSON object in this exact format:
+{
+  "Career": 75,
+  "Finances": 68,
+  "Health": 82,
+  "Connections": 71,
+  "insights": {
+    "Career": "Brief insight about career based on responses",
+    "Finances": "Brief insight about finances based on responses", 
+    "Health": "Brief insight about health based on responses",
+    "Connections": "Brief insight about connections based on responses"
+  }
+}
+`;
+
+    const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
+    if (!openRouterApiKey) {
+      throw new Error('OpenRouter API key not configured');
+    }
+
+    console.log('Calling OpenRouter API...');
+
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openRouterApiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://infinitegame.life',
+        'X-Title': 'Infinite Game Life Pulse Check'
+      },
+      body: JSON.stringify({
+        model: 'anthropic/claude-3.5-sonnet',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 1000
+      })
     });
 
-    console.log('Calculated category scores:', categoryScores);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenRouter API error:', response.status, errorText);
+      throw new Error(`OpenRouter API error: ${response.status}`);
+    }
 
-    // Generate insights based on scores
-    const insights = generateInsights(categoryScores, results);
+    const data = await response.json();
+    console.log('OpenRouter response received');
 
-    const response = {
-      sessionId,
-      scores: categoryScores,
-      insights,
-      totalCards: results.length,
-      timestamp: new Date().toISOString()
-    };
+    const aiResponse = data.choices[0]?.message?.content;
+    if (!aiResponse) {
+      throw new Error('No response from AI');
+    }
 
-    console.log('Returning pulse check analysis:', response);
+    // Parse the JSON response
+    let scores: CategoryScores & { insights: Record<string, string> };
+    try {
+      scores = JSON.parse(aiResponse);
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', aiResponse);
+      // Fallback scoring based on simple heuristics
+      const fallbackScores = {
+        Career: Math.min(100, Math.max(0, (categoryData.Career.kept.length / Math.max(1, categoryData.Career.kept.length + categoryData.Career.passed.length)) * 100)),
+        Finances: Math.min(100, Math.max(0, (categoryData.Finances.kept.length / Math.max(1, categoryData.Finances.kept.length + categoryData.Finances.passed.length)) * 100)),
+        Health: Math.min(100, Math.max(0, (categoryData.Health.kept.length / Math.max(1, categoryData.Health.kept.length + categoryData.Health.passed.length)) * 100)),
+        Connections: Math.min(100, Math.max(0, (categoryData.Connections.kept.length / Math.max(1, categoryData.Connections.kept.length + categoryData.Connections.passed.length)) * 100)),
+        insights: {
+          Career: "Based on your responses, we've calculated your career wellness score.",
+          Finances: "Your financial wellness score reflects your current relationship with money.",
+          Health: "Your health score represents your current physical and mental wellbeing focus.",
+          Connections: "Your connection score shows how you're managing relationships and social needs."
+        }
+      };
+      scores = fallbackScores;
+    }
 
-    return new Response(JSON.stringify(response), {
+    console.log('Generated scores:', scores);
+
+    return new Response(JSON.stringify(scores), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Error in generate-scores function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'An unexpected error occurred'
+      error: error.message,
+      // Provide fallback scores in case of error
+      Career: 50,
+      Finances: 50,
+      Health: 50,
+      Connections: 50,
+      insights: {
+        Career: "Unable to analyze at this time. Please try again.",
+        Finances: "Unable to analyze at this time. Please try again.",
+        Health: "Unable to analyze at this time. Please try again.",
+        Connections: "Unable to analyze at this time. Please try again."
+      }
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
-
-function generateInsights(scores: CategoryScores, results: PulseCheckResult[]) {
-  const insights: string[] = [];
-  
-  // Find highest and lowest scoring categories
-  const sortedCategories = Object.entries(scores).sort(([,a], [,b]) => b - a);
-  const highestCategory = sortedCategories[0];
-  const lowestCategory = sortedCategories[sortedCategories.length - 1];
-  
-  // Generate insights based on patterns
-  if (highestCategory[1] >= 75) {
-    insights.push(`You show strong alignment in ${highestCategory[0]} with ${highestCategory[1]}% resonance.`);
-  }
-  
-  if (lowestCategory[1] <= 25) {
-    insights.push(`${lowestCategory[0]} might need more attention in your life planning.`);
-  }
-  
-  // Check for balance
-  const scoreValues = Object.values(scores);
-  const average = scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length;
-  const variance = scoreValues.reduce((sum, score) => sum + Math.pow(score - average, 2), 0) / scoreValues.length;
-  
-  if (variance < 200) { // Low variance means balanced
-    insights.push("You show a balanced approach across all life areas.");
-  } else {
-    insights.push("There's room to create more balance between different life areas.");
-  }
-  
-  // Add specific insights based on kept cards
-  const keptCards = results.filter(r => r.swipe_decision === 'keep');
-  if (keptCards.length >= 8) {
-    insights.push("You're open to growth and new perspectives across multiple areas.");
-  }
-  
-  return insights;
-}

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import SwipeCard from '@/components/pulse-check/SwipeCard';
+import RadarChart from '@/components/pulse-check/RadarChart';
 import { pulseCheckCards } from '@/data/pulseCheckCards';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,18 @@ export default function PulseCheck() {
   const [isComplete, setIsComplete] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showResultsButton, setShowResultsButton] = useState(false);
+  const [radarData, setRadarData] = useState<{
+    Career: number;
+    Finances: number;
+    Health: number;
+    Connections: number;
+    insights?: {
+      Career: string;
+      Finances: string;
+      Health: string;
+      Connections: string;
+    };
+  } | null>(null);
 
   // Use ALL cards, shuffled for variety
   const [shuffledCards] = useState(() => {
@@ -126,12 +139,68 @@ export default function PulseCheck() {
     setResults([]);
     setIsComplete(false);
     setShowResultsButton(false);
+    setRadarData(null);
     setSessionId(crypto.randomUUID());
   };
 
   const handleGoBack = () => {
     navigate('/');
   };
+
+  // Generate radar data by calling the edge function
+  const generateRadarData = async () => {
+    if (results.length === 0) return;
+    
+    setIsLoading(true);
+    try {
+      console.log('Calling generate-scores with results:', results);
+      
+      const { data, error } = await supabase.functions.invoke('generate-scores', {
+        body: { results }
+      });
+
+      if (error) {
+        console.error('Error calling generate-scores:', error);
+        throw error;
+      }
+
+      console.log('Received radar data:', data);
+      setRadarData(data);
+      
+    } catch (error) {
+      console.error('Failed to generate radar data:', error);
+      toast.error('Failed to generate insights. Please try again.');
+      
+      // Fallback to simple calculation
+      const categories = ['Career', 'Finances', 'Health', 'Connections'] as const;
+      const fallbackData = categories.reduce((acc, category) => {
+        const categoryResults = results.filter(r => r.card_data.category === category);
+        const keeps = categoryResults.filter(r => r.decision === 'keep').length;
+        const total = categoryResults.length;
+        acc[category] = total > 0 ? Math.round((keeps / total) * 100) : 50;
+        return acc;
+      }, {} as { [K in typeof categories[number]]: number });
+      
+      setRadarData({
+        ...fallbackData,
+        insights: {
+          Career: "Unable to analyze at this time. Please try again.",
+          Finances: "Unable to analyze at this time. Please try again.",
+          Health: "Unable to analyze at this time. Please try again.",
+          Connections: "Unable to analyze at this time. Please try again."
+        }
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Generate radar data when results are complete
+  useEffect(() => {
+    if (isComplete && results.length > 0 && !radarData) {
+      generateRadarData();
+    }
+  }, [isComplete, results, radarData]);
 
   const getResultsSummary = () => {
     const categories = ['Career', 'Finances', 'Health', 'Connections'];
@@ -145,35 +214,41 @@ export default function PulseCheck() {
   };
 
   if (isComplete) {
-    const summary = getResultsSummary();
-    
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-12">
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="space-y-8">
             <div className="text-center space-y-4">
               <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary-glow to-secondary bg-clip-text text-transparent">
-                Your Pulse Check Results
+                Your Life Pulse Results
               </h1>
               <p className="text-muted-foreground text-lg">
-                Here's what resonated with you right now
+                AI-powered insights from your pulse check
               </p>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              {summary.map(({ category, keeps, total, percentage }) => (
-                <div key={category} className="bg-card p-6 rounded-2xl border border-border">
-                  <h3 className="font-semibold text-lg mb-4 text-card-foreground">{category}</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Resonated: {keeps}/{total}</span>
-                      <span className="text-muted-foreground">{Math.round(percentage)}%</span>
-                    </div>
-                    <Progress value={percentage} className="h-2" />
-                  </div>
-                </div>
-              ))}
-            </div>
+            {/* Loading state */}
+            {isLoading && !radarData && (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                <p className="text-muted-foreground mt-4">Analyzing your responses...</p>
+              </div>
+            )}
+
+            {/* Radar Chart */}
+            {radarData && (
+              <div className="flex flex-col items-center space-y-8">
+                <RadarChart 
+                  data={{
+                    Career: radarData.Career,
+                    Finances: radarData.Finances,
+                    Health: radarData.Health,
+                    Connections: radarData.Connections
+                  }}
+                  insights={radarData.insights}
+                />
+              </div>
+            )}
 
             <div className="text-center space-y-4">
               <p className="text-muted-foreground">
