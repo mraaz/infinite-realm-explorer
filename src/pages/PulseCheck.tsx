@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import SwipeCard from '@/components/pulse-check/SwipeCard';
 import { pulseCheckCards, PulseCheckCard } from '@/data/pulseCheckCards';
@@ -12,20 +13,36 @@ interface CategoryScores {
   Connections: number;
 }
 
+// Fisher-Yates shuffle algorithm for randomizing array
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 const PulseCheck: React.FC = () => {
-  const [cardStack, setCardStack] = useState<PulseCheckCard[]>(pulseCheckCards);
+  const [cardStack, setCardStack] = useState<PulseCheckCard[]>([]);
   const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
   const [results, setResults] = useState<CategoryScores | null>(null);
   const [insights, setInsights] = useState<{ Career: string; Finances: string; Health: string; Connections: string; } | null>(null);
   const [showResults, setShowResults] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Calculate progress
-  const totalCards = pulseCheckCards.length;
-  const cardsLeft = cardStack.length - activeCardIndex;
-  const progress = ((totalCards - cardsLeft) / totalCards) * 100;
+  // Initialize with shuffled cards on component mount
+  useEffect(() => {
+    const shuffledCards = shuffleArray(pulseCheckCards);
+    setCardStack(shuffledCards);
+  }, []);
 
-  // Calculate category progress
+  // Calculate progress
+  const totalCards = cardStack.length;
+  const cardsLeft = totalCards - activeCardIndex;
+  const progress = totalCards > 0 ? ((totalCards - cardsLeft) / totalCards) * 100 : 0;
+
+  // Calculate category progress using the original pulseCheckCards for totals
   const categoryTotals = {
     Career: pulseCheckCards.filter(card => card.category === 'Career').length,
     Finances: pulseCheckCards.filter(card => card.category === 'Finances').length,
@@ -34,10 +51,10 @@ const PulseCheck: React.FC = () => {
   };
 
   const categoryProgress = {
-    Career: pulseCheckCards.filter((card, index) => index < activeCardIndex && card.category === 'Career').length,
-    Finances: pulseCheckCards.filter((card, index) => index < activeCardIndex && card.category === 'Finances').length,
-    Health: pulseCheckCards.filter((card, index) => index < activeCardIndex && card.category === 'Health').length,
-    Connections: pulseCheckCards.filter((card, index) => index < activeCardIndex && card.category === 'Connections').length
+    Career: cardStack.filter((card, index) => index < activeCardIndex && card.category === 'Career').length,
+    Finances: cardStack.filter((card, index) => index < activeCardIndex && card.category === 'Finances').length,
+    Health: cardStack.filter((card, index) => index < activeCardIndex && card.category === 'Health').length,
+    Connections: cardStack.filter((card, index) => index < activeCardIndex && card.category === 'Connections').length
   };
 
   const handleSwipe = async (cardId: number, decision: 'keep' | 'pass') => {
@@ -47,7 +64,7 @@ const PulseCheck: React.FC = () => {
 
     if (activeCardIndex === cardStack.length - 1) {
       setIsLoading(true);
-      const selectedCards = pulseCheckCards.slice(0, activeCardIndex + 1).map((card, index) => ({
+      const selectedCards = cardStack.slice(0, activeCardIndex + 1).map((card, index) => ({
         cardId: card.id,
         decision: index < activeCardIndex ? (decision === 'keep' ? 'keep' : 'pass') : decision,
         card_data: {
@@ -84,12 +101,22 @@ const PulseCheck: React.FC = () => {
   };
 
   const resetPulseCheck = () => {
-    setCardStack(pulseCheckCards);
+    const shuffledCards = shuffleArray(pulseCheckCards);
+    setCardStack(shuffledCards);
     setActiveCardIndex(0);
     setResults(null);
     setInsights(null);
     setShowResults(false);
   };
+
+  // Don't render until cards are shuffled
+  if (cardStack.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-purple-900 flex items-center justify-center">
+        <div className="text-white text-2xl font-bold">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-purple-900">
