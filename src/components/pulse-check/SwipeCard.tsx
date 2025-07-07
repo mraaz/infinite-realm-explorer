@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useSwipeable } from 'react-swipeable';
 import { PulseCheckCard, categoryColors, categoryIconPaths, keepMessages, passMessages } from '@/data/pulseCheckCards';
@@ -102,10 +103,10 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ card, onSwipe, isActive, zIndex }
               className={`w-full h-full rounded-2xl border ${categoryColor.border} bg-gradient-to-br ${categoryColor.gradient} backdrop-blur-sm p-6 flex flex-col items-center justify-center text-center relative overflow-hidden`}
               onClick={handleReveal}
             >
-              {/* Category indicator */}
-              <div className={`absolute top-4 left-4 flex items-center gap-2 ${categoryColor.bg} px-3 py-1 rounded-full`}>
-                <img src={iconPath} alt={card.category} className="w-4 h-4" />
-                <span className={`text-sm font-medium ${categoryColor.text}`}>{card.category}</span>
+              {/* Enhanced Category indicator */}
+              <div className={`absolute top-4 left-4 flex items-center gap-3 ${categoryColor.bg} px-4 py-2 rounded-full shadow-lg border border-white/20`}>
+                <img src={iconPath} alt={card.category} className="w-6 h-6" />
+                <span className={`text-lg font-bold ${categoryColor.text}`}>{card.category}</span>
               </div>
 
               {/* Eye icon */}
@@ -127,10 +128,10 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ card, onSwipe, isActive, zIndex }
           {/* Back of card */}
           <div className="flip-card-back">
             <div className={`w-full h-full rounded-2xl border ${categoryColor.border} bg-gradient-to-br ${categoryColor.gradient} backdrop-blur-sm p-6 flex flex-col justify-between relative overflow-hidden`}>
-              {/* Category indicator */}
-              <div className={`flex items-center gap-2 ${categoryColor.bg} px-3 py-1 rounded-full w-fit`}>
-                <img src={iconPath} alt={card.category} className="w-4 h-4" />
-                <span className={`text-sm font-medium ${categoryColor.text}`}>{card.category}</span>
+              {/* Enhanced Category indicator */}
+              <div className={`flex items-center gap-3 ${categoryColor.bg} px-4 py-2 rounded-full w-fit shadow-lg border border-white/20`}>
+                <img src={iconPath} alt={card.category} className="w-6 h-6" />
+                <span className={`text-lg font-bold ${categoryColor.text}`}>{card.category}</span>
               </div>
 
               {/* Card text */}

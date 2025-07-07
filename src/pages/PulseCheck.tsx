@@ -1,406 +1,174 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import SwipeCard from '@/components/pulse-check/SwipeCard';
+import { pulseCheckCards, PulseCheckCard } from '@/data/pulseCheckCards';
 import RadarChart from '@/components/pulse-check/RadarChart';
-import { pulseCheckCards } from '@/data/pulseCheckCards';
-import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, RotateCcw, ArrowRight } from 'lucide-react';
-import { toast } from 'sonner';
+import OverallProgressBar from '@/components/OverallProgressBar';
+import CategoryProgress from '@/components/pulse-check/CategoryProgress';
 
-interface PulseCheckResult {
-  cardId: number;
-  decision: 'keep' | 'pass';
-  card_data: any;
-}
-
-interface CategoryProgress {
+interface CategoryScores {
   Career: number;
   Finances: number;
   Health: number;
   Connections: number;
 }
 
-export default function PulseCheck() {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { user, isLoggedIn } = useAuth();
-  const isGuest = searchParams.get('guest') === 'true';
-  
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [results, setResults] = useState<PulseCheckResult[]>([]);
-  const [sessionId, setSessionId] = useState<string>('');
-  const [isComplete, setIsComplete] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showResultsButton, setShowResultsButton] = useState(false);
-  const [radarData, setRadarData] = useState<{
-    Career: number;
-    Finances: number;
-    Health: number;
-    Connections: number;
-    insights?: {
-      Career: string;
-      Finances: string;
-      Health: string;
-      Connections: string;
-    };
-  } | null>(null);
+const PulseCheck: React.FC = () => {
+  const [cardStack, setCardStack] = useState<PulseCheckCard[]>(pulseCheckCards);
+  const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
+  const [results, setResults] = useState<CategoryScores | null>(null);
+  const [insights, setInsights] = useState<{ Career: string; Finances: string; Health: string; Connections: string; } | null>(null);
+  const [showResults, setShowResults] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Use ALL cards, shuffled for variety
-  const [shuffledCards] = useState(() => {
-    return [...pulseCheckCards].sort(() => Math.random() - 0.5);
-  });
+  // Calculate progress
+  const totalCards = pulseCheckCards.length;
+  const cardsLeft = cardStack.length - activeCardIndex;
+  const progress = ((totalCards - cardsLeft) / totalCards) * 100;
 
-  // Redirect unauthenticated users (unless they're guests)
-  useEffect(() => {
-    // Generate session ID
-    setSessionId(crypto.randomUUID());
-    
-    if (!isLoggedIn && !isGuest) {
-      // Allow a moment for auth context to initialize
-      const timer = setTimeout(() => {
-        if (!isLoggedIn && !isGuest) {
-          navigate('/?login=true');
-        }
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoggedIn, isGuest, navigate]);
-
-  // Check if minimum requirements are met (1 keep per category)
-  const checkMinimumRequirements = (resultsToCheck: PulseCheckResult[]) => {
-    const categories = ['Career', 'Finances', 'Health', 'Connections'];
-    const categoryKeeps = categories.map(category => {
-      return resultsToCheck.filter(r => r.card_data.category === category && r.decision === 'keep').length;
-    });
-    return categoryKeeps.every(count => count >= 1);
+  // Calculate category progress
+  const categoryTotals = {
+    Career: pulseCheckCards.filter(card => card.category === 'Career').length,
+    Finances: pulseCheckCards.filter(card => card.category === 'Finances').length,
+    Health: pulseCheckCards.filter(card => card.category === 'Health').length,
+    Connections: pulseCheckCards.filter(card => card.category === 'Connections').length
   };
 
-  // Get category progress for display
-  const getCategoryProgress = () => {
-    const categories = ['Career', 'Finances', 'Health', 'Connections'];
-    return categories.reduce((acc, category) => {
-      const keeps = results.filter(r => r.card_data.category === category && r.decision === 'keep').length;
-      acc[category as keyof CategoryProgress] = keeps;
-      return acc;
-    }, {} as CategoryProgress);
+  const categoryProgress = {
+    Career: pulseCheckCards.filter((card, index) => index < activeCardIndex && card.category === 'Career').length,
+    Finances: pulseCheckCards.filter((card, index) => index < activeCardIndex && card.category === 'Finances').length,
+    Health: pulseCheckCards.filter((card, index) => index < activeCardIndex && card.category === 'Health').length,
+    Connections: pulseCheckCards.filter((card, index) => index < activeCardIndex && card.category === 'Connections').length
   };
 
   const handleSwipe = async (cardId: number, decision: 'keep' | 'pass') => {
-    const card = shuffledCards.find(c => c.id === cardId);
-    if (!card) return;
-
-    const newResult: PulseCheckResult = {
-      cardId,
-      decision,
-      card_data: card
-    };
-
-    const updatedResults = [...results, newResult];
-    setResults(updatedResults);
-
-    // Save to database if user is logged in
-    if (isLoggedIn && user) {
-      try {
-        await supabase
-          .from('pulse_check_results')
-          .insert({
-            user_id: user.sub,
-            session_id: sessionId,
-            card_data: card as any,
-            swipe_decision: decision,
-            category: card.category
-          });
-      } catch (error) {
-        console.error('Error saving pulse check result:', error);
-        // Don't block user flow for save errors
-      }
+    if (activeCardIndex < cardStack.length) {
+      setActiveCardIndex(activeCardIndex + 1);
     }
 
-    // Check if minimum requirements are now met
-    const meetsRequirements = checkMinimumRequirements(updatedResults);
-    setShowResultsButton(meetsRequirements);
-
-    // Move to next card or complete
-    if (currentCardIndex < shuffledCards.length - 1) {
-      setCurrentCardIndex(currentCardIndex + 1);
-    } else {
-      setIsComplete(true);
-      if (isLoggedIn) {
-        toast.success('All cards completed! Results saved to your profile.');
-      }
-    }
-  };
-
-  const restartPulseCheck = () => {
-    setCurrentCardIndex(0);
-    setResults([]);
-    setIsComplete(false);
-    setShowResultsButton(false);
-    setRadarData(null);
-    setSessionId(crypto.randomUUID());
-  };
-
-  const handleGoBack = () => {
-    navigate('/');
-  };
-
-  // Generate radar data by calling the edge function
-  const generateRadarData = async () => {
-    if (results.length === 0) return;
-    
-    setIsLoading(true);
-    try {
-      console.log('Calling generate-scores with results:', results);
-      
-      const { data, error } = await supabase.functions.invoke('generate-scores', {
-        body: { results }
-      });
-
-      if (error) {
-        console.error('Error calling generate-scores:', error);
-        throw error;
-      }
-
-      console.log('Received radar data:', data);
-      setRadarData(data);
-      
-    } catch (error) {
-      console.error('Failed to generate radar data:', error);
-      toast.error('Failed to generate insights. Please try again.');
-      
-      // Fallback to simple calculation
-      const categories = ['Career', 'Finances', 'Health', 'Connections'] as const;
-      const fallbackData = categories.reduce((acc, category) => {
-        const categoryResults = results.filter(r => r.card_data.category === category);
-        const keeps = categoryResults.filter(r => r.decision === 'keep').length;
-        const total = categoryResults.length;
-        acc[category] = total > 0 ? Math.round((keeps / total) * 100) : 50;
-        return acc;
-      }, {} as { [K in typeof categories[number]]: number });
-      
-      setRadarData({
-        ...fallbackData,
-        insights: {
-          Career: "Unable to analyze at this time. Please try again.",
-          Finances: "Unable to analyze at this time. Please try again.",
-          Health: "Unable to analyze at this time. Please try again.",
-          Connections: "Unable to analyze at this time. Please try again."
+    if (activeCardIndex === cardStack.length - 1) {
+      setIsLoading(true);
+      const selectedCards = pulseCheckCards.slice(0, activeCardIndex + 1).map((card, index) => ({
+        cardId: card.id,
+        decision: index < activeCardIndex ? (decision === 'keep' ? 'keep' : 'pass') : decision,
+        card_data: {
+          category: card.category,
+          tone: card.tone,
+          text: card.text
         }
-      });
-    } finally {
-      setIsLoading(false);
+      }));
+
+      try {
+        const response = await fetch('/api/generate-scores', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ results: selectedCards }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setResults(data);
+        setInsights(data.insights);
+        setShowResults(true);
+      } catch (error) {
+        console.error('Error generating scores:', error);
+        // Handle error appropriately
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
-  // Generate radar data when results are complete
-  useEffect(() => {
-    if (isComplete && results.length > 0 && !radarData) {
-      generateRadarData();
-    }
-  }, [isComplete, results, radarData]);
-
-  const getResultsSummary = () => {
-    const categories = ['Career', 'Finances', 'Health', 'Connections'];
-    const summary = categories.map(category => {
-      const categoryResults = results.filter(r => r.card_data.category === category);
-      const keeps = categoryResults.filter(r => r.decision === 'keep').length;
-      const total = categoryResults.length;
-      return { category, keeps, total, percentage: total > 0 ? (keeps / total) * 100 : 0 };
-    });
-    return summary;
+  const resetPulseCheck = () => {
+    setCardStack(pulseCheckCards);
+    setActiveCardIndex(0);
+    setResults(null);
+    setInsights(null);
+    setShowResults(false);
   };
-
-  if (isComplete) {
-    return (
-      <div className="min-h-screen bg-[#16161a] py-12">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <div className="space-y-8">
-            <div className="text-center space-y-4">
-              <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                AI-powered insights from your pulse check
-              </h1>
-            </div>
-
-            {/* Loading state */}
-            {isLoading && !radarData && (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-                <p className="text-muted-foreground mt-4">Analyzing your responses...</p>
-              </div>
-            )}
-
-            {/* Radar Chart */}
-            {radarData && (
-              <div className="flex flex-col items-center space-y-8">
-                <div className="w-full max-w-md">
-                  <RadarChart 
-                    data={{
-                      Career: radarData.Career,
-                      Finances: radarData.Finances,
-                      Health: radarData.Health,
-                      Connections: radarData.Connections
-                    }}
-                  />
-                </div>
-
-                {/* Category Cards */}
-                <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
-                  {(['Career', 'Finances', 'Health', 'Connections'] as const).map((category) => (
-                    <div key={category} className="bg-gray-900/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/50 ring-1 ring-white/10">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
-                          <h3 className="text-lg font-semibold text-white">{category}</h3>
-                        </div>
-                        <span className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">{radarData[category]}</span>
-                      </div>
-                      <p className="text-gray-400 leading-relaxed">
-                        {radarData.insights?.[category] || 
-                         `Your ${category.toLowerCase()} score reflects your current alignment and satisfaction in this area.`}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="text-center space-y-6 mt-12">
-              <p className="text-gray-400">
-                {isLoggedIn ? "" : "Sign up to save your results and track your progress over time."}
-              </p>
-              <div className="flex gap-4 justify-center flex-wrap">
-                <Button 
-                  onClick={restartPulseCheck} 
-                  variant="outline" 
-                  className="gap-2 bg-transparent border border-purple-500/50 text-purple-400 hover:border-purple-400 hover:text-purple-300"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  Take Another Pulse Check
-                </Button>
-                <Button 
-                  onClick={() => navigate('/onboarding-questionnaire')} 
-                  className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 px-8"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                  Get your Life Snapshot
-                </Button>
-                <Button 
-                  onClick={handleGoBack} 
-                  variant="outline"
-                  className="gap-2 bg-transparent border border-purple-500/50 text-purple-400 hover:border-purple-400 hover:text-purple-300"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Back to Home
-                </Button>
-                {!isLoggedIn && (
-                  <Button 
-                    onClick={() => navigate('/?signup=true')} 
-                    variant="outline"
-                    className="bg-transparent border border-purple-500/50 text-purple-400 hover:border-purple-400 hover:text-purple-300"
-                  >
-                    Sign Up to Save Results
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const progress = ((currentCardIndex + 1) / shuffledCards.length) * 100;
-  const currentCard = shuffledCards[currentCardIndex];
 
   return (
-    <div className="min-h-screen bg-[#16161a] py-8">
-      <div className="container mx-auto px-4 max-w-2xl">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-purple-900">
+      <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center space-y-4 mb-8">
-          <div className="flex items-center justify-between">
-            <Button variant="ghost" onClick={handleGoBack} className="gap-2">
-              <ChevronLeft className="w-4 h-4" />
-              Back
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              {currentCardIndex + 1} of {shuffledCards.length}
-            </span>
-          </div>
-          
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            60-Second Pulse Check
+        <div className="text-center mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            Life Pulse Check
           </h1>
-          
-          <Progress value={progress} className="w-full h-2" />
+          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+            A quick exploration of where you stand in the four key areas of life
+          </p>
         </div>
 
-        {/* Card Container */}
-        <div className="relative h-[500px] w-full max-w-md mx-auto">
-          {shuffledCards.slice(currentCardIndex, currentCardIndex + 3).map((card, index) => (
-            <SwipeCard
-              key={card.id}
-              card={card}
-              onSwipe={handleSwipe}
-              isActive={index === 0}
-              zIndex={10 - index}
-            />
-          ))}
-        </div>
+        {/* Progress Bar */}
+        <OverallProgressBar value={progress} />
 
         {/* Category Progress */}
-        <div className="mt-6 mb-4">
-          <div className="grid grid-cols-4 gap-2 max-w-md mx-auto">
-            {Object.entries(getCategoryProgress()).map(([category, count]) => (
-              <div key={category} className="text-center">
-                <div className={`w-8 h-8 mx-auto rounded-full border-2 flex items-center justify-center text-xs font-bold ${
-                  count >= 1 
-                    ? 'bg-purple-500 border-purple-500 text-white' 
-                    : 'bg-transparent border-gray-600 text-gray-400'
-                }`}>
-                  {count}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">{category}</p>
-              </div>
-            ))}
-          </div>
-          <p className="text-center text-xs text-muted-foreground mt-2">
-            Keep at least 1 from each category to unlock results
-          </p>
-        </div>
+        <CategoryProgress 
+          categories={[
+            { name: 'Career', completed: categoryProgress.Career, total: categoryTotals.Career },
+            { name: 'Finances', completed: categoryProgress.Finances, total: categoryTotals.Finances },
+            { name: 'Health', completed: categoryProgress.Health, total: categoryTotals.Health },
+            { name: 'Connections', completed: categoryProgress.Connections, total: categoryTotals.Connections }
+          ]}
+        />
 
-        {/* Get Results Button */}
-        {showResultsButton && (
-          <div className="text-center mb-6">
-            <Button 
-              onClick={() => setIsComplete(true)} 
-              className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90"
-            >
-              <ArrowRight className="w-4 h-4" />
-              Get Your Results
-            </Button>
+        {/* Card Stack or Results */}
+        {showResults ? (
+          <div className="flex flex-col items-center space-y-8">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-white mb-4">
+                Your Life Balance Overview
+              </h2>
+              <p className="text-gray-300 max-w-2xl mx-auto">
+                Here's how you're doing across the four key areas of your life, based on your responses.
+              </p>
+            </div>
+            
+            <RadarChart data={results!} insights={insights} />
+            
+            <div className="flex flex-col sm:flex-row gap-4 mt-8">
+              <button
+                onClick={() => window.location.href = '/onboarding-questionnaire'}
+                className="bg-gradient-cta hover:opacity-90 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 hover:scale-105 shadow-lg"
+              >
+                Get your Life Snapshot
+              </button>
+              <button
+                onClick={resetPulseCheck}
+                className="bg-gray-700 hover:bg-gray-600 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 hover:scale-105 shadow-lg"
+              >
+                Take Again
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="relative h-[600px] w-full max-w-2xl mx-auto">
+            {cardStack.slice(activeCardIndex, activeCardIndex + 3).map((card, index) => (
+              <SwipeCard
+                key={card.id}
+                card={card}
+                onSwipe={handleSwipe}
+                isActive={index === 0}
+                zIndex={3 - index}
+              />
+            ))}
+            {isLoading && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <div className="text-white text-2xl font-bold">
+                  Loading...
+                </div>
+              </div>
+            )}
           </div>
         )}
-
-        {/* Instructions */}
-        <div className="text-center mt-8 space-y-2">
-          <p className="text-muted-foreground">
-            Tap to reveal, then swipe or tap to choose
-          </p>
-          <div className="flex justify-center gap-8 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-              <span className="text-muted-foreground">Swipe left to pass</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-              <span className="text-muted-foreground">Swipe right to keep</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
-}
+};
+
+export default PulseCheck;
