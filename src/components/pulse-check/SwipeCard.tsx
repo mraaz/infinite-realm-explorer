@@ -100,26 +100,26 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ card, onSwipe, isActive, zIndex }
           {/* Front of card */}
           <div className="flip-card-front">
             <div 
-              className={`w-full h-full rounded-2xl border ${categoryColor.border} bg-gradient-to-br ${categoryColor.gradient} backdrop-blur-sm p-6 flex flex-col items-center justify-center text-center relative overflow-hidden`}
+              className={`w-full h-full rounded-2xl border ${categoryColor.border} bg-gradient-to-br ${categoryColor.gradient} backdrop-blur-sm p-4 md:p-6 flex flex-col items-center justify-center text-center relative overflow-hidden`}
               onClick={handleReveal}
             >
               {/* Enhanced Category indicator */}
-              <div className={`absolute top-4 left-4 flex items-center gap-3 ${categoryColor.bg} px-4 py-2 rounded-full shadow-lg border border-white/20`}>
-                <img src={iconPath} alt={card.category} className="w-6 h-6" />
-                <span className={`text-lg font-bold ${categoryColor.text}`}>{card.category}</span>
+              <div className={`absolute top-3 left-3 md:top-4 md:left-4 flex items-center gap-2 md:gap-3 ${categoryColor.bg} px-3 py-1.5 md:px-4 md:py-2 rounded-full shadow-lg border border-white/20`}>
+                <img src={iconPath} alt={card.category} className="w-5 h-5 md:w-6 md:h-6" />
+                <span className={`text-sm md:text-lg font-bold ${categoryColor.text}`}>{card.category}</span>
               </div>
 
               {/* Eye icon */}
-              <div className="mb-4">
-                <Eye className="w-16 h-16 text-gray-400" />
+              <div className="mb-3 md:mb-4">
+                <Eye className="w-12 h-12 md:w-16 md:h-16 text-gray-400" />
               </div>
 
               {/* Text */}
-              <h3 className="text-xl font-semibold text-white mb-2">Ready to explore?</h3>
-              <p className="text-gray-400 mb-6">Tap to reveal the insight</p>
+              <h3 className="text-lg md:text-xl font-semibold text-white mb-2">Ready to explore?</h3>
+              <p className="text-gray-400 mb-4 md:mb-6 text-sm md:text-base">Tap to reveal the insight</p>
 
               {/* Tap to reveal button */}
-              <button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+              <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 md:px-6 md:py-3 rounded-lg font-medium transition-colors text-sm md:text-base">
                 Tap to Reveal
               </button>
             </div>
@@ -127,31 +127,31 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ card, onSwipe, isActive, zIndex }
 
           {/* Back of card */}
           <div className="flip-card-back">
-            <div className={`w-full h-full rounded-2xl border ${categoryColor.border} bg-gradient-to-br ${categoryColor.gradient} backdrop-blur-sm p-6 flex flex-col justify-between relative overflow-hidden`}>
+            <div className={`w-full h-full rounded-2xl border ${categoryColor.border} bg-gradient-to-br ${categoryColor.gradient} backdrop-blur-sm p-4 md:p-6 flex flex-col justify-between relative overflow-hidden`}>
               {/* Enhanced Category indicator */}
-              <div className={`flex items-center gap-3 ${categoryColor.bg} px-4 py-2 rounded-full w-fit shadow-lg border border-white/20`}>
-                <img src={iconPath} alt={card.category} className="w-6 h-6" />
-                <span className={`text-lg font-bold ${categoryColor.text}`}>{card.category}</span>
+              <div className={`flex items-center gap-2 md:gap-3 ${categoryColor.bg} px-3 py-1.5 md:px-4 md:py-2 rounded-full w-fit shadow-lg border border-white/20`}>
+                <img src={iconPath} alt={card.category} className="w-5 h-5 md:w-6 md:h-6" />
+                <span className={`text-sm md:text-lg font-bold ${categoryColor.text}`}>{card.category}</span>
               </div>
 
               {/* Card text */}
-              <div className="flex-1 flex items-center justify-center px-4 py-8">
-                <p className="text-lg sm:text-xl text-white font-medium leading-relaxed text-center">
+              <div className="flex-1 flex items-center justify-center px-2 md:px-4 py-4 md:py-8">
+                <p className="text-base md:text-lg sm:text-xl text-white font-medium leading-relaxed text-center">
                   "{card.text}"
                 </p>
               </div>
 
               {/* Action buttons */}
-              <div className="flex justify-between items-center gap-4">
+              <div className="flex justify-between items-center gap-3 md:gap-4">
                 <button
                   onClick={() => handleButtonClick('pass')}
-                  className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-4 py-3 rounded-xl font-medium transition-all duration-200 hover:scale-105"
+                  className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-3 py-2 md:px-4 md:py-3 rounded-xl font-medium transition-all duration-200 hover:scale-105 text-sm md:text-base"
                 >
                   {passMessage}
                 </button>
                 <button
                   onClick={() => handleButtonClick('keep')}
-                  className="flex-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 px-4 py-3 rounded-xl font-medium transition-all duration-200 hover:scale-105"
+                  className="flex-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 px-3 py-2 md:px-4 md:py-3 rounded-xl font-medium transition-all duration-200 hover:scale-105 text-sm md:text-base"
                 >
                   {keepMessage}
                 </button>
@@ -164,7 +164,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ card, onSwipe, isActive, zIndex }
       {/* Swipe indicators */}
       {swipeDirection && (
         <div className={`absolute inset-0 flex items-center justify-center pointer-events-none`}>
-          <div className={`text-6xl font-bold ${swipeDirection === 'right' ? 'text-purple-400' : 'text-red-400'} opacity-70`}>
+          <div className={`text-4xl md:text-6xl font-bold ${swipeDirection === 'right' ? 'text-purple-400' : 'text-red-400'} opacity-70`}>
             {swipeDirection === 'right' ? 'KEEP' : 'PASS'}
           </div>
         </div>

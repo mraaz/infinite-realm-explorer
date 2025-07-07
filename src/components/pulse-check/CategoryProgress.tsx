@@ -12,12 +12,12 @@ interface CategoryProgressProps {
 
 const CategoryProgress: React.FC<CategoryProgressProps> = ({ categories }) => {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full max-w-5xl mx-auto mb-10">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 w-full max-w-5xl mx-auto mb-6 md:mb-10">
       {categories.map((category) => {
         const categoryColor = categoryColors[category.name as keyof typeof categoryColors];
         const iconPath = categoryIconPaths[category.name as keyof typeof categoryIconPaths];
         const percentage = category.total > 0 ? (category.completed / category.total) * 100 : 0;
-        const circumference = 2 * Math.PI * 50; // radius of 50 for larger circles
+        const circumference = 2 * Math.PI * 35; // Smaller radius for mobile (35 instead of 50)
         const strokeDasharray = circumference;
         const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
@@ -41,25 +41,25 @@ const CategoryProgress: React.FC<CategoryProgressProps> = ({ categories }) => {
 
         return (
           <div key={category.name} className="flex flex-col items-center">
-            <div className="relative w-32 h-32 mb-4">
+            <div className="relative w-20 h-20 md:w-32 md:h-32 mb-2 md:mb-4">
               {/* Background circle */}
-              <svg className="w-32 h-32 -rotate-90" viewBox="0 0 120 120">
+              <svg className="w-20 h-20 md:w-32 md:h-32 -rotate-90" viewBox="0 0 80 80">
                 <circle
-                  cx="60"
-                  cy="60"
-                  r="50"
+                  cx="40"
+                  cy="40"
+                  r="35"
                   stroke="rgba(75, 85, 99, 0.3)"
-                  strokeWidth="8"
+                  strokeWidth="6"
                   fill="none"
                   className="drop-shadow-sm"
                 />
                 {/* Progress circle */}
                 <circle
-                  cx="60"
-                  cy="60"
-                  r="50"
+                  cx="40"
+                  cy="40"
+                  r="35"
                   stroke={`url(#gradient-${category.name})`}
-                  strokeWidth="8"
+                  strokeWidth="6"
                   fill="none"
                   strokeDasharray={strokeDasharray}
                   strokeDashoffset={strokeDashoffset}
@@ -76,16 +76,16 @@ const CategoryProgress: React.FC<CategoryProgressProps> = ({ categories }) => {
               
               {/* Center icon */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className={`${categoryColor.bg} p-3 rounded-full shadow-xl border-2 border-white/30`}>
-                  <img src={iconPath} alt={category.name} className="w-8 h-8" />
+                <div className={`${categoryColor.bg} p-2 md:p-3 rounded-full shadow-xl border-2 border-white/30`}>
+                  <img src={iconPath} alt={category.name} className="w-5 h-5 md:w-8 md:h-8" />
                 </div>
               </div>
             </div>
             
             {/* Category name and progress */}
             <div className="text-center">
-              <h3 className={`font-bold text-lg ${categoryColor.text} mb-2`}>{category.name}</h3>
-              <p className="text-sm text-gray-400 font-medium">
+              <h3 className={`font-bold text-sm md:text-lg ${categoryColor.text} mb-1 md:mb-2`}>{category.name}</h3>
+              <p className="text-xs md:text-sm text-gray-400 font-medium">
                 {category.completed}/{category.total}
               </p>
             </div>

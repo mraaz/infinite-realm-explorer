@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Share } from 'lucide-react';
 import html2canvas from 'html2canvas';
@@ -97,15 +98,15 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
       <button
         onClick={handleShare}
         disabled={isGenerating || isSharing}
-        className="group relative overflow-hidden bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        className="group relative overflow-hidden bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 py-3 md:px-8 md:py-4 rounded-xl font-semibold text-base md:text-lg transition-all duration-300 hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto"
       >
         {/* Animated background effect */}
         <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
         
         {/* Button content */}
-        <div className="relative flex items-center gap-3">
-          <Share className={`w-5 h-5 transition-transform duration-300 ${isGenerating || isSharing ? 'animate-spin' : 'group-hover:rotate-12'}`} />
-          <span className="relative">
+        <div className="relative flex items-center justify-center gap-2 md:gap-3">
+          <Share className={`w-4 h-4 md:w-5 md:h-5 transition-transform duration-300 ${isGenerating || isSharing ? 'animate-spin' : 'group-hover:rotate-12'}`} />
+          <span className="relative text-sm md:text-base">
             {isGenerating 
               ? 'Creating Image...' 
               : isSharing 
