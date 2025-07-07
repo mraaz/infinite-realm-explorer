@@ -20,8 +20,8 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
   const categories = ['Career', 'Finances', 'Health', 'Connections'] as const;
   const size = 400;
   const center = size / 2;
-  const maxRadius = 140;
-  const labelOffset = 50;
+  const maxRadius = 120;
+  const labelOffset = 80;
   
   // Calculate angles for each category (starting from top, going clockwise)
   const getAngle = (index: number) => {
@@ -62,7 +62,7 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
   // Generate labels positions with better spacing to prevent cutoff
   const labelPositions = categories.map((category, index) => {
     const angle = getAngle(index);
-    const labelRadius = maxRadius + labelOffset + 10; // Increased spacing
+    const labelRadius = maxRadius + labelOffset; // Better spacing
     const position = polarToCartesian(angle, labelRadius);
     return {
       category,
@@ -72,7 +72,7 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
     };
   });
 
-  const svgSize = size + (labelOffset * 2) + 80; // Increased overall size
+  const svgSize = size + (labelOffset * 2) + 120; // Increased overall size for better padding
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -100,7 +100,7 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
             </linearGradient>
           </defs>
           
-          <g transform={`translate(${labelOffset + 30}, ${labelOffset + 30})`}>
+          <g transform={`translate(${labelOffset + 60}, ${labelOffset + 60})`}>
             {/* Background circle */}
             <circle
               cx={center}
@@ -169,31 +169,42 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
               
               return (
                 <g key={label.category}>
+                  {/* Background circle for score visibility */}
+                  <circle
+                    cx={label.x}
+                    cy={label.y + 6}
+                    r="22"
+                    fill="rgba(0, 0, 0, 0.8)"
+                    stroke="url(#scoreGradient)"
+                    strokeWidth="2"
+                  />
+                  
                   {/* Category name with improved positioning */}
                   <text
                     x={label.x}
-                    y={label.y - 18}
+                    y={label.y - 30}
                     textAnchor={isLeft ? "end" : isRight ? "start" : "middle"}
-                    className="text-base font-bold fill-white"
+                    className="text-lg font-bold fill-white"
                     style={{ 
-                      fontSize: '18px',
+                      fontSize: '20px',
                       fontWeight: 'bold',
                       filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.9))'
                     }}
                   >
                     {label.category}
                   </text>
+                  
                   {/* Score with enhanced visibility */}
                   <text
                     x={label.x}
-                    y={label.y + 6}
-                    textAnchor={isLeft ? "end" : isRight ? "start" : "middle"}
-                    className="text-2xl font-bold"
+                    y={label.y + 12}
+                    textAnchor="middle"
+                    className="text-3xl font-bold"
                     style={{ 
-                      fontSize: '24px',
+                      fontSize: '28px',
                       fontWeight: 'bold',
                       fill: 'url(#scoreGradient)',
-                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.9))'
+                      filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.8))'
                     }}
                   >
                     {label.value}

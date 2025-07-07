@@ -19,20 +19,14 @@ interface PulseCheckActionsProps {
 
 const PulseCheckActions = ({ data }: PulseCheckActionsProps) => {
   const [loginModalOpen, setLoginModalOpen] = useState(false);
-  const [triggerShare, setTriggerShare] = useState(false);
   const { user } = useAuth();
   const isGuest = isGuestMode();
 
   const isAuthenticated = user && !isGuest;
 
   const handleMagicLinkClick = () => {
-    if (isAuthenticated) {
-      // For authenticated users, show the ShareButton directly
-      setTriggerShare(true);
-    } else {
-      // For guests, open login modal
-      setLoginModalOpen(true);
-    }
+    // For guests, open login modal
+    setLoginModalOpen(true);
   };
 
   return (
@@ -43,8 +37,8 @@ const PulseCheckActions = ({ data }: PulseCheckActionsProps) => {
           {/* Share as Image Button - Always available */}
           <ShareImageButton data={data} />
 
-          {/* Create Magic Link Button - shows ShareButton for authenticated users */}
-          {isAuthenticated && triggerShare ? (
+          {/* Create Magic Link Button - direct ShareButton for authenticated users */}
+          {isAuthenticated ? (
             <ShareButton data={data} />
           ) : (
             <Button
