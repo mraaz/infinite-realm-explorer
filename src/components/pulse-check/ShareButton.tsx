@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { isGuestMode } from '@/utils/guestUtils';
+import ShareLinkModal from './ShareLinkModal';
 
 interface ShareButtonProps {
   data: {
@@ -19,6 +20,8 @@ interface ShareButtonProps {
 const ShareButton = ({ data }: ShareButtonProps) => {
   const [isSharing, setIsSharing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
   const isGuest = isGuestMode();
@@ -80,7 +83,7 @@ const ShareButton = ({ data }: ShareButtonProps) => {
       const shareUrl = response.shareUrl;
       console.log('[ShareButton] Share URL created:', shareUrl);
 
-      // Try native sharing first, then fallback to copy
+      // Try native sharing first, then fallback to modal
       if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) {
         try {
           console.log('[ShareButton] Attempting native share...');
@@ -97,34 +100,14 @@ const ShareButton = ({ data }: ShareButtonProps) => {
           });
           return;
         } catch (shareError) {
-          console.log('[ShareButton] Native share failed, falling back to copy:', shareError);
-          // Fall through to copy functionality
+          console.log('[ShareButton] Native share failed, falling back to modal:', shareError);
+          // Fall through to modal
         }
       }
 
-      // Copy to clipboard
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-        console.log('[ShareButton] URL copied to clipboard');
-        
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-        
-        toast({
-          title: "Link Copied!",
-          description: "Share link has been copied to your clipboard.",
-        });
-      } catch (clipboardError) {
-        console.error('[ShareButton] Clipboard error:', clipboardError);
-        
-        // Final fallback - show the URL in a prompt
-        prompt('Copy this share link:', shareUrl);
-        
-        toast({
-          title: "Share Link Created",
-          description: "Copy the link from the dialog box.",
-        });
-      }
+      // Show modal with copy functionality
+      setShareUrl(shareUrl);
+      setShowModal(true);
 
     } catch (error) {
       console.error('[ShareButton] Sharing failed:', error);
@@ -161,23 +144,31 @@ const ShareButton = ({ data }: ShareButtonProps) => {
   }
 
   return (
-    <Button
-      onClick={handleShare}
-      disabled={isSharing}
-      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 transition-all duration-300 hover:scale-105"
-    >
-      {copied ? (
-        <>
-          <Check size={18} className="mr-2" />
-          Link Copied!
-        </>
-      ) : (
-        <>
-          <Share2 size={18} className="mr-2" />
-          {isSharing ? 'Creating Link...' : 'Create Magic Link'}
-        </>
-      )}
-    </Button>
+    <>
+      <Button
+        onClick={handleShare}
+        disabled={isSharing}
+        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 transition-all duration-300 hover:scale-105"
+      >
+        {copied ? (
+          <>
+            <Check size={18} className="mr-2" />
+            Link Copied!
+          </>
+        ) : (
+          <>
+            <Share2 size={18} className="mr-2" />
+            {isSharing ? 'Creating Link...' : 'Create Magic Link'}
+          </>
+        )}
+      </Button>
+      
+      <ShareLinkModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        shareUrl={shareUrl}
+      />
+    </>
   );
 };
 

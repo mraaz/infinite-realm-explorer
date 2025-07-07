@@ -153,8 +153,8 @@ const ShareImageButton = ({ data }: ShareImageButtonProps) => {
         )}
       </Button>
 
-      {/* Hidden component for image generation */}
-      <div className="fixed -top-[9999px] -left-[9999px] pointer-events-none">
+      {/* Hidden component for image generation - make it visible but tiny */}
+      <div className="fixed top-0 left-0 w-1 h-1 overflow-hidden pointer-events-none opacity-0 scale-[0.001]">
         <ShareableResultImage ref={imageRef} data={data} />
       </div>
     </>
