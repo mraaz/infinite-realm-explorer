@@ -21,6 +21,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
   const [isCreatingLink, setIsCreatingLink] = useState(false);
   const [shareUrl, setShareUrl] = useState<string>('');
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [error, setError] = useState<string>('');
   const shareableRef = useRef<HTMLDivElement>(null);
   const { user, isLoggedIn } = useAuth();
 
@@ -29,6 +30,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
 
     try {
       setIsGenerating(true);
+      setError('');
       
       const canvas = await html2canvas(shareableRef.current, {
         backgroundColor: null,
@@ -43,6 +45,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
       });
     } catch (error) {
       console.error('Error generating image:', error);
+      setError('Failed to generate image');
       return null;
     } finally {
       setIsGenerating(false);
@@ -51,6 +54,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
 
   const handleShareImage = async () => {
     setIsSharing(true);
+    setError('');
     
     try {
       const imageBlob = await generateShareableImage();
@@ -92,8 +96,8 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
         }
       }
     } catch (error) {
-      console.error('Error sharing:', error);
-      alert('Sorry, there was an error sharing your results. Please try again.');
+      console.error('Error sharing image:', error);
+      setError('Failed to share image');
     } finally {
       setIsSharing(false);
       setShowShareMenu(false);
@@ -109,12 +113,17 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
     }
 
     setIsCreatingLink(true);
+    setError('');
     
     try {
       const token = localStorage.getItem('infinitelife_jwt');
+      console.log('[ShareButton] JWT token check:', token ? 'Found' : 'Missing');
+      
       if (!token) {
-        throw new Error('No authentication token found');
+        throw new Error('No authentication token found. Please sign in again.');
       }
+
+      console.log('[ShareButton] Calling share-pulse-results function with data:', data);
 
       const { data: responseData, error } = await supabase.functions.invoke('share-pulse-results', {
         body: { resultsData: data },
@@ -123,30 +132,43 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
         },
       });
 
-      if (error) throw error;
+      console.log('[ShareButton] Function response:', { responseData, error });
 
-      if (responseData.error) {
+      if (error) {
+        console.error('[ShareButton] Supabase function error:', error);
+        throw error;
+      }
+
+      if (responseData?.error) {
+        console.error('[ShareButton] Function returned error:', responseData.error);
         if (responseData.error === 'Daily share limit reached') {
-          alert(responseData.message || 'You have reached your daily sharing limit. Try again tomorrow!');
+          setError(responseData.message || 'You have reached your daily sharing limit. Try again tomorrow!');
+        } else if (responseData.error === 'Authentication required' || responseData.error === 'Invalid authentication token' || responseData.error === 'Token expired') {
+          setError('Please sign in again to share your results.');
         } else {
-          throw new Error(responseData.error);
+          setError(responseData.message || 'Failed to create share link');
         }
         return;
       }
 
+      if (!responseData?.shareUrl) {
+        throw new Error('No share URL received');
+      }
+
       setShareUrl(responseData.shareUrl);
+      console.log('[ShareButton] Share URL created:', responseData.shareUrl);
       
       // Copy to clipboard
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(responseData.shareUrl);
-        alert(`Magic link created and copied to clipboard! You have ${responseData.sharesRemaining} shares remaining today.`);
+        alert(`Magic link created and copied to clipboard! You have ${responseData.sharesRemaining || 0} shares remaining today.`);
       } else {
-        alert(`Magic link created: ${responseData.shareUrl}\n\nYou have ${responseData.sharesRemaining} shares remaining today.`);
+        alert(`Magic link created: ${responseData.shareUrl}\n\nYou have ${responseData.sharesRemaining || 0} shares remaining today.`);
       }
 
     } catch (error) {
-      console.error('Error creating share link:', error);
-      alert('Sorry, there was an error creating your share link. Please try again.');
+      console.error('[ShareButton] Error creating share link:', error);
+      setError(error instanceof Error ? error.message : 'Failed to create share link');
     } finally {
       setIsCreatingLink(false);
       setShowShareMenu(false);
@@ -163,6 +185,13 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
 
   return (
     <div className="relative">
+      {/* Error Display */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-200 text-sm">
+          {error}
+        </div>
+      )}
+
       {/* Main Share Button */}
       <button
         onClick={handleMainButtonClick}

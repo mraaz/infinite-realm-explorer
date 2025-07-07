@@ -1,6 +1,6 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-import { decode } from "https://deno.land/x/djwt@v2.8/mod.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,36 +21,58 @@ serve(async (req) => {
 
     // Get JWT token from Authorization header
     const authorization = req.headers.get('Authorization');
+    console.log('[share-pulse-results] Authorization header:', authorization ? 'Present' : 'Missing');
+
     if (!authorization || !authorization.startsWith('Bearer ')) {
+      console.log('[share-pulse-results] Missing or invalid authorization header');
       return new Response(
-        JSON.stringify({ error: 'Missing or invalid authorization header' }),
+        JSON.stringify({ error: 'Authentication required', message: 'Please sign in to share your results' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const token = authorization.replace('Bearer ', '');
+    console.log('[share-pulse-results] Token extracted, length:', token.length);
     
-    // Decode JWT token to get user info
+    // Simple JWT payload extraction (without verification for now)
     let userInfo;
     try {
-      const [header, payload, signature] = decode(token);
-      userInfo = payload as any;
+      // Split JWT and decode payload
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        throw new Error('Invalid JWT format');
+      }
+      
+      // Decode base64url payload
+      const payload = parts[1];
+      const paddedPayload = payload + '='.repeat((4 - payload.length % 4) % 4);
+      const decodedPayload = atob(paddedPayload.replace(/-/g, '+').replace(/_/g, '/'));
+      userInfo = JSON.parse(decodedPayload);
+      
+      console.log('[share-pulse-results] JWT decoded successfully:', { 
+        sub: userInfo.sub, 
+        email: userInfo.email,
+        exp: userInfo.exp 
+      });
     } catch (error) {
+      console.error('[share-pulse-results] JWT decode error:', error);
       return new Response(
-        JSON.stringify({ error: 'Invalid JWT token' }),
+        JSON.stringify({ error: 'Invalid authentication token', message: 'Please sign in again' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Check if token is expired
     if (userInfo.exp && userInfo.exp * 1000 < Date.now()) {
+      console.log('[share-pulse-results] Token is expired');
       return new Response(
-        JSON.stringify({ error: 'Token expired' }),
+        JSON.stringify({ error: 'Token expired', message: 'Please sign in again' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const { resultsData } = await req.json();
+    console.log('[share-pulse-results] Results data received:', !!resultsData);
     
     if (!resultsData) {
       return new Response(
@@ -63,6 +85,8 @@ serve(async (req) => {
     const userEmail = userInfo.email || 'Unknown';
     const userName = userInfo.name || userEmail.split('@')[0];
 
+    console.log('[share-pulse-results] User info:', { userId, userEmail, userName });
+
     // Check daily rate limit
     const today = new Date().toISOString().split('T')[0];
     
@@ -74,10 +98,12 @@ serve(async (req) => {
       .single();
 
     if (limitError && limitError.code !== 'PGRST116') {
+      console.error('[share-pulse-results] Rate limit check error:', limitError);
       throw limitError;
     }
 
     const currentShares = existingLimit?.share_count || 0;
+    console.log('[share-pulse-results] Current shares today:', currentShares);
     
     if (currentShares >= 25) {
       return new Response(
@@ -91,6 +117,7 @@ serve(async (req) => {
 
     // Generate unique share token
     const shareToken = crypto.randomUUID();
+    console.log('[share-pulse-results] Generated share token:', shareToken);
 
     // Create shared result
     const { data: sharedResult, error: shareError } = await supabase
@@ -106,27 +133,39 @@ serve(async (req) => {
       .single();
 
     if (shareError) {
+      console.error('[share-pulse-results] Share creation error:', shareError);
       throw shareError;
     }
 
+    console.log('[share-pulse-results] Shared result created:', sharedResult.id);
+
     // Update or create share limit record
     if (existingLimit) {
-      await supabase
+      const { error: updateError } = await supabase
         .from('user_share_limits')
         .update({ share_count: currentShares + 1, updated_at: new Date().toISOString() })
         .eq('user_id', userId)
         .eq('share_date', today);
+      
+      if (updateError) {
+        console.error('[share-pulse-results] Share limit update error:', updateError);
+      }
     } else {
-      await supabase
+      const { error: insertError } = await supabase
         .from('user_share_limits')
         .insert({
           user_id: userId,
           share_date: today,
           share_count: 1
         });
+      
+      if (insertError) {
+        console.error('[share-pulse-results] Share limit insert error:', insertError);
+      }
     }
 
     const shareUrl = `${req.headers.get('origin') || 'https://infinitegame.life'}/shared/${shareToken}`;
+    console.log('[share-pulse-results] Share URL generated:', shareUrl);
 
     return new Response(
       JSON.stringify({ 
@@ -141,9 +180,9 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error sharing results:', error);
+    console.error('[share-pulse-results] Unexpected error:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error', message: 'Please try again later' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
