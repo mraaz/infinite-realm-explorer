@@ -18,14 +18,14 @@ interface RadarChartProps {
 
 const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
   const categories = ['Career', 'Finances', 'Health', 'Connections'] as const;
-  const size = 400; // Increased base size
+  const size = 400;
   const center = size / 2;
-  const maxRadius = 140; // Increased radius
-  const labelOffset = 50; // Increased label offset
+  const maxRadius = 140;
+  const labelOffset = 50;
   
   // Calculate angles for each category (starting from top, going clockwise)
   const getAngle = (index: number) => {
-    return (index * 90 - 90) * (Math.PI / 180); // Start from top (-90 degrees)
+    return (index * 90 - 90) * (Math.PI / 180);
   };
   
   // Convert polar coordinates to cartesian
@@ -72,7 +72,7 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
     };
   });
 
-  const svgSize = size + (labelOffset * 2) + 60; // Increased padding for labels
+  const svgSize = size + (labelOffset * 2) + 60;
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -160,10 +160,8 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
               />
             ))}
             
-            {/* Category labels and scores with better positioning */}
+            {/* Category labels and scores */}
             {labelPositions.map((label, index) => {
-              const isTop = index === 0;
-              const isBottom = index === 2;
               const isLeft = index === 3;
               const isRight = index === 1;
               
@@ -213,17 +211,19 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
         </svg>
       </div>
       
-      {/* Insights */}
+      {/* AI Insights */}
       {insights && (
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           {categories.map((category) => (
-            <div key={category} className="bg-card/50 backdrop-blur-sm p-4 rounded-xl border border-border/50">
+            <div key={category} className="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-3 h-3 bg-primary rounded-full"></div>
-                <h4 className="font-semibold text-card-foreground">{category}</h4>
-                <span className="ml-auto text-2xl font-bold text-primary">{data[category]}</span>
+                <div className="w-3 h-3 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full"></div>
+                <h4 className="font-semibold text-white">{category}</h4>
+                <span className="ml-auto text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  {data[category]}
+                </span>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className="text-sm text-gray-300 leading-relaxed">
                 {insights[category]}
               </p>
             </div>
