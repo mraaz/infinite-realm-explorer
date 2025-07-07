@@ -14,7 +14,11 @@ const AuthCallback = () => {
     console.log('[AuthCallback] Current URL:', window.location.href);
     console.log('[AuthCallback] Search params:', location.search);
     
-    // Get the token from the URL query parameter.
+    // Check if we're running in a popup window
+    const isPopup = window.opener && window.opener !== window;
+    console.log('[AuthCallback] Running in popup:', isPopup);
+    
+    // Get the token from the URL query parameter
     const searchParams = new URLSearchParams(location.search);
     const token = searchParams.get('token');
     const error = searchParams.get('error');
@@ -22,28 +26,59 @@ const AuthCallback = () => {
     console.log('[AuthCallback] Token received:', !!token);
     console.log('[AuthCallback] Error received:', error);
 
-    // Find out where the user was before they logged in.
-    const preLoginPath = localStorage.getItem('preLoginPath') || '/'; // Default to the homepage if not found.
-    console.log('[AuthCallback] PreLoginPath:', preLoginPath);
-
-    if (token) {
-      console.log('[AuthCallback] Processing login with token');
-      // 1. Use the auth context to handle login (this updates global state)
-      login(token);
-      
-      // 2. Clean up the stored path from localStorage.
-      localStorage.removeItem('preLoginPath');
-      
-      // 3. Send the user back to where they came from.
-      console.log('[AuthCallback] Redirecting to:', preLoginPath);
-      navigate(preLoginPath, { replace: true });
-    } else if (error) {
-      console.error('[AuthCallback] OAuth error:', error);
-      navigate('/?error=' + encodeURIComponent(error), { replace: true });
+    if (isPopup) {
+      // We're in a popup - communicate with parent window
+      if (token) {
+        console.log('[AuthCallback] Sending success message to parent');
+        
+        // Login with the token first
+        login(token);
+        
+        // Send success message to parent window
+        window.opener.postMessage({
+          type: 'OAUTH_SUCCESS',
+          token: token
+        }, window.location.origin);
+        
+        // Dispatch custom event for parent to listen to
+        const authCompleteEvent = new CustomEvent('auth-complete', { detail: { token } });
+        window.opener.dispatchEvent(authCompleteEvent);
+        
+        // Close popup
+        window.close();
+      } else if (error) {
+        console.error('[AuthCallback] Sending error message to parent:', error);
+        window.opener.postMessage({
+          type: 'OAUTH_ERROR',
+          error: error
+        }, window.location.origin);
+        window.close();
+      } else {
+        console.error('[AuthCallback] No token or error found, sending error to parent');
+        window.opener.postMessage({
+          type: 'OAUTH_ERROR',
+          error: 'no_token'
+        }, window.location.origin);
+        window.close();
+      }
     } else {
-      console.error('[AuthCallback] No token or error found in callback');
-      // If login failed for some reason, send them to a login error page or the homepage.
-      navigate('/?error=no_token', { replace: true });
+      // Not in popup - use normal redirect flow
+      const preLoginPath = localStorage.getItem('preLoginPath') || '/';
+      console.log('[AuthCallback] PreLoginPath:', preLoginPath);
+
+      if (token) {
+        console.log('[AuthCallback] Processing login with token');
+        login(token);
+        localStorage.removeItem('preLoginPath');
+        console.log('[AuthCallback] Redirecting to:', preLoginPath);
+        navigate(preLoginPath, { replace: true });
+      } else if (error) {
+        console.error('[AuthCallback] OAuth error:', error);
+        navigate('/?error=' + encodeURIComponent(error), { replace: true });
+      } else {
+        console.error('[AuthCallback] No token or error found in callback');
+        navigate('/?error=no_token', { replace: true });
+      }
     }
   }, [location, navigate, login]);
 

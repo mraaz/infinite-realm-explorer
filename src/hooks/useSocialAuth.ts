@@ -6,7 +6,7 @@ export const useSocialAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLoginClick = (provider: 'google' | 'facebook' | 'discord') => {
-    console.log(`[OAuth] Starting ${provider} login flow`);
+    console.log(`[OAuth] Starting ${provider} popup login flow`);
     setIsLoading(true);
     
     // --- Configuration ---
@@ -25,15 +25,75 @@ export const useSocialAuth = () => {
     }
 
     if (loginUrl) {
-      console.log(`[OAuth] Redirect URL: ${loginUrl}`);
-      // Save the user's current page path so we can return them here after login.
+      console.log(`[OAuth] Opening popup for URL: ${loginUrl}`);
+      
+      // Save the user's current page path so we can return them here after login
       localStorage.setItem('preLoginPath', window.location.pathname);
       console.log(`[OAuth] Saved preLoginPath: ${window.location.pathname}`);
-      // Redirect the user to the AWS authentication endpoint.
-      window.location.href = loginUrl;
+      
+      // Open popup window for OAuth flow
+      const popup = window.open(
+        loginUrl,
+        'oauth-popup',
+        'width=500,height=600,scrollbars=yes,resizable=yes'
+      );
+
+      if (!popup) {
+        console.error('[OAuth] Popup blocked, falling back to redirect');
+        window.location.href = loginUrl;
+        return;
+      }
+
+      // Listen for messages from the popup
+      const handleMessage = (event: MessageEvent) => {
+        // Verify origin for security
+        if (event.origin !== window.location.origin) return;
+
+        console.log('[OAuth] Received message from popup:', event.data);
+
+        if (event.data.type === 'OAUTH_SUCCESS') {
+          console.log('[OAuth] Login successful via popup');
+          setIsLoading(false);
+          window.removeEventListener('message', handleMessage);
+          popup.close();
+          
+          // The AuthCallback component will handle the actual login logic
+          // and dispatch a custom event that we can listen to
+          window.addEventListener('auth-complete', () => {
+            console.log('[OAuth] Auth complete event received');
+          }, { once: true });
+          
+        } else if (event.data.type === 'OAUTH_ERROR') {
+          console.error('[OAuth] Error from popup:', event.data.error);
+          setIsLoading(false);
+          window.removeEventListener('message', handleMessage);
+          popup.close();
+        }
+      };
+
+      window.addEventListener('message', handleMessage);
+
+      // Handle popup being closed manually
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          console.log('[OAuth] Popup closed by user');
+          setIsLoading(false);
+          window.removeEventListener('message', handleMessage);
+          clearInterval(checkClosed);
+        }
+      }, 1000);
+
+      // Timeout after 5 minutes
+      setTimeout(() => {
+        if (!popup.closed) {
+          console.log('[OAuth] Popup timeout, closing');
+          popup.close();
+          setIsLoading(false);
+          window.removeEventListener('message', handleMessage);
+          clearInterval(checkClosed);
+        }
+      }, 300000);
     }
-    
-    setIsLoading(false);
   };
 
   return {
