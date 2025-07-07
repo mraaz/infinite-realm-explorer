@@ -3,6 +3,8 @@ import React, { useState, useRef } from 'react';
 import { Share } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import ShareableResultImage from './ShareableResultImage';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ShareButtonProps {
   data: {
@@ -17,6 +19,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const shareableRef = useRef<HTMLDivElement>(null);
+  const { user, isLoggedIn } = useAuth();
 
   const generateShareableImage = async (): Promise<Blob | null> => {
     if (!shareableRef.current) return null;
@@ -43,46 +46,61 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
     }
   };
 
+  const handleAuthPrompt = () => {
+    // Store current path to return after login
+    localStorage.setItem('preLoginPath', window.location.pathname);
+    // Redirect to login page
+    window.location.href = '/auth';
+  };
+
   const handleShare = async () => {
+    if (!isLoggedIn || !user) {
+      handleAuthPrompt();
+      return;
+    }
+
     setIsSharing(true);
     
     try {
-      const imageBlob = await generateShareableImage();
-      
-      if (!imageBlob) {
-        throw new Error('Failed to generate image');
+      // Create shared result in database
+      const { data: shareResult, error } = await supabase.functions.invoke('create-shared-result', {
+        body: {
+          results_data: data,
+          user_display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Anonymous User',
+          user_email: user.email || ''
+        }
+      });
+
+      if (error) {
+        console.error('Error creating shared result:', error);
+        alert('Sorry, there was an error creating your shareable link. Please try again.');
+        return;
       }
 
+      const shareUrl = `${window.location.origin}/shared/${shareResult.share_token}`;
+      const imageBlob = await generateShareableImage();
+      
       const shareData = {
-        title: 'Life Path Pulse Check',
-        text: 'Check out my pulse check results across the four key areas of life! Take your own at infinitegame.life',
-        url: 'https://infinitegame.life'
+        title: 'Life Path Pulse Check Results',
+        text: `Check out my pulse check results! Take your own at ${window.location.origin}`,
+        url: shareUrl
       };
 
       // Check if Web Share API is supported and can share files
-      if (navigator.share && navigator.canShare?.({ files: [new File([imageBlob], 'pulse-check.png', { type: 'image/png' })] })) {
+      if (navigator.share && imageBlob && navigator.canShare?.({ files: [new File([imageBlob], 'pulse-check.png', { type: 'image/png' })] })) {
         const file = new File([imageBlob], 'pulse-check-results.png', { type: 'image/png' });
         await navigator.share({
           ...shareData,
           files: [file]
         });
       } else {
-        // Fallback: Download image and copy text
-        const url = URL.createObjectURL(imageBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'pulse-check-results.png';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
-        // Copy share text to clipboard
+        // Fallback: Copy link to clipboard
         if (navigator.clipboard) {
-          await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
-          alert('Image downloaded and share text copied to clipboard!');
+          await navigator.clipboard.writeText(shareUrl);
+          alert('Share link copied to clipboard! You can now paste it anywhere to share your results.');
         } else {
-          alert('Image downloaded! Share it with the text: ' + shareData.text + ' ' + shareData.url);
+          // Final fallback: show the link
+          prompt('Copy this link to share your results:', shareUrl);
         }
       }
     } catch (error) {
@@ -111,7 +129,9 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
               ? 'Creating Image...' 
               : isSharing 
                 ? 'Sharing...' 
-                : 'Invite A Friend'
+                : isLoggedIn 
+                  ? 'Share Results'
+                  : 'Login to Share'
             }
           </span>
         </div>
