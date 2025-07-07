@@ -72,7 +72,7 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
     };
   });
 
-  const svgSize = size + (labelOffset * 2) + 40; // Extra padding for labels
+  const svgSize = size + (labelOffset * 2) + 60; // Increased padding for labels
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -100,7 +100,7 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
             </linearGradient>
           </defs>
           
-          <g transform={`translate(${labelOffset + 20}, ${labelOffset + 20})`}>
+          <g transform={`translate(${labelOffset + 30}, ${labelOffset + 30})`}>
             {/* Background circle */}
             <circle
               cx={center}

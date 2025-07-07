@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import SwipeCard from '@/components/pulse-check/SwipeCard';
 import { pulseCheckCards, PulseCheckCard } from '@/data/pulseCheckCards';
 import RadarChart from '@/components/pulse-check/RadarChart';
+import ShareButton from '@/components/pulse-check/ShareButton';
 import OverallProgressBar from '@/components/OverallProgressBar';
 import CategoryProgress from '@/components/pulse-check/CategoryProgress';
 
@@ -221,6 +222,11 @@ const PulseCheck: React.FC = () => {
             </div>
             
             <RadarChart data={results!} insights={insights} />
+            
+            {/* Share Button */}
+            <div className="flex justify-center mt-6">
+              <ShareButton data={results!} />
+            </div>
             
             <div className="flex flex-col sm:flex-row gap-4 mt-8">
               <button
