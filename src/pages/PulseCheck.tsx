@@ -5,7 +5,7 @@ import SwipeCard from '@/components/pulse-check/SwipeCard';
 import CategoryProgress from '@/components/pulse-check/CategoryProgress';
 import OverallProgressBar from '@/components/OverallProgressBar';
 import RadarChart from '@/components/pulse-check/RadarChart';
-import ShareButton from '@/components/pulse-check/ShareButton';
+import PulseCheckActions from '@/components/pulse-check/PulseCheckActions';
 import { 
   getInitialPositiveCards, 
   getRemainingShuffledCards, 
@@ -120,7 +120,7 @@ const PulseCheck = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-pink-900 text-white overflow-hidden">
+    <div className="min-h-screen bg-[#16161a] text-white overflow-hidden">
       {/* Results Page */}
       {isCompleted && (
         <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8">
@@ -143,7 +143,7 @@ const PulseCheck = () => {
                 </div>
                 
                 <div className="flex justify-center mb-6 md:mb-8">
-                  <ShareButton data={aiResults} />
+                  <PulseCheckActions data={aiResults} />
                 </div>
               </>
             )}

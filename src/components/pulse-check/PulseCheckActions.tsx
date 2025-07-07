@@ -2,7 +2,9 @@
 import React, { useState } from 'react';
 import { Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import ShareDialog from './ShareDialog';
+import ShareImageButton from './ShareImageButton';
+import ShareButton from './ShareButton';
+import PulseCheckLoginModal from './PulseCheckLoginModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { isGuestMode } from '@/utils/guestUtils';
 
@@ -16,29 +18,61 @@ interface PulseCheckActionsProps {
 }
 
 const PulseCheckActions = ({ data }: PulseCheckActionsProps) => {
-  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [triggerShare, setTriggerShare] = useState(false);
   const { user } = useAuth();
   const isGuest = isGuestMode();
 
   const isAuthenticated = user && !isGuest;
-  const buttonText = isAuthenticated ? 'Invite A Friend' : 'Share Results';
+
+  const handleMagicLinkClick = () => {
+    if (isAuthenticated) {
+      // For authenticated users, show the ShareButton directly
+      setTriggerShare(true);
+    } else {
+      // For guests, open login modal
+      setLoginModalOpen(true);
+    }
+  };
 
   return (
     <>
-      <div className="flex justify-center mt-8">
-        <Button
-          onClick={() => setShareDialogOpen(true)}
-          className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-300 hover:scale-105 shadow-lg"
-        >
-          <Share2 size={20} className="mr-2" />
-          {buttonText}
-        </Button>
+      <div className="flex flex-col items-center space-y-4 mt-8">
+        {/* Two main action buttons */}
+        <div className="flex flex-col w-full max-w-sm space-y-3">
+          {/* Share as Image Button - Always available */}
+          <ShareImageButton data={data} />
+
+          {/* Create Magic Link Button - shows ShareButton for authenticated users */}
+          {isAuthenticated && triggerShare ? (
+            <ShareButton data={data} />
+          ) : (
+            <Button
+              onClick={handleMagicLinkClick}
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 transition-all duration-300 hover:scale-105 font-semibold"
+            >
+              <Share2 size={18} className="mr-2" />
+              Create Magic Link
+            </Button>
+          )}
+        </div>
+
+        {/* Description text under Magic Link button */}
+        <p className="text-center text-sm text-gray-400 max-w-sm leading-relaxed">
+          Thriving or surviving? Share your Pulse Check and see how your friends stack up.
+        </p>
       </div>
 
-      <ShareDialog 
-        open={shareDialogOpen} 
-        onOpenChange={setShareDialogOpen}
-        data={data}
+      {/* Login Modal for Guests */}
+      <PulseCheckLoginModal
+        open={loginModalOpen}
+        onOpenChange={setLoginModalOpen}
+        pulseCheckData={data}
+        onSuccessfulAuth={() => {
+          // After successful auth, the user will be redirected back
+          // and the ShareButton will be available
+          console.log('[PulseCheckActions] Auth successful, user will be redirected');
+        }}
       />
     </>
   );

@@ -59,10 +59,10 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
     };
   });
   
-  // Generate labels positions with better spacing
+  // Generate labels positions with better spacing to prevent cutoff
   const labelPositions = categories.map((category, index) => {
     const angle = getAngle(index);
-    const labelRadius = maxRadius + labelOffset;
+    const labelRadius = maxRadius + labelOffset + 10; // Increased spacing
     const position = polarToCartesian(angle, labelRadius);
     return {
       category,
@@ -72,7 +72,7 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
     };
   });
 
-  const svgSize = size + (labelOffset * 2) + 60;
+  const svgSize = size + (labelOffset * 2) + 80; // Increased overall size
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -162,36 +162,38 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
             
             {/* Category labels and scores */}
             {labelPositions.map((label, index) => {
-              const isLeft = index === 3;
-              const isRight = index === 1;
+              const isLeft = index === 3; // Connections
+              const isRight = index === 1; // Finances
+              const isTop = index === 0; // Career
+              const isBottom = index === 2; // Health
               
               return (
                 <g key={label.category}>
-                  {/* Category name */}
+                  {/* Category name with improved positioning */}
                   <text
                     x={label.x}
-                    y={label.y - 15}
+                    y={label.y - 18}
                     textAnchor={isLeft ? "end" : isRight ? "start" : "middle"}
                     className="text-base font-bold fill-white"
                     style={{ 
-                      fontSize: '16px',
+                      fontSize: '18px',
                       fontWeight: 'bold',
-                      filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.8))'
+                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.9))'
                     }}
                   >
                     {label.category}
                   </text>
-                  {/* Score */}
+                  {/* Score with enhanced visibility */}
                   <text
                     x={label.x}
-                    y={label.y + 5}
+                    y={label.y + 6}
                     textAnchor={isLeft ? "end" : isRight ? "start" : "middle"}
-                    className="text-xl font-bold"
+                    className="text-2xl font-bold"
                     style={{ 
-                      fontSize: '20px',
+                      fontSize: '24px',
                       fontWeight: 'bold',
                       fill: 'url(#scoreGradient)',
-                      filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.8))'
+                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.9))'
                     }}
                   >
                     {label.value}
@@ -215,7 +217,7 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
       {insights && (
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           {categories.map((category) => (
-            <div key={category} className="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
+            <div key={category} className="bg-gray-900/50 backdrop-blur-sm p-4 rounded-xl border border-gray-700">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-3 h-3 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full"></div>
                 <h4 className="font-semibold text-white">{category}</h4>
