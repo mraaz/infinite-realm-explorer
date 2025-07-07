@@ -57,7 +57,17 @@ const SharedResults = () => {
           return;
         }
 
-        setSharedResult(data);
+        // Type the data properly
+        const typedResult: SharedResult = {
+          id: data.id,
+          user_display_name: data.user_display_name,
+          user_email: data.user_email,
+          results_data: data.results_data as SharedResult['results_data'],
+          created_at: data.created_at,
+          view_count: data.view_count
+        };
+
+        setSharedResult(typedResult);
 
         // Increment view count
         await supabase
