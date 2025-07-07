@@ -1,10 +1,11 @@
 
 import React, { useState } from 'react';
-import { Share2, Copy, Check } from 'lucide-react';
+import { Share2, Copy, Check, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { isGuestMode } from '@/utils/guestUtils';
 
 interface ShareButtonProps {
   data: {
@@ -20,16 +21,24 @@ const ShareButton = ({ data }: ShareButtonProps) => {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const isGuest = isGuestMode();
+
+  const handleSignUp = () => {
+    // Remove guest parameter and redirect to auth
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.delete('guest');
+    window.location.href = '/auth';
+  };
 
   const handleShare = async () => {
-    console.log('[ShareButton] Share initiated', { user: !!user, data });
+    console.log('[ShareButton] Share initiated', { user: !!user, isGuest, data });
     
-    if (!user) {
-      console.log('[ShareButton] No user found, showing auth required message');
+    if (!user || isGuest) {
+      console.log('[ShareButton] User not authenticated or in guest mode');
       toast({
-        title: "Authentication Required",
-        description: "Please sign in to share your results",
-        variant: "destructive"
+        title: "Sign Up Required",
+        description: "Create an account to generate magic links and share with friends",
+        variant: "default"
       });
       return;
     }
@@ -137,6 +146,19 @@ const ShareButton = ({ data }: ShareButtonProps) => {
       setIsSharing(false);
     }
   };
+
+  // If user is not authenticated or is a guest, show sign up prompt
+  if (!user || isGuest) {
+    return (
+      <Button
+        onClick={handleSignUp}
+        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 transition-all duration-300 hover:scale-105"
+      >
+        <UserPlus size={18} className="mr-2" />
+        Sign Up for Magic Links
+      </Button>
+    );
+  }
 
   return (
     <Button

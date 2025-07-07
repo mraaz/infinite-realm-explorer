@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import html2canvas from 'html2canvas';
 import ShareableResultImage from './ShareableResultImage';
 import { useAuth } from '@/contexts/AuthContext';
+import { isGuestMode } from '@/utils/guestUtils';
 
 interface ShareImageButtonProps {
   data: {
@@ -21,19 +22,10 @@ const ShareImageButton = ({ data }: ShareImageButtonProps) => {
   const imageRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const isGuest = isGuestMode();
 
   const generateImage = async () => {
-    console.log('[ShareImageButton] Image generation started', { user: !!user, data });
-    
-    if (!user) {
-      console.log('[ShareImageButton] No user found, showing auth required message');
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to share your results as an image",
-        variant: "destructive"
-      });
-      return;
-    }
+    console.log('[ShareImageButton] Image generation started', { user: !!user, isGuest, data });
     
     if (!imageRef.current) {
       console.error('[ShareImageButton] Image ref not found');
