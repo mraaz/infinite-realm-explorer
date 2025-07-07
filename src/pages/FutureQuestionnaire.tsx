@@ -1,18 +1,6 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
-import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { PriorityRanking } from "@/components/PriorityRanking";
 import { PillarQuestions } from "@/components/futureQuestionnaire/PillarQuestions";
 import { ConfirmationStep } from "@/components/futureQuestionnaire/ConfirmationStep";
@@ -21,24 +9,23 @@ import { QuestionnaireNavigation } from "@/components/futureQuestionnaire/Questi
 import { questionnaireData } from "@/components/futureQuestionnaire/questionnaireData";
 import { Pillar } from "@/components/priority-ranking/types";
 
-// Import the new hook
-import { useQuestionnaireState } from "@/hooks/useQuestionnaireState";
-// This is a placeholder for your actual authentication hook
+// Import our hooks and services
+import { useQuestionnaireState } from "@/hooks/useQuestionnaireState.tsx";
+import { saveQuestionnaireProgress } from "@/services/apiService.tsx";
 import { useAuth } from "@/contexts/AuthContext";
 
-const FutureQuestionnaire = () => {
+const FutureQuestionnaire: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isArchitect } = (location.state || { isArchitect: false }) as {
     isArchitect: boolean;
   };
 
-  // Assume `useAuth` returns { user: object } or { user: null }
-  const { user } = useAuth();
-
+  const { user, authToken } = useAuth();
   const [step, setStep] = useState(1);
+  const [isSaving, setIsSaving] = useState(false); // For UI feedback
 
-  // All data state is now managed by our custom hook
+  // Pass only the user object to the hook
   const {
     isLoading,
     priorities,
@@ -49,27 +36,31 @@ const FutureQuestionnaire = () => {
 
   const handlePrevious = () => setStep((prev) => Math.max(prev - 1, 1));
 
-  const handleNext = () => {
-    if (user) {
-      // If the user is logged in, this is where you would save to the backend on each "Next" click.
-      console.log("User is logged in. Saving progress to backend...");
-      // e.g., saveQuestionnaireProgress({ priorities, answers });
+  // This function now correctly handles the save-on-click logic
+  const handleNext = async () => {
+    if (user && authToken) {
+      setIsSaving(true);
+      try {
+        await saveQuestionnaireProgress({ priorities, answers }, authToken);
+        console.log("Progress saved successfully on Next click!");
+      } catch (error) {
+        console.error("handleNext save failed:", error);
+        // Optionally show an error message to the user here
+      } finally {
+        setIsSaving(false);
+      }
     }
     setStep((prev) => prev + 1);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const futureQuestionnaireAnswers = { priorities, answers };
-    if (user) {
-      // Final save to backend
-      console.log("User is logged in. Saving final answers to backend...");
-    } else {
-      // For guests, we can clear localStorage after they've seen their results
-      // or prompt them to sign up to save their progress permanently.
-      console.log(
-        "Guest finished. Consider clearing localStorage or prompting sign-up."
-      );
+    if (user && authToken) {
+      // Final save before showing results
+      await saveQuestionnaireProgress({ priorities, answers }, authToken);
     }
+    // Clear localStorage for both guests and logged-in users upon completion
+    localStorage.removeItem("futureQuestionnaireGuestProgress");
     navigate("/results", {
       state: {
         ...location.state,
@@ -80,17 +71,21 @@ const FutureQuestionnaire = () => {
 
   const totalSteps = 5;
 
-  const isNextDisabled = () => {
+  const isNextDisabled = (): boolean => {
+    if (isSaving) return true; // Disable button while API call is in progress
     if (!priorities) return true;
     const checkAnswers = (
       pillarName: Pillar,
       focusType: "main" | "secondary" | "maintenance"
-    ) => {
+    ): boolean => {
       const pillarAnswerObject = answers[pillarName];
       if (!pillarAnswerObject) return true;
       const questionsForPillar =
         questionnaireData[pillarName][focusType].questions;
-      return questionsForPillar.some((q) => !pillarAnswerObject[q.id]);
+      return questionsForPillar.some(
+        (q) =>
+          !pillarAnswerObject[q.id] || pillarAnswerObject[q.id].trim() === ""
+      );
     };
     switch (step) {
       case 1:
@@ -108,7 +103,7 @@ const FutureQuestionnaire = () => {
     }
   };
 
-  const renderCurrentStep = () => {
+  const renderCurrentStep = (): React.ReactNode => {
     if (isLoading) {
       return <div className="text-center text-gray-500">Loading...</div>;
     }
