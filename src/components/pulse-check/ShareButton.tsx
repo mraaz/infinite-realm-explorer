@@ -4,7 +4,6 @@ import { Share } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import ShareableResultImage from './ShareableResultImage';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ShareButtonProps {
   data: {
@@ -49,7 +48,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
   const handleAuthPrompt = () => {
     // Store current path to return after login
     localStorage.setItem('preLoginPath', window.location.pathname);
-    // Redirect to login page
+    // Redirect to your existing auth system
     window.location.href = '/auth';
   };
 
@@ -62,21 +61,26 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
     setIsSharing(true);
     
     try {
-      // Create shared result in database
-      const { data: shareResult, error } = await supabase.functions.invoke('create-shared-result', {
-        body: {
+      // Create shared result using your existing API
+      const token = localStorage.getItem("infinitelife_jwt");
+      const response = await fetch('https://ffwkwcix01.execute-api.us-east-1.amazonaws.com/prod/share-result', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
           results_data: data,
-          user_display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Anonymous User',
+          user_display_name: user.name || user.email?.split('@')[0] || 'Anonymous User',
           user_email: user.email || ''
-        }
+        })
       });
 
-      if (error) {
-        console.error('Error creating shared result:', error);
-        alert('Sorry, there was an error creating your shareable link. Please try again.');
-        return;
+      if (!response.ok) {
+        throw new Error('Failed to create shareable link');
       }
 
+      const shareResult = await response.json();
       const shareUrl = `${window.location.origin}/shared/${shareResult.share_token}`;
       const imageBlob = await generateShareableImage();
       

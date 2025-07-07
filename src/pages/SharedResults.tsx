@@ -1,7 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import RadarChart from '@/components/pulse-check/RadarChart';
 import { ArrowLeft, Share, Eye } from 'lucide-react';
 
@@ -40,15 +39,11 @@ const SharedResults = () => {
       }
 
       try {
-        // Fetch the shared result
-        const { data, error } = await supabase
-          .from('shared_pulse_results')
-          .select('*')
-          .eq('share_token', shareToken)
-          .single();
+        // Fetch the shared result using your existing API
+        const response = await fetch(`https://ffwkwcix01.execute-api.us-east-1.amazonaws.com/prod/shared-result/${shareToken}`);
 
-        if (error) {
-          if (error.code === 'PGRST116') {
+        if (!response.ok) {
+          if (response.status === 404) {
             setError('This shared result has expired or does not exist');
           } else {
             setError('Failed to load shared result');
@@ -57,23 +52,13 @@ const SharedResults = () => {
           return;
         }
 
-        // Type the data properly
-        const typedResult: SharedResult = {
-          id: data.id,
-          user_display_name: data.user_display_name,
-          user_email: data.user_email,
-          results_data: data.results_data as SharedResult['results_data'],
-          created_at: data.created_at,
-          view_count: data.view_count
-        };
-
-        setSharedResult(typedResult);
+        const data = await response.json();
+        setSharedResult(data);
 
         // Increment view count
-        await supabase
-          .from('shared_pulse_results')
-          .update({ view_count: data.view_count + 1 })
-          .eq('id', data.id);
+        fetch(`https://ffwkwcix01.execute-api.us-east-1.amazonaws.com/prod/shared-result/${shareToken}/view`, {
+          method: 'POST'
+        }).catch(err => console.error('Failed to increment view count:', err));
 
       } catch (err) {
         console.error('Error fetching shared result:', err);

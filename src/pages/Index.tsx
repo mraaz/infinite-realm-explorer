@@ -1,305 +1,86 @@
-// src/pages/index.tsx
 
-import Header from "@/components/Header";
-import PillarCardWithPopover from "@/components/PillarCardWithPopover"; // Correctly import the new component
-import QuestionnaireLoginModal from "@/components/QuestionnaireLoginModal";
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { useChangelog } from "@/hooks/useChangelog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { Plus, Edit, AlertTriangle, Trash2, Bug, Shield } from "lucide-react";
-import careerIcon from '/lovable-uploads/17c46b5d-39d7-4366-a2b1-0ca119060118.png';
-import financeIcon from '/lovable-uploads/093d4b1c-b1c4-428b-8c8e-304488447147.png';
-import healthIcon from '/lovable-uploads/80bdf94e-e50a-400d-a2aa-1923772a5201.png';
-import connectionsIcon from '/lovable-uploads/3167f89f-9cfc-4372-8b99-7c2474932863.png';
-
-const pillars = [
-  {
-    icon: (
-      <img 
-        src={careerIcon} 
-        alt="Career" 
-        className="w-7 h-7 object-contain filter brightness-110 contrast-110" 
-      />
-    ),
-    title: "Career",
-    description: "Professional growth & goals",
-    hoverBorderColor: "hover:border-purple-500",
-    iconBgColor: "bg-purple-500/10",
-    popoverContent: {
-      title: "About Your Career Pillar",
-      text: "This pillar analyses your current job satisfaction, skill development, and long-term professional aspirations to project your career trajectory.",
-    },
-  },
-  {
-    icon: (
-      <img 
-        src={financeIcon} 
-        alt="Finances" 
-        className="w-7 h-7 object-contain filter brightness-110 contrast-110" 
-      />
-    ),
-    title: "Finances",
-    description: "Wealth & financial security",
-    hoverBorderColor: "hover:border-blue-500",
-    iconBgColor: "bg-blue-500/10",
-    popoverContent: {
-      title: "About Your Finances Pillar",
-      text: "Here we look at your income, savings, investments, and financial habits to forecast your path towards financial independence and security.",
-    },
-  },
-  {
-    icon: (
-      <img 
-        src={healthIcon} 
-        alt="Health" 
-        className="w-7 h-7 object-contain filter brightness-110 contrast-110" 
-      />
-    ),
-    title: "Health",
-    description: "Physical & mental wellbeing",
-    hoverBorderColor: "hover:border-emerald-500",
-    iconBgColor: "bg-emerald-500/10",
-    popoverContent: {
-      title: "About Your Health Pillar",
-      text: "This pillar assesses your physical fitness, mental health, diet, and lifestyle choices to project your long-term wellbeing.",
-    },
-  },
-  {
-    icon: (
-      <img 
-        src={connectionsIcon} 
-        alt="Connections" 
-        className="w-7 h-7 object-contain filter brightness-110 contrast-110" 
-      />
-    ),
-    title: "Connections",
-    description: "Relationships & community",
-    hoverBorderColor: "hover:border-amber-500",
-    iconBgColor: "bg-amber-500/10",
-    popoverContent: {
-      title: "About Your Connections Pillar",
-      text: "We evaluate the strength of your social bonds, family relationships, and community involvement to understand your support system.",
-    },
-  },
-];
+import React from 'react';
+import { ArrowRight, Brain, Target, Users, Zap } from 'lucide-react';
 
 const Index = () => {
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [modalSource, setModalSource] = useState<'snapshot' | 'pulse'>('snapshot');
-  const { isLoggedIn } = useAuth();
-  const navigate = useNavigate();
-  const { changelog, loading: changelogLoading } = useChangelog(1);
-
-  const typeIcons = {
-    added: Plus,
-    changed: Edit,
-    deprecated: AlertTriangle,
-    removed: Trash2,
-    fixed: Bug,
-    security: Shield,
-  };
-
-  const typeColors = {
-    added: 'bg-green-500/10 text-green-400 border-green-500/20',
-    changed: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    deprecated: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-    removed: 'bg-red-500/10 text-red-400 border-red-500/20',
-    fixed: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-    security: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-  };
-
-  const handleGetSnapshotClick = () => {
-    if (isLoggedIn) {
-      navigate("/onboarding-questionnaire");
-    } else {
-      setModalSource('snapshot');
-      setShowLoginModal(true);
-    }
-  };
-
-  const handlePulseCheckClick = () => {
-    if (isLoggedIn) {
-      navigate("/pulse-check");
-    } else {
-      setModalSource('pulse');
-      setShowLoginModal(true);
-    }
-  };
-
-  const handleContinueAsGuest = () => {
-    setShowLoginModal(false);
-    if (modalSource === 'pulse') {
-      navigate("/pulse-check?guest=true");
-    } else {
-      navigate("/onboarding-questionnaire?guest=true");
-    }
-  };
-
-  const handleModalOpenChange = (open: boolean) => {
-    setShowLoginModal(open);
+  const handleStartPulseCheck = () => {
+    window.location.href = '/pulse-check';
   };
 
   return (
-    <div className="min-h-screen bg-[#16161a]">
-      <Header />
-
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
-        {/* Hero Section */}
-        <section className="text-center mb-16 md:mb-24">
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight mb-6">
-            Discover Your{" "}
-            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              5-Year Future
-            </span>
-          </h2>
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-            Get a personalised snapshot of where your life is heading. Our AI
-            analyses your current situation across four key pillars to project
-            your path forward.
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-pink-900 text-white">
+      {/* Hero Section */}
+      <div className="container mx-auto px-4 py-16 md:py-24">
+        <div className="text-center max-w-4xl mx-auto">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+            Life Path Pulse Check
+          </h1>
+          <p className="text-xl md:text-2xl text-gray-300 mb-8 leading-relaxed">
+            Discover your balance across the four key areas of life: Career, Finances, Health, and Connections. 
+            Get AI-powered insights to guide your next steps.
           </p>
-        </section>
+          <button
+            onClick={handleStartPulseCheck}
+            className="group bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 hover:scale-105 shadow-lg flex items-center gap-3 mx-auto"
+          >
+            Start Your Pulse Check
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
+      </div>
 
-        {/* Pillar Cards Section */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16 md:mb-24">
-          {pillars.map((pillar) => (
-            <PillarCardWithPopover
-              key={pillar.title}
-              icon={pillar.icon}
-              title={pillar.title}
-              description={pillar.description}
-              hoverBorderColor={pillar.hoverBorderColor}
-              iconBgColor={pillar.iconBgColor}
-              popoverContent={pillar.popoverContent}
-            />
-          ))}
-        </section>
-
-        {/* Call-to-Action Section */}
-        <section className="flex justify-center">
-          <div className="bg-gray-900/50 backdrop-blur-sm p-8 rounded-2xl shadow-2xl ring-1 ring-white/10 text-center max-w-md">
-            <h3 className="text-2xl font-bold text-white mb-4">
-              Get your Life Snapshot
-            </h3>
-            <p className="text-gray-400 mb-6">
-              Take our assessment and unlock your personalised life insights.
-              This usually takes 5mins to complete.
-            </p>
-
-            <button
-              onClick={handleGetSnapshotClick}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 px-8 rounded-lg hover:opacity-90 transition-opacity duration-200 w-full mb-4"
-            >
-              Get Your Life Snapshot
-            </button>
-
-            <p className="text-gray-400 text-sm mb-4">
-              Short on time? Start with a quick check-in instead.
-            </p>
-
-            <button
-              onClick={handlePulseCheckClick}
-              className="bg-transparent border border-purple-500/50 text-purple-400 font-semibold py-3 px-8 rounded-lg hover:border-purple-400 hover:text-purple-300 transition-all duration-200 w-full mb-4"
-            >
-              Take a 60-Second Pulse Check
-            </button>
-
-            <div className="flex justify-center space-x-4">
-              <span className="bg-purple-500/10 text-purple-400 px-2 py-1 rounded-full text-xs font-medium">
-                Powered by AI
-              </span>
-              <span className="bg-green-500/10 text-green-400 px-2 py-1 rounded-full text-xs font-medium">
-                Instant results
-              </span>
+      {/* Features Section */}
+      <div className="container mx-auto px-4 py-16">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Brain className="w-8 h-8 text-purple-400" />
             </div>
-          </div>
-        </section>
-      </main>
-
-      {/* Changelog Preview Section */}
-      {!changelogLoading && changelog.length > 0 && (
-        <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-gray-800">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-primary via-primary-glow to-secondary bg-clip-text text-transparent mb-4">
-              What's New
-            </h2>
-            <p className="text-gray-400">
-              Latest updates and improvements to Infinite Game
-            </p>
+            <h3 className="text-xl font-semibold mb-2">AI-Powered Insights</h3>
+            <p className="text-gray-400">Get personalized analysis of your life balance with advanced AI technology.</p>
           </div>
           
-          <div className="space-y-6 max-w-4xl mx-auto">
-            {changelog.map((entry) => {
-              const Icon = typeIcons[entry.type];
-              return (
-                <Card key={entry.id} className="border-gray-800 bg-gray-900/50 backdrop-blur-sm">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-xl text-white">{entry.version}</CardTitle>
-                      <time className="text-sm text-gray-400">
-                        {format(new Date(entry.release_date), 'MMM dd, yyyy')}
-                      </time>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Badge className={`${typeColors[entry.type]} capitalize text-xs`}>
-                        <Icon className="h-3 w-3 mr-1" />
-                        {entry.type}
-                      </Badge>
-                      <h3 className="font-semibold text-gray-200">{entry.title}</h3>
-                    </div>
-                    <p className="text-gray-400 text-sm">{entry.content}</p>
-                  </CardContent>
-                </Card>
-              );
-            })}
+          <div className="text-center">
+            <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Target className="w-8 h-8 text-blue-400" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Four Key Areas</h3>
+            <p className="text-gray-400">Focus on Career, Finances, Health, and Connections for holistic growth.</p>
           </div>
           
-          <div className="text-center mt-8">
-            <Link 
-              to="/changelog" 
-              className="inline-flex items-center text-primary hover:text-primary-glow transition-colors"
-            >
-              View Full Changelog
-              <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
+          <div className="text-center">
+            <div className="w-16 h-16 bg-pink-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Zap className="w-8 h-8 text-pink-400" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Quick & Easy</h3>
+            <p className="text-gray-400">Complete your assessment in just a few minutes with our intuitive interface.</p>
           </div>
-        </section>
-      )}
-
-      {/* Footer */}
-      <footer className="text-center py-8 text-sm text-gray-600 border-t border-gray-800">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div>
-              © {new Date().getFullYear()} Infinite Game. All rights reserved.
+          
+          <div className="text-center">
+            <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Users className="w-8 h-8 text-green-400" />
             </div>
-            <div className="flex space-x-6">
-              <Link to="/changelog" className="hover:text-gray-400 transition-colors">
-                Changelog
-              </Link>
-              <Link to="/privacy" className="hover:text-gray-400 transition-colors">
-                Privacy Policy
-              </Link>
-              <Link to="/terms" className="hover:text-gray-400 transition-colors">
-                Terms of Use
-              </Link>
-            </div>
+            <h3 className="text-xl font-semibold mb-2">Share & Compare</h3>
+            <p className="text-gray-400">Share your results with friends and see how you compare across different areas.</p>
           </div>
         </div>
-      </footer>
+      </div>
 
-      <QuestionnaireLoginModal
-        open={showLoginModal}
-        onOpenChange={handleModalOpenChange}
-        onContinueAsGuest={handleContinueAsGuest}
-      />
+      {/* CTA Section */}
+      <div className="container mx-auto px-4 py-16">
+        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 text-center max-w-2xl mx-auto">
+          <h2 className="text-3xl font-bold mb-4">Ready to discover your path?</h2>
+          <p className="text-gray-300 mb-6">
+            Join thousands who have gained clarity about their life direction through our comprehensive assessment.
+          </p>
+          <button
+            onClick={handleStartPulseCheck}
+            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 hover:scale-105 shadow-lg"
+          >
+            Take Your Pulse Check Now
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
