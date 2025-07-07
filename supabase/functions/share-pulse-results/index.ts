@@ -34,16 +34,16 @@ serve(async (req) => {
     const token = authorization.replace('Bearer ', '');
     console.log('[share-pulse-results] Token extracted, length:', token.length);
     
-    // Simple JWT payload extraction (without verification for now)
+    // Enhanced JWT payload extraction with better error handling
     let userInfo;
     try {
       // Split JWT and decode payload
       const parts = token.split('.');
       if (parts.length !== 3) {
-        throw new Error('Invalid JWT format');
+        throw new Error('Invalid JWT format - expected 3 parts');
       }
       
-      // Decode base64url payload
+      // Decode base64url payload with proper padding
       const payload = parts[1];
       const paddedPayload = payload + '='.repeat((4 - payload.length % 4) % 4);
       const decodedPayload = atob(paddedPayload.replace(/-/g, '+').replace(/_/g, '/'));
@@ -51,13 +51,23 @@ serve(async (req) => {
       
       console.log('[share-pulse-results] JWT decoded successfully:', { 
         sub: userInfo.sub, 
-        email: userInfo.email,
-        exp: userInfo.exp 
+        email: userInfo.email || 'no email',
+        exp: userInfo.exp,
+        iss: userInfo.iss || 'no issuer'
       });
+
+      // Validate required fields
+      if (!userInfo.sub) {
+        throw new Error('JWT missing user ID (sub)');
+      }
     } catch (error) {
       console.error('[share-pulse-results] JWT decode error:', error);
       return new Response(
-        JSON.stringify({ error: 'Invalid authentication token', message: 'Please sign in again' }),
+        JSON.stringify({ 
+          error: 'Invalid authentication token', 
+          message: 'Please sign in again',
+          details: error.message 
+        }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -71,7 +81,19 @@ serve(async (req) => {
       );
     }
 
-    const { resultsData } = await req.json();
+    // Parse request body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (error) {
+      console.error('[share-pulse-results] JSON parse error:', error);
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { resultsData } = requestBody;
     console.log('[share-pulse-results] Results data received:', !!resultsData);
     
     if (!resultsData) {
@@ -82,8 +104,8 @@ serve(async (req) => {
     }
 
     const userId = userInfo.sub;
-    const userEmail = userInfo.email || 'Unknown';
-    const userName = userInfo.name || userEmail.split('@')[0];
+    const userEmail = userInfo.email || 'Unknown User';
+    const userName = userInfo.name || userInfo.email?.split('@')[0] || 'Anonymous';
 
     console.log('[share-pulse-results] User info:', { userId, userEmail, userName });
 
@@ -119,7 +141,7 @@ serve(async (req) => {
     const shareToken = crypto.randomUUID();
     console.log('[share-pulse-results] Generated share token:', shareToken);
 
-    // Create shared result
+    // Create shared result with enhanced error logging
     const { data: sharedResult, error: shareError } = await supabase
       .from('shared_pulse_results')
       .insert({
@@ -133,11 +155,16 @@ serve(async (req) => {
       .single();
 
     if (shareError) {
-      console.error('[share-pulse-results] Share creation error:', shareError);
+      console.error('[share-pulse-results] Share creation error:', {
+        code: shareError.code,
+        message: shareError.message,
+        details: shareError.details,
+        hint: shareError.hint
+      });
       throw shareError;
     }
 
-    console.log('[share-pulse-results] Shared result created:', sharedResult.id);
+    console.log('[share-pulse-results] Shared result created successfully:', sharedResult.id);
 
     // Update or create share limit record
     if (existingLimit) {
@@ -180,9 +207,17 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('[share-pulse-results] Unexpected error:', error);
+    console.error('[share-pulse-results] Unexpected error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     return new Response(
-      JSON.stringify({ error: 'Internal server error', message: 'Please try again later' }),
+      JSON.stringify({ 
+        error: 'Internal server error', 
+        message: 'Please try again later',
+        details: error.message
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
