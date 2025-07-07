@@ -15,6 +15,7 @@ const FutureQuestionnaire = lazy(() => import("./pages/FutureQuestionnaire"));
 const HabitBuilder = lazy(() => import("./pages/HabitBuilder"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const PulseCheck = lazy(() => import("./pages/PulseCheck"));
+const SharedResults = lazy(() => import("./pages/SharedResults"));
 const Changelog = lazy(() => import("./pages/Changelog"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/future-questionnaire" element={<FutureQuestionnaire />} />
               <Route path="/habit-builder" element={<HabitBuilder />} />
               <Route path="/pulse-check" element={<PulseCheck />} />
+              <Route path="/shared/:shareToken" element={<SharedResults />} />
               <Route path="/changelog" element={<Changelog />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />

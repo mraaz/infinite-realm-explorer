@@ -3,6 +3,8 @@ import React, { useState, useRef } from 'react';
 import { Share } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import ShareableResultImage from './ShareableResultImage';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ShareButtonProps {
   data: {
@@ -16,7 +18,11 @@ interface ShareButtonProps {
 const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [isCreatingLink, setIsCreatingLink] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string>('');
+  const [showShareMenu, setShowShareMenu] = useState(false);
   const shareableRef = useRef<HTMLDivElement>(null);
+  const { user, isLoggedIn } = useAuth();
 
   const generateShareableImage = async (): Promise<Blob | null> => {
     if (!shareableRef.current) return null;
@@ -43,7 +49,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
     }
   };
 
-  const handleShare = async () => {
+  const handleShareImage = async () => {
     setIsSharing(true);
     
     try {
@@ -90,14 +96,77 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
       alert('Sorry, there was an error sharing your results. Please try again.');
     } finally {
       setIsSharing(false);
+      setShowShareMenu(false);
+    }
+  };
+
+  const handleCreateShareLink = async () => {
+    if (!isLoggedIn) {
+      // Redirect to login with current page as callback
+      const currentUrl = encodeURIComponent(window.location.href);
+      window.location.href = `/?login=true&redirect=${currentUrl}`;
+      return;
+    }
+
+    setIsCreatingLink(true);
+    
+    try {
+      const token = localStorage.getItem('infinitelife_jwt');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const { data: responseData, error } = await supabase.functions.invoke('share-pulse-results', {
+        body: { resultsData: data },
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (responseData.error) {
+        if (responseData.error === 'Daily share limit reached') {
+          alert(responseData.message || 'You have reached your daily sharing limit. Try again tomorrow!');
+        } else {
+          throw new Error(responseData.error);
+        }
+        return;
+      }
+
+      setShareUrl(responseData.shareUrl);
+      
+      // Copy to clipboard
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(responseData.shareUrl);
+        alert(`Magic link created and copied to clipboard! You have ${responseData.sharesRemaining} shares remaining today.`);
+      } else {
+        alert(`Magic link created: ${responseData.shareUrl}\n\nYou have ${responseData.sharesRemaining} shares remaining today.`);
+      }
+
+    } catch (error) {
+      console.error('Error creating share link:', error);
+      alert('Sorry, there was an error creating your share link. Please try again.');
+    } finally {
+      setIsCreatingLink(false);
+      setShowShareMenu(false);
+    }
+  };
+
+  const handleMainButtonClick = () => {
+    if (isLoggedIn) {
+      setShowShareMenu(!showShareMenu);
+    } else {
+      handleShareImage();
     }
   };
 
   return (
-    <>
+    <div className="relative">
+      {/* Main Share Button */}
       <button
-        onClick={handleShare}
-        disabled={isGenerating || isSharing}
+        onClick={handleMainButtonClick}
+        disabled={isGenerating || isSharing || isCreatingLink}
         className="group relative overflow-hidden bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 py-3 md:px-8 md:py-4 rounded-xl font-semibold text-base md:text-lg transition-all duration-300 hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto"
       >
         {/* Animated background effect */}
@@ -105,13 +174,15 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
         
         {/* Button content */}
         <div className="relative flex items-center justify-center gap-2 md:gap-3">
-          <Share className={`w-4 h-4 md:w-5 md:h-5 transition-transform duration-300 ${isGenerating || isSharing ? 'animate-spin' : 'group-hover:rotate-12'}`} />
+          <Share className={`w-4 h-4 md:w-5 md:h-5 transition-transform duration-300 ${isGenerating || isSharing || isCreatingLink ? 'animate-spin' : 'group-hover:rotate-12'}`} />
           <span className="relative text-sm md:text-base">
             {isGenerating 
               ? 'Creating Image...' 
               : isSharing 
                 ? 'Sharing...' 
-                : 'Invite A Friend'
+                : isCreatingLink
+                  ? 'Creating Link...'
+                  : 'Invite A Friend'
             }
           </span>
         </div>
@@ -122,11 +193,48 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
         </div>
       </button>
 
+      {/* Share Options Menu - Only shown for authenticated users */}
+      {showShareMenu && isLoggedIn && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-lg overflow-hidden z-10">
+          <button
+            onClick={handleShareImage}
+            disabled={isGenerating || isSharing}
+            className="w-full px-4 py-3 text-left text-white hover:bg-white/10 transition-colors flex items-center gap-3 text-sm"
+          >
+            <Share className="w-4 h-4" />
+            Share Image
+          </button>
+          <button
+            onClick={handleCreateShareLink}
+            disabled={isCreatingLink}
+            className="w-full px-4 py-3 text-left text-white hover:bg-white/10 transition-colors flex items-center gap-3 text-sm border-t border-white/10"
+          >
+            <Share className="w-4 h-4" />
+            {isCreatingLink ? 'Creating Magic Link...' : 'Create Magic Link'}
+          </button>
+        </div>
+      )}
+
+      {/* Login Prompt for Guests */}
+      {!isLoggedIn && (
+        <p className="text-gray-400 text-xs mt-2 text-center">
+          <button 
+            onClick={() => {
+              const currentUrl = encodeURIComponent(window.location.href);
+              window.location.href = `/?login=true&redirect=${currentUrl}`;
+            }}
+            className="text-purple-400 hover:text-purple-300 underline"
+          >
+            Sign in
+          </button> to create magic links for easy sharing
+        </p>
+      )}
+
       {/* Hidden shareable image component */}
       <div className="fixed -top-[9999px] -left-[9999px] pointer-events-none">
         <ShareableResultImage ref={shareableRef} data={data} />
       </div>
-    </>
+    </div>
   );
 };
 
