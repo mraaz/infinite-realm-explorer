@@ -37,26 +37,22 @@ const ShareButton = ({ data }: ShareButtonProps) => {
     setIsSharing(true);
 
     try {
-      console.log('[ShareButton] Getting session...');
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // Get JWT token directly from localStorage (AWS JWT)
+      const token = localStorage.getItem("infinitelife_jwt");
+      console.log('[ShareButton] JWT token from localStorage:', token ? 'Found' : 'Not found');
       
-      if (sessionError) {
-        console.error('[ShareButton] Session error:', sessionError);
-        throw new Error(`Session error: ${sessionError.message}`);
+      if (!token) {
+        console.error('[ShareButton] No JWT token found in localStorage');
+        throw new Error('No authentication token found. Please sign in again.');
       }
 
-      if (!session?.access_token) {
-        console.error('[ShareButton] No access token found in session');
-        throw new Error('No valid session found. Please sign in again.');
-      }
-
-      console.log('[ShareButton] Session found, calling edge function...');
+      console.log('[ShareButton] Calling edge function with token...');
       
-      // Call the edge function with proper error handling
+      // Call the edge function with the AWS JWT token
       const { data: response, error } = await supabase.functions.invoke('share-pulse-results', {
         body: { resultsData: data },
         headers: {
-          Authorization: `Bearer ${session.access_token}`
+          Authorization: `Bearer ${token}`
         }
       });
 

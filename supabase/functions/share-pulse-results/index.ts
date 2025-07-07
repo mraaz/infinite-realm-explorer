@@ -14,6 +14,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log('[share-pulse-results] Function invoked');
+    
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -85,6 +87,7 @@ serve(async (req) => {
     let requestBody;
     try {
       requestBody = await req.json();
+      console.log('[share-pulse-results] Request body parsed successfully');
     } catch (error) {
       console.error('[share-pulse-results] JSON parse error:', error);
       return new Response(
