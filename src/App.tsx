@@ -1,26 +1,52 @@
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from '@/contexts/AuthContext';
-import { Toaster } from '@/components/ui/toaster';
-import Index from '@/pages/Index';
-import PulseCheck from '@/pages/PulseCheck';
-import Results from '@/pages/Results';
-import SharedResults from '@/pages/SharedResults';
+import { Suspense, lazy } from "react";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import PageLoading from "./components/ui/page-loading";
 
-function App() {
-  return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/pulse-check" element={<PulseCheck />} />
-          <Route path="/results" element={<Results />} />
-          <Route path="/shared/:shareToken" element={<SharedResults />} />
-        </Routes>
-        <Toaster />
-      </Router>
-    </AuthProvider>
-  );
-}
+// Lazy load all pages for better performance
+const Index = lazy(() => import("./pages/Index"));
+const OnboardingQuestionnaire = lazy(() => import("./pages/OnboardingQuestionnaire"));
+const Results = lazy(() => import("./pages/Results"));
+const FutureQuestionnaire = lazy(() => import("./pages/FutureQuestionnaire"));
+const HabitBuilder = lazy(() => import("./pages/HabitBuilder"));
+const AuthCallback = lazy(() => import("./pages/AuthCallback"));
+const PulseCheck = lazy(() => import("./pages/PulseCheck"));
+const Changelog = lazy(() => import("./pages/Changelog"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+const queryClient = new QueryClient();
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <AuthProvider>
+        <BrowserRouter>
+          <Suspense fallback={<PageLoading />}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/onboarding-questionnaire" element={<OnboardingQuestionnaire />} />
+              <Route path="/results" element={<Results />} />
+              <Route path="/future-questionnaire" element={<FutureQuestionnaire />} />
+              <Route path="/habit-builder" element={<HabitBuilder />} />
+              <Route path="/pulse-check" element={<PulseCheck />} />
+              <Route path="/changelog" element={<Changelog />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </AuthProvider>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;

@@ -191,42 +191,6 @@ export type Database = {
         }
         Relationships: []
       }
-      shared_pulse_results: {
-        Row: {
-          created_at: string
-          expires_at: string
-          id: string
-          results_data: Json
-          share_token: string
-          user_display_name: string
-          user_email: string
-          user_id: string
-          view_count: number
-        }
-        Insert: {
-          created_at?: string
-          expires_at?: string
-          id?: string
-          results_data: Json
-          share_token: string
-          user_display_name: string
-          user_email: string
-          user_id: string
-          view_count?: number
-        }
-        Update: {
-          created_at?: string
-          expires_at?: string
-          id?: string
-          results_data?: Json
-          share_token?: string
-          user_display_name?: string
-          user_email?: string
-          user_id?: string
-          view_count?: number
-        }
-        Relationships: []
-      }
       surveys: {
         Row: {
           answers: Json | null
@@ -264,33 +228,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      user_share_limits: {
-        Row: {
-          created_at: string
-          id: string
-          share_count: number
-          share_date: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          share_count?: number
-          share_date?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          share_count?: number
-          share_date?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
       }
       users: {
         Row: {
@@ -330,10 +267,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      cleanup_expired_shared_results: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

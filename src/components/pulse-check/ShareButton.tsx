@@ -3,7 +3,6 @@ import React, { useState, useRef } from 'react';
 import { Share } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import ShareableResultImage from './ShareableResultImage';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface ShareButtonProps {
   data: {
@@ -18,7 +17,6 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const shareableRef = useRef<HTMLDivElement>(null);
-  const { user, isLoggedIn } = useAuth();
 
   const generateShareableImage = async (): Promise<Blob | null> => {
     if (!shareableRef.current) return null;
@@ -45,66 +43,46 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
     }
   };
 
-  const handleAuthPrompt = () => {
-    // Store current path to return after login
-    localStorage.setItem('preLoginPath', window.location.pathname);
-    // Redirect to your existing auth system
-    window.location.href = '/auth';
-  };
-
   const handleShare = async () => {
-    if (!isLoggedIn || !user) {
-      handleAuthPrompt();
-      return;
-    }
-
     setIsSharing(true);
     
     try {
-      // Create shared result using your existing API
-      const token = localStorage.getItem("infinitelife_jwt");
-      const response = await fetch('https://ffwkwcix01.execute-api.us-east-1.amazonaws.com/prod/share-result', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          results_data: data,
-          user_display_name: user.name || user.email?.split('@')[0] || 'Anonymous User',
-          user_email: user.email || ''
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create shareable link');
-      }
-
-      const shareResult = await response.json();
-      const shareUrl = `${window.location.origin}/shared/${shareResult.share_token}`;
       const imageBlob = await generateShareableImage();
       
+      if (!imageBlob) {
+        throw new Error('Failed to generate image');
+      }
+
       const shareData = {
-        title: 'Life Path Pulse Check Results',
-        text: `Check out my pulse check results! Take your own at ${window.location.origin}`,
-        url: shareUrl
+        title: 'Life Path Pulse Check',
+        text: 'Check out my pulse check results across the four key areas of life! Take your own at infinitegame.life',
+        url: 'https://infinitegame.life'
       };
 
       // Check if Web Share API is supported and can share files
-      if (navigator.share && imageBlob && navigator.canShare?.({ files: [new File([imageBlob], 'pulse-check.png', { type: 'image/png' })] })) {
+      if (navigator.share && navigator.canShare?.({ files: [new File([imageBlob], 'pulse-check.png', { type: 'image/png' })] })) {
         const file = new File([imageBlob], 'pulse-check-results.png', { type: 'image/png' });
         await navigator.share({
           ...shareData,
           files: [file]
         });
       } else {
-        // Fallback: Copy link to clipboard
+        // Fallback: Download image and copy text
+        const url = URL.createObjectURL(imageBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'pulse-check-results.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        // Copy share text to clipboard
         if (navigator.clipboard) {
-          await navigator.clipboard.writeText(shareUrl);
-          alert('Share link copied to clipboard! You can now paste it anywhere to share your results.');
+          await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+          alert('Image downloaded and share text copied to clipboard!');
         } else {
-          // Final fallback: show the link
-          prompt('Copy this link to share your results:', shareUrl);
+          alert('Image downloaded! Share it with the text: ' + shareData.text + ' ' + shareData.url);
         }
       }
     } catch (error) {
@@ -133,9 +111,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({ data }) => {
               ? 'Creating Image...' 
               : isSharing 
                 ? 'Sharing...' 
-                : isLoggedIn 
-                  ? 'Share Results'
-                  : 'Login to Share'
+                : 'Invite A Friend'
             }
           </span>
         </div>
