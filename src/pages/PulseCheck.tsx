@@ -125,7 +125,8 @@ const PulseCheck = () => {
       {isCompleted && (
         <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8">
           <div className="w-full max-w-6xl mx-auto text-center">
-            <h1 className="text-3xl md:text-5xl font-bold mb-4 md:mb-8 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+            {/* Reduced bottom margin from mb-8 to mb-4 */}
+            <h1 className="text-3xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
               Your Pulse Check Results
             </h1>
             
@@ -138,6 +139,7 @@ const PulseCheck = () => {
             
             {aiResults && !aiLoading && (
               <>
+                {/* Removed extra margin here */}
                 <div className="mb-6 md:mb-8">
                   <RadarChart data={aiResults} insights={aiResults.insights} />
                 </div>

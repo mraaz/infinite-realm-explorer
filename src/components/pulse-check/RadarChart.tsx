@@ -20,20 +20,17 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
   console.log('[RadarChart] Rendering with data:', data);
   
   const categories = ['Career', 'Finances', 'Health', 'Connections'] as const;
-  
-  // SVG dimensions and layout
-  const svgSize = 600;
+  const svgSize = 400;
   const center = svgSize / 2;
-  const chartRadius = 140;
-  const labelRadius = 180;
-  
+  const chartRadius = 120;
+  const labelRadius = 160;
+
   // Calculate positions for each category (starting from top, going clockwise)
   const getAngleRadians = (index: number) => {
-    // Start from top (-90 degrees) and go clockwise
     const degrees = (index * 90) - 90;
     return (degrees * Math.PI) / 180;
   };
-  
+
   // Convert polar to cartesian coordinates
   const polarToCartesian = (angle: number, radius: number) => {
     return {
@@ -41,27 +38,21 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
       y: center + radius * Math.sin(angle)
     };
   };
-  
+
   // Generate data points for the polygon
   const dataPoints = categories.map((category, index) => {
     const value = data[category];
-    const normalizedValue = Math.max(0, Math.min(100, value)); // Ensure 0-100 range
+    const normalizedValue = Math.max(0, Math.min(100, value));
     const radius = (normalizedValue / 100) * chartRadius;
     const angle = getAngleRadians(index);
-    const point = polarToCartesian(angle, radius);
-    
-    console.log(`[RadarChart] ${category}: value=${value}, radius=${radius}, angle=${angle}, point=`, point);
-    
-    return point;
+    return polarToCartesian(angle, radius);
   });
-  
+
   // Generate label positions
   const labelPositions = categories.map((category, index) => {
     const angle = getAngleRadians(index);
     const position = polarToCartesian(angle, labelRadius);
     const value = data[category];
-    
-    console.log(`[RadarChart] Label ${category}: angle=${angle}, position=`, position, `value=${value}`);
     
     return {
       category,
@@ -71,10 +62,10 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
       angle
     };
   });
-  
+
   // Grid levels
   const gridLevels = [20, 40, 60, 80, 100];
-  
+
   // Axis lines from center to edge
   const axisLines = categories.map((_, index) => {
     const angle = getAngleRadians(index);
@@ -89,15 +80,14 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
 
   return (
     <div className="w-full max-w-4xl mx-auto">
-      <div className="w-full flex justify-center">
+      {/* Reduced top margin from mt-8 to mt-4 */}
+      <div className="w-full flex justify-center mb-4">
         <svg 
           width={svgSize} 
           height={svgSize} 
           viewBox={`0 0 ${svgSize} ${svgSize}`}
-          className="w-full h-auto max-w-lg md:max-w-2xl"
-          style={{ background: 'transparent' }}
+          className="w-full h-auto max-w-md md:max-w-lg"
         >
-          {/* Gradients and definitions */}
           <defs>
             <radialGradient id="backgroundGradient" cx="50%" cy="50%" r="60%">
               <stop offset="0%" stopColor="rgba(147, 51, 234, 0.1)" />
@@ -108,12 +98,8 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
               <stop offset="50%" stopColor="rgba(168, 85, 247, 0.6)" />
               <stop offset="100%" stopColor="rgba(196, 181, 253, 0.4)" />
             </linearGradient>
-            <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="rgb(168, 85, 247)" />
-              <stop offset="100%" stopColor="rgb(236, 72, 153)" />
-            </linearGradient>
           </defs>
-          
+
           {/* Background circle */}
           <circle
             cx={center}
@@ -123,7 +109,7 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
             stroke="rgba(147, 51, 234, 0.2)"
             strokeWidth="1"
           />
-          
+
           {/* Grid circles */}
           {gridLevels.map((level, index) => (
             <circle
@@ -137,7 +123,7 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
               strokeDasharray={index === gridLevels.length - 1 ? "none" : "2,2"}
             />
           ))}
-          
+
           {/* Axis lines */}
           {axisLines.map((line, index) => (
             <line
@@ -150,7 +136,7 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
               strokeWidth="1"
             />
           ))}
-          
+
           {/* Data polygon */}
           <polygon
             points={dataPoints.map(point => `${point.x},${point.y}`).join(' ')}
@@ -159,7 +145,7 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
             strokeWidth="2"
             strokeLinejoin="round"
           />
-          
+
           {/* Data points */}
           {dataPoints.map((point, index) => (
             <circle
@@ -172,7 +158,7 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
               strokeWidth="2"
             />
           ))}
-          
+
           {/* Center point */}
           <circle
             cx={center}
@@ -180,61 +166,49 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
             r="3"
             fill="rgb(147, 51, 234)"
           />
-          
-          {/* Category labels */}
+
+          {/* Category labels and scores */}
           {labelPositions.map((label) => (
-            <text
-              key={`label-${label.category}`}
-              x={label.x}
-              y={label.y - 25}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fill="white"
-              fontSize="16"
-              fontWeight="bold"
-              style={{ 
-                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.9))',
-                userSelect: 'none'
-              }}
-            >
-              {label.category}
-            </text>
-          ))}
-          
-          {/* Score numbers - these should always be visible */}
-          {labelPositions.map((label) => (
-            <text
-              key={`score-${label.category}`}
-              x={label.x}
-              y={label.y + 25}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fill="url(#scoreGradient)"
-              fontSize="28"
-              fontWeight="bold"
-              style={{ 
-                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.9))',
-                userSelect: 'none'
-              }}
-            >
-              {label.value}
-            </text>
-          ))}
-          
-          {/* Debug markers to verify positions */}
-          {process.env.NODE_ENV === 'development' && labelPositions.map((label) => (
-            <g key={`debug-${label.category}`}>
-              <circle cx={label.x} cy={label.y} r="2" fill="red" opacity="0.5" />
-              <circle cx={label.x} cy={label.y - 25} r="1" fill="blue" opacity="0.5" />
-              <circle cx={label.x} cy={label.y + 25} r="1" fill="green" opacity="0.5" />
+            <g key={`label-group-${label.category}`}>
+              {/* Category name */}
+              <text
+                x={label.x}
+                y={label.y - 15}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill="white"
+                fontSize="14"
+                fontWeight="600"
+                style={{ 
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))'
+                }}
+              >
+                {label.category}
+              </text>
+              
+              {/* Score number */}
+              <text
+                x={label.x}
+                y={label.y + 15}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill="rgb(168, 85, 247)"
+                fontSize="24"
+                fontWeight="bold"
+                style={{ 
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))'
+                }}
+              >
+                {label.value}
+              </text>
             </g>
           ))}
         </svg>
       </div>
-      
-      {/* AI Insights */}
+
+      {/* AI Insights - reduced top margin from mt-8 to mt-4 */}
       {insights && (
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
           {categories.map((category) => (
             <div key={category} className="bg-gray-900/50 backdrop-blur-sm p-4 rounded-xl border border-gray-700">
               <div className="flex items-center gap-2 mb-2">

@@ -12,94 +12,113 @@ export const usePdfReport = (
   futureSelfArchitect?: FutureSelfArchitect[]
 ) => {
   const handleDownloadReport = async () => {
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfPageHeight = pdf.internal.pageSize.getHeight();
-    const margin = 15; // 15mm margin
-    const contentWidth = pdfWidth - (margin * 2);
-    const pageContentHeight = pdfPageHeight - (margin * 2);
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfPageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15; // 15mm margin
+      const contentWidth = pdfWidth - (margin * 2);
+      const pageContentHeight = pdfPageHeight - (margin * 2);
 
-    // Function to temporarily show PDF-only elements
-    const showPdfElements = () => {
-      const pdfOnlyElements = document.querySelectorAll('.pdf-only');
-      pdfOnlyElements.forEach(element => {
-        (element as HTMLElement).style.setProperty('display', 'block', 'important');
-      });
-    };
+      // Function to temporarily show PDF-only elements
+      const showPdfElements = () => {
+        const pdfOnlyElements = document.querySelectorAll('.pdf-only');
+        pdfOnlyElements.forEach(element => {
+          (element as HTMLElement).style.setProperty('display', 'block', 'important');
+        });
+      };
 
-    // Function to hide PDF-only elements again
-    const hidePdfElements = () => {
-      const pdfOnlyElements = document.querySelectorAll('.pdf-only');
-      pdfOnlyElements.forEach(element => {
-        (element as HTMLElement).style.setProperty('display', 'none', 'important');
-      });
-    };
+      // Function to hide PDF-only elements again
+      const hidePdfElements = () => {
+        const pdfOnlyElements = document.querySelectorAll('.pdf-only');
+        pdfOnlyElements.forEach(element => {
+          (element as HTMLElement).style.setProperty('display', 'none', 'important');
+        });
+      };
 
-    const appendContentAsImage = async (element: HTMLElement, isFirstPage = false) => {
-      // Show PDF elements before capturing
-      showPdfElements();
-      
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        useCORS: true,
-      });
-      
-      // Hide PDF elements after capturing
-      hidePdfElements();
-      
-      const imgData = canvas.toDataURL('image/png');
-      const imgProps = pdf.getImageProperties(imgData);
-      const imgHeight = (imgProps.height * contentWidth) / imgProps.width;
+      const appendContentAsImage = async (element: HTMLElement, isFirstPage = false) => {
+        // Show PDF elements before capturing
+        showPdfElements();
+        
+        // Use improved html2canvas options to avoid document.write issues
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          allowTaint: true,
+          foreignObjectRendering: false,
+          logging: false,
+          imageTimeout: 0,
+          removeContainer: true,
+          onclone: (clonedDoc) => {
+            // Ensure no document.write calls in cloned document
+            const scripts = clonedDoc.getElementsByTagName('script');
+            for (let i = scripts.length - 1; i >= 0; i--) {
+              scripts[i].parentNode?.removeChild(scripts[i]);
+            }
+          }
+        });
+        
+        // Hide PDF elements after capturing
+        hidePdfElements();
+        
+        const imgData = canvas.toDataURL('image/png', 0.95);
+        const imgProps = pdf.getImageProperties(imgData);
+        const imgHeight = (imgProps.height * contentWidth) / imgProps.width;
 
-      let heightLeft = imgHeight;
-      let position = 0;
+        let heightLeft = imgHeight;
+        let position = 0;
 
-      if (!isFirstPage) {
-        pdf.addPage();
-      }
+        if (!isFirstPage) {
+          pdf.addPage();
+        }
 
-      pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, imgHeight);
-      heightLeft -= pageContentHeight;
-
-      while (heightLeft > 0) {
-        position -= pageContentHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', margin, position + margin, contentWidth, imgHeight);
+        pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, imgHeight);
         heightLeft -= pageContentHeight;
-      }
-    };
-    
-    // Page 1: Charts
-    const chartsElement = chartsRef.current;
-    if (chartsElement) {
-      await appendContentAsImage(chartsElement, true);
-    }
 
-    // Page 2: Insights
-    const insightsElement = insightsRef.current;
-    if (insightsElement) {
-      await appendContentAsImage(insightsElement);
-    }
-
-    // Page 3: Future Self Architect (if data exists)
-    if (futureSelfArchitect && futureSelfArchitect.length > 0) {
-      const architectElement = architectRef.current;
-      if (architectElement) {
-        await appendContentAsImage(architectElement);
+        while (heightLeft > 0) {
+          position -= pageContentHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', margin, position + margin, contentWidth, imgHeight);
+          heightLeft -= pageContentHeight;
+        }
+      };
+      
+      // Page 1: Charts
+      const chartsElement = chartsRef.current;
+      if (chartsElement) {
+        await appendContentAsImage(chartsElement, true);
       }
-    }
 
-    // Page 4: Habits Timeline (if completed habits exist)
-    const completedHabits = futureSelfArchitect?.filter(h => h.isCompleted) || [];
-    if (completedHabits.length > 0) {
-      const timelineElement = timelineRef.current;
-      if (timelineElement) {
-        await appendContentAsImage(timelineElement);
+      // Page 2: Insights
+      const insightsElement = insightsRef.current;
+      if (insightsElement) {
+        await appendContentAsImage(insightsElement);
       }
+
+      // Page 3: Future Self Architect (if data exists)
+      if (futureSelfArchitect && futureSelfArchitect.length > 0) {
+        const architectElement = architectRef.current;
+        if (architectElement) {
+          await appendContentAsImage(architectElement);
+        }
+      }
+
+      // Page 4: Habits Timeline (if completed habits exist)
+      const completedHabits = futureSelfArchitect?.filter(h => h.isCompleted) || [];
+      if (completedHabits.length > 0) {
+        const timelineElement = timelineRef.current;
+        if (timelineElement) {
+          await appendContentAsImage(timelineElement);
+        }
+      }
+      
+      pdf.save('pulse-check-results.pdf');
+      
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      throw error;
     }
-    
-    pdf.save('life-view-report.pdf');
   };
 
   return { handleDownloadReport };
