@@ -168,50 +168,67 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
               fill="rgb(147, 51, 234)"
             />
             
-            {/* Category labels and scores - MOVED TO END TO ENSURE THEY'RE ON TOP */}
+            {/* Category labels - rendered BEFORE scores to ensure scores are on top */}
             {labelPositions.map((label, index) => {
               const isLeft = index === 3; // Connections
               const isRight = index === 1; // Finances
-              const isTop = index === 0; // Career
-              const isBottom = index === 2; // Health
               
               return (
-                <g key={label.category}>
-                  {/* Category name with improved positioning */}
+                <g key={`label-${label.category}`}>
+                  {/* Category name with white background circle for better visibility */}
+                  <circle
+                    cx={label.x}
+                    cy={label.y - 30}
+                    r="25"
+                    fill="rgba(0,0,0,0.8)"
+                    stroke="rgba(147, 51, 234, 0.5)"
+                    strokeWidth="1"
+                  />
                   <text
                     x={label.x}
                     y={label.y - 30}
-                    textAnchor={isLeft ? "end" : isRight ? "start" : "middle"}
+                    textAnchor="middle"
                     className="text-lg font-bold fill-white"
                     style={{ 
-                      fontSize: '20px',
+                      fontSize: '16px',
                       fontWeight: 'bold',
-                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.9))',
-                      zIndex: 1000
+                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.9))'
                     }}
                   >
                     {label.category}
                   </text>
-                  
-                  {/* Score with enhanced visibility - HIGHEST Z-INDEX */}
-                  <text
-                    x={label.x}
-                    y={label.y + 12}
-                    textAnchor="middle"
-                    className="text-3xl font-bold"
-                    style={{ 
-                      fontSize: '28px',
-                      fontWeight: 'bold',
-                      fill: 'url(#scoreGradient)',
-                      filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.8))',
-                      zIndex: 1001
-                    }}
-                  >
-                    {label.value}
-                  </text>
                 </g>
               );
             })}
+            
+            {/* Score numbers - rendered LAST to ensure they're always on top */}
+            {labelPositions.map((label, index) => (
+              <g key={`score-${label.category}`}>
+                {/* White background circle for score for maximum visibility */}
+                <circle
+                  cx={label.x}
+                  cy={label.y + 12}
+                  r="20"
+                  fill="rgba(0,0,0,0.9)"
+                  stroke="url(#scoreGradient)"
+                  strokeWidth="2"
+                />
+                <text
+                  x={label.x}
+                  y={label.y + 18}
+                  textAnchor="middle"
+                  className="text-3xl font-bold"
+                  style={{ 
+                    fontSize: '24px',
+                    fontWeight: 'bold',
+                    fill: 'url(#scoreGradient)',
+                    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.8))'
+                  }}
+                >
+                  {label.value}
+                </text>
+              </g>
+            ))}
           </g>
         </svg>
       </div>
