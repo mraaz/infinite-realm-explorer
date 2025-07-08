@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -172,48 +173,50 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     .reduce((total, _, index) => total + getQuestionCount(index), 0) + currentQuestionIndex;
 
   return (
-    <div className="flex flex-col h-[70vh] max-w-4xl mx-auto">
+    <div className="flex flex-col h-full max-w-4xl mx-auto">
       {/* Progress indicator */}
-      <div className="mb-4 p-3 bg-card rounded-lg border">
-        <div className="flex justify-between items-center text-sm text-muted-foreground">
-          <span>Category: {orderedCategories[currentCategoryIndex]} ({currentCategoryIndex + 1}/{orderedCategories.length})</span>
+      <div className="mb-4 p-4 bg-card rounded-xl border border-border shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm text-muted-foreground">
+          <span className="font-medium">
+            Category: <span className="text-foreground">{orderedCategories[currentCategoryIndex]}</span> ({currentCategoryIndex + 1}/{orderedCategories.length})
+          </span>
           <span>Question {completedQuestions + 1} of {totalQuestions}</span>
         </div>
-        <div className="w-full bg-secondary rounded-full h-2 mt-2">
+        <div className="w-full bg-secondary rounded-full h-2 mt-3">
           <div 
-            className="bg-primary h-2 rounded-full transition-all duration-300" 
+            className="bg-gradient-cta h-2 rounded-full transition-all duration-500 ease-out" 
             style={{ width: `${((completedQuestions) / totalQuestions) * 100}%` }}
           />
         </div>
       </div>
 
       {/* Chat messages */}
-      <div className="flex-1 overflow-y-auto space-y-4 bg-card rounded-lg p-4 border">
+      <div className="flex-1 overflow-y-auto space-y-4 bg-card rounded-xl p-4 sm:p-6 border border-border shadow-sm min-h-[50vh] sm:min-h-[60vh]">
         {messages.map((msg, index) => (
           <div
             key={index}
             className={cn(
-              "flex w-full",
+              "flex w-full animate-fade-in",
               msg.role === "user" ? "justify-end" : "justify-start"
             )}
           >
             <div
               className={cn(
-                "p-4 rounded-lg max-w-[85%]",
-                msg.role === "user" && "bg-primary text-primary-foreground",
-                msg.role === "hero" && "bg-green-500/10 border border-green-500/20 text-green-100",
-                msg.role === "villain" && "bg-red-500/10 border border-red-500/20 text-red-100"
+                "p-4 rounded-2xl max-w-[85%] sm:max-w-[80%] shadow-sm",
+                msg.role === "user" && "bg-gradient-cta text-white ml-4",
+                msg.role === "hero" && "bg-primary/10 border border-primary/20 text-primary-foreground mr-4",
+                msg.role === "villain" && "bg-muted border border-muted-foreground/20 text-muted-foreground mr-4"
               )}
             >
               {msg.role !== "user" && (
-                <div className="font-semibold text-xs uppercase tracking-wide mb-2 opacity-70">
-                  {msg.role === "hero" ? "Future You" : "Inner Doubt"}
+                <div className="font-semibold text-xs uppercase tracking-wide mb-2 opacity-80">
+                  {msg.role === "hero" ? "🌟 Future You" : "😟 Inner Doubt"}
                 </div>
               )}
               <div 
-                className="whitespace-pre-wrap"
+                className="whitespace-pre-wrap text-sm sm:text-base leading-relaxed"
                 dangerouslySetInnerHTML={{
-                  __html: msg.content.replace(/\*(.*?)\*/g, '<em>$1</em>')
+                  __html: msg.content.replace(/\*(.*?)\*/g, '<em class="font-medium not-italic">$1</em>')
                 }}
               />
             </div>
@@ -221,17 +224,22 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
         ))}
         
         {isLoading && (
-          <div className="flex justify-start">
-            <div className="p-4 rounded-lg bg-muted border">
-              <Loader2 className="h-5 w-5 animate-spin" />
+          <div className="flex justify-start animate-fade-in">
+            <div className="p-4 rounded-2xl bg-muted border border-muted-foreground/20 max-w-[85%] sm:max-w-[80%] shadow-sm">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Thinking...</span>
+              </div>
             </div>
           </div>
         )}
         
         {isComplete && (
-          <div className="flex justify-center">
-            <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20 text-green-100 text-center">
-              🎉 Congratulations! Your Future Self journey is complete. Preparing your results...
+          <div className="flex justify-center animate-fade-in">
+            <div className="p-6 rounded-2xl bg-gradient-cta text-white text-center max-w-md shadow-lg">
+              <div className="text-2xl mb-2">🎉</div>
+              <div className="font-semibold mb-1">Congratulations!</div>
+              <div className="text-sm opacity-90">Your Future Self journey is complete. Preparing your results...</div>
             </div>
           </div>
         )}
@@ -243,16 +251,16 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
       {!isComplete && (
         <form
           onSubmit={handleSendMessage}
-          className="mt-4 flex items-end gap-3"
+          className="mt-4 flex flex-col sm:flex-row items-end gap-3"
         >
           <Textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Share your thoughts..."
-            className="flex-1 min-h-[80px] resize-none"
+            className="flex-1 min-h-[80px] sm:min-h-[60px] resize-none text-base bg-card border-border focus:border-primary/50 transition-colors"
             disabled={isLoading}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
+              if (e.key === "Enter" && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
                 e.preventDefault();
                 handleSendMessage(e);
               }
@@ -262,7 +270,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
             type="submit"
             size="lg"
             disabled={isLoading || !inputValue.trim()}
-            className="h-[80px] px-6"
+            className="h-[60px] px-6 sm:h-[80px] bg-gradient-cta hover:opacity-90 transition-opacity w-full sm:w-auto"
           >
             {isLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
