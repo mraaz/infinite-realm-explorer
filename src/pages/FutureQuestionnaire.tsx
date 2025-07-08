@@ -121,7 +121,13 @@ const FutureQuestionnaire: React.FC = () => {
             <AIChatQuestionnaire
               priorities={priorities}
               // The chat component will call this function with the complete answers object when done
-              onComplete={handlePillarAnswersUpdate}
+              onComplete={(completeAnswers) => {
+                // Update all answers at once and move to confirmation
+                Object.entries(completeAnswers).forEach(([pillar, pillarAnswers]) => {
+                  handlePillarAnswersUpdate(pillar as any, pillarAnswers);
+                });
+                setStep(3); // Move to confirmation step
+              }}
             />
           )
         );
@@ -160,7 +166,6 @@ const FutureQuestionnaire: React.FC = () => {
             {/* Pass the new totalSteps to the stepper */}
             <QuestionnaireSteps
               step={step}
-              totalSteps={totalSteps}
               isArchitect={isArchitect}
             />
             <div className="mt-10 min-h-[400px]">{renderCurrentStep()}</div>
@@ -173,6 +178,7 @@ const FutureQuestionnaire: React.FC = () => {
                 )}
                 <QuestionnaireNavigation
                   step={step}
+                  isArchitect={isArchitect}
                   onPrevious={step > 1 ? handlePrevious : undefined}
                   onNext={handleNext}
                   nextDisabled={isNextDisabled()}

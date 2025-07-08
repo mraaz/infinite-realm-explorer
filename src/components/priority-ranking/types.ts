@@ -20,3 +20,7 @@ export interface PriorityRankingProps {
   onComplete: (priorities: Priorities | null) => void;
   value?: Priorities | null;
 }
+
+// Define answers types for Future Self Chat
+export type PillarAnswers = Record<string, string>;
+export type Answers = { [key in Pillar]?: PillarAnswers };

@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.get-shared-results]
 verify_jwt = false
+
+[functions.future-self-dialogue]
+verify_jwt = false
