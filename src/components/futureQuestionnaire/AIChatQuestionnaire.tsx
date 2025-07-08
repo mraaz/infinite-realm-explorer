@@ -233,34 +233,49 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     }
   };
 
-  // Get current progress for display
+  // Get current progress for display aligned with 5-step flow
   const totalQuestions = orderedCategories.reduce((total, _, index) => 
     total + getQuestionCount(index), 0);
   const completedQuestions = orderedCategories.slice(0, currentCategoryIndex)
     .reduce((total, _, index) => total + getQuestionCount(index), 0) + currentQuestionIndex;
+  
+  // Calculate current step based on category progression (aligned with 5-step flow)
+  const getCurrentStep = () => {
+    if (currentCategoryIndex === 0) return 2; // Main Focus
+    if (currentCategoryIndex === 1) return 3; // Secondary Focus
+    if (currentCategoryIndex >= 2) return 4; // Maintenance
+    return 2;
+  };
+  
+  const getCurrentStepName = () => {
+    if (currentCategoryIndex === 0) return "Main Focus";
+    if (currentCategoryIndex === 1) return "Secondary Focus";
+    if (currentCategoryIndex >= 2) return "Maintenance";
+    return "Main Focus";
+  };
 
   return (
     <div className="flex flex-col h-full max-w-4xl mx-auto p-4">
-      {/* Enhanced Progress indicator */}
+      {/* Enhanced Progress indicator aligned with 5-step flow */}
       <div className="mb-6 p-5 bg-card/50 backdrop-blur-sm rounded-2xl border border-border/50 shadow-lg">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 text-sm">
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 rounded-full bg-gradient-cta animate-pulse"></div>
             <span className="font-semibold text-foreground">
-              {orderedCategories[currentCategoryIndex]} Journey
+              Step {getCurrentStep()}: {getCurrentStepName()}
             </span>
             <span className="text-muted-foreground">
-              ({currentCategoryIndex + 1}/{orderedCategories.length})
+              ({orderedCategories[currentCategoryIndex]})
             </span>
           </div>
           <span className="text-muted-foreground font-medium">
-            Question {completedQuestions + 1} of {totalQuestions}
+            Question {currentQuestionIndex + 1} of {getQuestionCount(currentCategoryIndex)}
           </span>
         </div>
         <div className="w-full bg-muted/30 rounded-full h-3 mt-4 overflow-hidden">
           <div 
             className="bg-gradient-cta h-3 rounded-full transition-all duration-700 ease-out shadow-sm" 
-            style={{ width: `${((completedQuestions) / totalQuestions) * 100}%` }}
+            style={{ width: `${((currentQuestionIndex + 1) / getQuestionCount(currentCategoryIndex)) * 100}%` }}
           />
         </div>
       </div>
@@ -288,7 +303,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
                 </div>
                 <div className={cn(
                   "text-[10px] font-bold uppercase tracking-wider",
-                  msg.role === "hero" ? "text-primary" : "text-muted-foreground/80"
+                  msg.role === "hero" ? "text-primary" : "text-black"
                 )}>
                   {msg.role === "hero" ? "Future" : "Doubt"}
                 </div>
@@ -300,7 +315,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
               {msg.role !== "user" && (
                 <div className={cn(
                   "text-xs font-semibold mb-2 px-2",
-                  msg.role === "hero" ? "text-primary" : "text-muted-foreground"
+                  msg.role === "hero" ? "text-primary" : "text-black"
                 )}>
                   {msg.role === "hero" ? "Your Future Self speaks:" : "Your Inner Doubt whispers:"}
                 </div>
