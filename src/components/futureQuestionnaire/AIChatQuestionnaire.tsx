@@ -310,8 +310,8 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
                 className={cn(
                   "p-5 rounded-2xl shadow-lg border transition-all duration-300 hover:shadow-xl",
                   msg.role === "user" && "bg-gradient-cta text-white border-transparent ml-auto relative",
-                  msg.role === "hero" && "bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 text-foreground backdrop-blur-sm",
-                  msg.role === "villain" && "bg-gradient-to-br from-muted/80 to-muted/40 border-muted-foreground/20 text-muted-foreground backdrop-blur-sm"
+                  msg.role === "hero" && "bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 text-black backdrop-blur-sm",
+                  msg.role === "villain" && "bg-gradient-to-br from-muted/80 to-muted/40 border-muted-foreground/20 text-black backdrop-blur-sm"
                 )}
               >
                 {/* Speech bubble tail for character messages */}
