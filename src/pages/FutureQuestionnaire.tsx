@@ -116,21 +116,30 @@ const FutureQuestionnaire: React.FC = () => {
         );
       case 2:
         // Render the new AI Chat component if priorities are set
-        return (
-          priorities && (
-            <AIChatQuestionnaire
-              priorities={priorities}
-              // The chat component will call this function with the complete answers object when done
-              onComplete={(completeAnswers) => {
-                // Update all answers at once and move to confirmation
-                Object.entries(completeAnswers).forEach(([pillar, pillarAnswers]) => {
-                  handlePillarAnswersUpdate(pillar as any, pillarAnswers);
-                });
-                setStep(3); // Move to confirmation step
-              }}
-            />
-          )
-        );
+      return (
+        priorities && (
+          <AIChatQuestionnaire
+            priorities={priorities}
+            // The chat component will call this function with the complete answers object when done
+            onComplete={(completeAnswers) => {
+              console.log('AI Chat completed with answers:', completeAnswers);
+              
+              // Transform the answers from AI format {Category: {q1: answer}} to expected format {Category: {questionId: answer}}
+              const transformedAnswers = Object.entries(completeAnswers).reduce((acc, [category, categoryAnswers]) => {
+                acc[category as Pillar] = categoryAnswers as Record<string, string>;
+                return acc;
+              }, {} as Record<Pillar, Record<string, string>>);
+              
+              // Update all answers at once using the proper format
+              Object.entries(transformedAnswers).forEach(([pillar, pillarAnswers]) => {
+                handlePillarAnswersUpdate(pillar as Pillar, pillarAnswers);
+              });
+              
+              setStep(3); // Move to confirmation step
+            }}
+          />
+        )
+      );
       case 3:
         // The final confirmation step
         return (

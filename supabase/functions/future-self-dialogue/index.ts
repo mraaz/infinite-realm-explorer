@@ -113,12 +113,18 @@ serve(async (req) => {
       throw new Error('OpenRouter API key not configured');
     }
 
-    // Generate Villain response
-    const villainPrompt = `You are the "Inner Doubt" voice in a future self conversation. The user just answered: "${user_response}". 
+    // Generate Villain response with strict character limits
+    const villainPrompt = `You are the "Inner Doubt" voice. Be extremely brief and gentle. MAXIMUM 15 words.
 
-Your role is to provide gentle, soft skepticism (never harsh). Here's your response template: "${questionData.villain_reply}"
+User answered: "${user_response}"
 
-Respond with a brief, doubting but gentle message that relates to their answer. Keep it conversational and not too negative.`;
+Respond with subtle doubt based on: "${questionData.villain_reply}"
+
+RULES:
+- Maximum 15 words total
+- Gentle, not harsh
+- One sentence only
+- No questions, just soft doubt`;
 
     const villainResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -132,8 +138,8 @@ Respond with a brief, doubting but gentle message that relates to their answer. 
           { role: 'system', content: villainPrompt },
           { role: 'user', content: user_response }
         ],
-        max_tokens: 150,
-        temperature: 0.7,
+        max_tokens: 50,
+        temperature: 0.5,
       }),
     });
 
@@ -144,12 +150,19 @@ Respond with a brief, doubting but gentle message that relates to their answer. 
     const villainData = await villainResponse.json();
     const villainMessage = villainData.choices[0].message.content;
 
-    // Generate Hero response (always gets the last word)
-    const heroPrompt = `You are the "Hero" voice - the future successful self. The user answered: "${user_response}" and the inner doubt responded: "${villainMessage}".
+    // Generate Hero response with strict character limits
+    const heroPrompt = `You are the "Hero" voice - future successful self. Be inspiring but brief. MAXIMUM 20 words.
 
-Your role is supportive, optimistic, and actionable with italicized nudges. Here's your response template: "${questionData.hero_closing}"
+User answered: "${user_response}"
+Doubt said: "${villainMessage}"
 
-Respond with an encouraging message that addresses their answer and the doubt. Include an *italicized action nudge* in your response. Keep it warm and motivating.`;
+Respond based on: "${questionData.hero_closing}"
+
+RULES:
+- Maximum 20 words total
+- Include one *italicized action* word
+- Encouraging and actionable
+- One sentence only`;
 
     const heroResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -163,8 +176,8 @@ Respond with an encouraging message that addresses their answer and the doubt. I
           { role: 'system', content: heroPrompt },
           { role: 'user', content: user_response }
         ],
-        max_tokens: 200,
-        temperature: 0.7,
+        max_tokens: 60,
+        temperature: 0.5,
       }),
     });
 
@@ -175,12 +188,15 @@ Respond with an encouraging message that addresses their answer and the doubt. I
     const heroData = await heroResponse.json();
     const heroMessage = heroData.choices[0].message.content;
 
-    // Update the cumulative answers JSON
+    // Fix answer format to match confirmation step expectations
     const updatedJson = { ...existing_json };
     if (!updatedJson[category]) {
       updatedJson[category] = {};
     }
-    updatedJson[category][`q${sequence + 1}`] = user_response;
+    
+    // Store answer with proper question ID format for confirmation step
+    const questionId = `q${sequence + 1}`;
+    updatedJson[category][questionId] = user_response;
 
     console.log('Generated responses:', { 
       villain: villainMessage, 

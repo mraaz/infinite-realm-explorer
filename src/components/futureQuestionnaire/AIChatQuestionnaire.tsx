@@ -36,6 +36,54 @@ const initialHeroPrompts = {
   "Connections": "Five years from now—what do you want your *relationships and connections* to look and feel like? *Think close friends, family, your community vibe.*"
 };
 
+// Full dialogue prompts structure for getting next question prompts
+const dialoguePrompts = {
+  "Career": [
+    {
+      "hero_prompt": "Imagine it's five years from now… what does your *dream career* look like? What's different, what's exciting? *Try closing your eyes for 10 seconds to picture it first.*"
+    },
+    {
+      "hero_prompt": "Let's break it down: what are the *three biggest milestones* you'd love to hit in your career over the next five years? *First three things that pop up—no perfection needed.*"
+    },
+    {
+      "hero_prompt": "Why does this matter to you? What's the *real* reason you want this change? *Your 'why' will fuel your follow-through.*"
+    }
+  ],
+  "Financials": [
+    {
+      "hero_prompt": "Five years ahead—what's your *ideal financial situation*? Paint me the lifestyle or feeling, not just the bank balance. *What would financial ease feel like for you?*"
+    },
+    {
+      "hero_prompt": "What are the *three biggest financial outcomes* you'd love to achieve by then? *Could be freedom from debt, a safety net, or a dream purchase.*"
+    },
+    {
+      "hero_prompt": "Why do these money goals matter to you? What would change in your life if you made them real? *Think beyond dollars—what's the feeling?*"
+    }
+  ],
+  "Health": [
+    {
+      "hero_prompt": "In five years, how do you want to *feel* in your body, mind, and energy? *Not about perfection—what's 'healthy enough' for your happiest self?*"
+    },
+    {
+      "hero_prompt": "What are *three small but meaningful outcomes* you'd like for your health by then? *Could be sleeping better, moving more, or less stress.*"
+    },
+    {
+      "hero_prompt": "Why does your health matter to you in the long run? What will it allow you to do, feel, or experience more of? *Your 'why' will make the how easier.*"
+    }
+  ],
+  "Connections": [
+    {
+      "hero_prompt": "Five years from now—what do you want your *relationships and connections* to look and feel like? *Think close friends, family, your community vibe.*"
+    },
+    {
+      "hero_prompt": "What are *three key outcomes* you'd love to see in your social or personal life by then? *Deeper friendships? New circles? Stronger bonds?*"
+    },
+    {
+      "hero_prompt": "Why do these relationships matter to you? What would having them give you in your life? *Connection is fuel too—what does it mean to you?*"
+    }
+  ]
+};
+
 export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
   priorities,
   onComplete,
@@ -90,10 +138,14 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     try {
       const currentCategory = orderedCategories[currentCategoryIndex];
       
+      // Get real user ID from auth context
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || 'anonymous';
+      
       // Call the Supabase edge function
       const { data, error } = await supabase.functions.invoke('future-self-dialogue', {
         body: {
-          user_id: 'user_123', // In real app, get from auth context
+          user_id: userId,
           category: currentCategory,
           sequence: currentQuestionIndex,
           user_response: inputValue,
@@ -150,8 +202,23 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
             }, 1500);
           }
         } else {
-          // Move to next question in same category
-          setCurrentQuestionIndex(currentQuestionIndex + 1);
+          // Move to next question in same category - trigger next AI question
+          const nextQuestionIndex = currentQuestionIndex + 1;
+          setCurrentQuestionIndex(nextQuestionIndex);
+          
+          // If there are more questions in this category, trigger the next hero prompt
+          if (nextQuestionIndex < totalQuestionsForCategory) {
+            setTimeout(() => {
+              // Get the next question prompt from the dialogue data
+              const nextPrompt = dialoguePrompts[currentCategory]?.[nextQuestionIndex]?.hero_prompt || 
+                               `Let's continue with question ${nextQuestionIndex + 1} about ${currentCategory}...`;
+              
+              setMessages(prev => [...prev, {
+                role: "hero",
+                content: nextPrompt
+              }]);
+            }, 1500);
+          }
         }
       }, 1000);
 
