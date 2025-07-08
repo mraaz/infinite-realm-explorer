@@ -11,18 +11,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Plus, Edit, AlertTriangle, Trash2, Bug, Shield } from "lucide-react";
-import careerIcon from '/lovable-uploads/17c46b5d-39d7-4366-a2b1-0ca119060118.png';
-import financeIcon from '/lovable-uploads/093d4b1c-b1c4-428b-8c8e-304488447147.png';
-import healthIcon from '/lovable-uploads/80bdf94e-e50a-400d-a2aa-1923772a5201.png';
-import connectionsIcon from '/lovable-uploads/3167f89f-9cfc-4372-8b99-7c2474932863.png';
+import careerIcon from "/lovable-uploads/17c46b5d-39d7-4366-a2b1-0ca119060118.png";
+import financeIcon from "/lovable-uploads/093d4b1c-b1c4-428b-8c8e-304488447147.png";
+import healthIcon from "/lovable-uploads/80bdf94e-e50a-400d-a2aa-1923772a5201.png";
+import connectionsIcon from "/lovable-uploads/3167f89f-9cfc-4372-8b99-7c2474932863.png";
 
 const pillars = [
   {
     icon: (
-      <img 
-        src={careerIcon} 
-        alt="Career" 
-        className="w-7 h-7 object-contain filter brightness-110 contrast-110" 
+      <img
+        src={careerIcon}
+        alt="Career"
+        className="w-7 h-7 object-contain filter brightness-110 contrast-110"
       />
     ),
     title: "Career",
@@ -36,10 +36,10 @@ const pillars = [
   },
   {
     icon: (
-      <img 
-        src={financeIcon} 
-        alt="Finances" 
-        className="w-7 h-7 object-contain filter brightness-110 contrast-110" 
+      <img
+        src={financeIcon}
+        alt="Finances"
+        className="w-7 h-7 object-contain filter brightness-110 contrast-110"
       />
     ),
     title: "Finances",
@@ -53,10 +53,10 @@ const pillars = [
   },
   {
     icon: (
-      <img 
-        src={healthIcon} 
-        alt="Health" 
-        className="w-7 h-7 object-contain filter brightness-110 contrast-110" 
+      <img
+        src={healthIcon}
+        alt="Health"
+        className="w-7 h-7 object-contain filter brightness-110 contrast-110"
       />
     ),
     title: "Health",
@@ -70,10 +70,10 @@ const pillars = [
   },
   {
     icon: (
-      <img 
-        src={connectionsIcon} 
-        alt="Connections" 
-        className="w-7 h-7 object-contain filter brightness-110 contrast-110" 
+      <img
+        src={connectionsIcon}
+        alt="Connections"
+        className="w-7 h-7 object-contain filter brightness-110 contrast-110"
       />
     ),
     title: "Connections",
@@ -89,7 +89,9 @@ const pillars = [
 
 const Index = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [modalSource, setModalSource] = useState<'snapshot' | 'pulse'>('snapshot');
+  const [modalSource, setModalSource] = useState<"snapshot" | "pulse">(
+    "snapshot"
+  );
   const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
   const { changelog, loading: changelogLoading } = useChangelog(1);
@@ -104,19 +106,19 @@ const Index = () => {
   };
 
   const typeColors = {
-    added: 'bg-green-500/10 text-green-400 border-green-500/20',
-    changed: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    deprecated: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-    removed: 'bg-red-500/10 text-red-400 border-red-500/20',
-    fixed: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-    security: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+    added: "bg-green-500/10 text-green-400 border-green-500/20",
+    changed: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    deprecated: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+    removed: "bg-red-500/10 text-red-400 border-red-500/20",
+    fixed: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+    security: "bg-orange-500/10 text-orange-400 border-orange-500/20",
   };
 
   const handleGetSnapshotClick = () => {
     if (isLoggedIn) {
       navigate("/future-questionnaire");
     } else {
-      setModalSource('snapshot');
+      setModalSource("snapshot");
       setShowLoginModal(true);
     }
   };
@@ -125,14 +127,14 @@ const Index = () => {
     if (isLoggedIn) {
       navigate("/pulse-check");
     } else {
-      setModalSource('pulse');
+      setModalSource("pulse");
       setShowLoginModal(true);
     }
   };
 
   const handleContinueAsGuest = () => {
     setShowLoginModal(false);
-    if (modalSource === 'pulse') {
+    if (modalSource === "pulse") {
       navigate("/pulse-check?guest=true");
     } else {
       navigate("/onboarding-questionnaire?guest=true");
@@ -184,18 +186,6 @@ const Index = () => {
             <h3 className="text-2xl font-bold text-white mb-4">
               Get your Life Snapshot
             </h3>
-            <p className="text-gray-400 mb-6">
-              Take our assessment and unlock your personalised life insights.
-              This usually takes 5mins to complete.
-            </p>
-
-            <button
-              onClick={handleGetSnapshotClick}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 px-8 rounded-lg hover:opacity-90 transition-opacity duration-200 w-full mb-4"
-            >
-              Get Your Life Snapshot
-            </button>
-
             <p className="text-gray-400 text-sm mb-4">
               Short on time? Start with a quick check-in instead.
             </p>
@@ -230,27 +220,38 @@ const Index = () => {
               Latest updates and improvements to Infinite Game
             </p>
           </div>
-          
+
           <div className="space-y-6 max-w-4xl mx-auto">
             {changelog.map((entry) => {
               const Icon = typeIcons[entry.type];
               return (
-                <Card key={entry.id} className="border-gray-800 bg-gray-900/50 backdrop-blur-sm">
+                <Card
+                  key={entry.id}
+                  className="border-gray-800 bg-gray-900/50 backdrop-blur-sm"
+                >
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-xl text-white">{entry.version}</CardTitle>
+                      <CardTitle className="text-xl text-white">
+                        {entry.version}
+                      </CardTitle>
                       <time className="text-sm text-gray-400">
-                        {format(new Date(entry.release_date), 'MMM dd, yyyy')}
+                        {format(new Date(entry.release_date), "MMM dd, yyyy")}
                       </time>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center space-x-2 mb-2">
-                      <Badge className={`${typeColors[entry.type]} capitalize text-xs`}>
+                      <Badge
+                        className={`${
+                          typeColors[entry.type]
+                        } capitalize text-xs`}
+                      >
                         <Icon className="h-3 w-3 mr-1" />
                         {entry.type}
                       </Badge>
-                      <h3 className="font-semibold text-gray-200">{entry.title}</h3>
+                      <h3 className="font-semibold text-gray-200">
+                        {entry.title}
+                      </h3>
                     </div>
                     <p className="text-gray-400 text-sm">{entry.content}</p>
                   </CardContent>
@@ -258,15 +259,25 @@ const Index = () => {
               );
             })}
           </div>
-          
+
           <div className="text-center mt-8">
-            <Link 
-              to="/changelog" 
+            <Link
+              to="/changelog"
               className="inline-flex items-center text-primary hover:text-primary-glow transition-colors"
             >
               View Full Changelog
-              <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <svg
+                className="ml-2 h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </Link>
           </div>
@@ -281,13 +292,22 @@ const Index = () => {
               © {new Date().getFullYear()} Infinite Game. All rights reserved.
             </div>
             <div className="flex space-x-6">
-              <Link to="/changelog" className="hover:text-gray-400 transition-colors">
+              <Link
+                to="/changelog"
+                className="hover:text-gray-400 transition-colors"
+              >
                 Changelog
               </Link>
-              <Link to="/privacy" className="hover:text-gray-400 transition-colors">
+              <Link
+                to="/privacy"
+                className="hover:text-gray-400 transition-colors"
+              >
                 Privacy Policy
               </Link>
-              <Link to="/terms" className="hover:text-gray-400 transition-colors">
+              <Link
+                to="/terms"
+                className="hover:text-gray-400 transition-colors"
+              >
                 Terms of Use
               </Link>
             </div>
