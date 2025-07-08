@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
-import { Share2, Copy, Check, UserPlus } from 'lucide-react';
+import { Share2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { isGuestMode } from '@/utils/guestUtils';
 import ShareLinkModal from './ShareLinkModal';
+import PulseCheckLoginModal from './PulseCheckLoginModal';
 
 interface ShareButtonProps {
   data: {
@@ -19,18 +20,16 @@ interface ShareButtonProps {
 
 const ShareButton = ({ data }: ShareButtonProps) => {
   const [isSharing, setIsSharing] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
   const isGuest = isGuestMode();
 
   const handleSignUp = () => {
-    // Remove guest parameter and redirect to auth
-    const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.delete('guest');
-    window.location.href = '/auth';
+    // Open the login modal instead of redirecting to /auth
+    setShowLoginModal(true);
   };
 
   const handleShare = async () => {
@@ -38,11 +37,7 @@ const ShareButton = ({ data }: ShareButtonProps) => {
     
     if (!user || isGuest) {
       console.log('[ShareButton] User not authenticated or in guest mode');
-      toast({
-        title: "Sign Up Required",
-        description: "Create an account to generate magic links and share with friends",
-        variant: "default"
-      });
+      setShowLoginModal(true);
       return;
     }
 
@@ -133,13 +128,25 @@ const ShareButton = ({ data }: ShareButtonProps) => {
   // If user is not authenticated or is a guest, show sign up prompt
   if (!user || isGuest) {
     return (
-      <Button
-        onClick={handleSignUp}
-        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 transition-all duration-300 hover:scale-105"
-      >
-        <UserPlus size={18} className="mr-2" />
-        Sign Up for Magic Links
-      </Button>
+      <>
+        <Button
+          onClick={handleSignUp}
+          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 transition-all duration-300 hover:scale-105"
+        >
+          <UserPlus size={18} className="mr-2" />
+          Sign Up for Magic Links
+        </Button>
+        
+        <PulseCheckLoginModal
+          open={showLoginModal}
+          onOpenChange={setShowLoginModal}
+          pulseCheckData={data}
+          onSuccessfulAuth={() => {
+            console.log('[ShareButton] Auth successful, user will be redirected');
+            setShowLoginModal(false);
+          }}
+        />
+      </>
     );
   }
 
@@ -150,23 +157,24 @@ const ShareButton = ({ data }: ShareButtonProps) => {
         disabled={isSharing}
         className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 transition-all duration-300 hover:scale-105"
       >
-        {copied ? (
-          <>
-            <Check size={18} className="mr-2" />
-            Link Copied!
-          </>
-        ) : (
-          <>
-            <Share2 size={18} className="mr-2" />
-            {isSharing ? 'Creating Link...' : 'Create Magic Link'}
-          </>
-        )}
+        <Share2 size={18} className="mr-2" />
+        {isSharing ? 'Creating Link...' : 'Create Magic Link'}
       </Button>
       
       <ShareLinkModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         shareUrl={shareUrl}
+      />
+      
+      <PulseCheckLoginModal
+        open={showLoginModal}
+        onOpenChange={setShowLoginModal}
+        pulseCheckData={data}
+        onSuccessfulAuth={() => {
+          console.log('[ShareButton] Auth successful, user will be redirected');
+          setShowLoginModal(false);
+        }}
       />
     </>
   );

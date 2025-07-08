@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import ShareImageButton from './ShareImageButton';
+import DownloadPdfButton from './DownloadPdfButton';
 import ShareButton from './ShareButton';
 import PulseCheckLoginModal from './PulseCheckLoginModal';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,7 +26,9 @@ const PulseCheckActions = ({ data }: PulseCheckActionsProps) => {
 
   const handleMagicLinkClick = () => {
     // For guests, open login modal
-    setLoginModalOpen(true);
+    if (!isAuthenticated) {
+      setLoginModalOpen(true);
+    }
   };
 
   return (
@@ -34,8 +36,8 @@ const PulseCheckActions = ({ data }: PulseCheckActionsProps) => {
       <div className="flex flex-col items-center space-y-4 mt-8">
         {/* Two main action buttons */}
         <div className="flex flex-col w-full max-w-sm space-y-3">
-          {/* Share as Image Button - Always available */}
-          <ShareImageButton data={data} />
+          {/* Download as PDF Button - Always available */}
+          <DownloadPdfButton data={data} />
 
           {/* Create Magic Link Button - direct ShareButton for authenticated users */}
           {isAuthenticated ? (

@@ -1,8 +1,8 @@
+
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { UserPlus } from 'lucide-react';
 import { savePulseCheckData } from '@/utils/pulseCheckStorage';
+import SocialLoginButtons from '@/components/SocialLoginButtons';
 
 interface PulseCheckLoginModalProps {
   open: boolean;
@@ -23,7 +23,7 @@ const PulseCheckLoginModal = ({
   pulseCheckData 
 }: PulseCheckLoginModalProps) => {
 
-  const handleAuthRedirect = () => {
+  const handleLoginClick = () => {
     // Save pulse check data before authentication if provided
     if (pulseCheckData) {
       savePulseCheckData(pulseCheckData);
@@ -36,9 +36,8 @@ const PulseCheckLoginModal = ({
       action: 'share'
     }));
 
-    // Close modal and redirect to auth page
+    // Close modal - the SocialLoginButtons will handle the authentication flow
     onOpenChange(false);
-    window.location.href = '/auth';
   };
 
   const handleModalClose = (open: boolean) => {
@@ -61,13 +60,10 @@ const PulseCheckLoginModal = ({
             </p>
           </div>
 
-          <Button
-            onClick={handleAuthRedirect}
-            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 transition-all duration-300 hover:scale-105"
-          >
-            <UserPlus size={18} className="mr-2" />
-            Sign Up to Share Results
-          </Button>
+          <SocialLoginButtons 
+            onLoginClick={handleLoginClick}
+            inModal={true}
+          />
 
           <p className="text-center text-xs text-gray-500">
             Sign up to unlock magic links and start sharing your results with friends
