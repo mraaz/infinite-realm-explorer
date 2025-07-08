@@ -396,7 +396,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Share your deepest thoughts and dreams..."
-              className="flex-1 min-h-[100px] sm:min-h-[80px] resize-none text-base bg-card/50 backdrop-blur-sm border-border/50 focus:border-primary/50 transition-all duration-300 rounded-2xl p-4 shadow-lg"
+              className="flex-1 min-h-[100px] sm:min-h-[80px] resize-none text-base text-black bg-card/50 backdrop-blur-sm border-border/50 focus:border-primary/50 transition-all duration-300 rounded-2xl p-4 shadow-lg"
               disabled={isLoading}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
