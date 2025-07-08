@@ -160,7 +160,15 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
               />
             ))}
             
-            {/* Category labels and scores */}
+            {/* Center point */}
+            <circle
+              cx={center}
+              cy={center}
+              r="3"
+              fill="rgb(147, 51, 234)"
+            />
+            
+            {/* Category labels and scores - MOVED TO END TO ENSURE THEY'RE ON TOP */}
             {labelPositions.map((label, index) => {
               const isLeft = index === 3; // Connections
               const isRight = index === 1; // Finances
@@ -178,13 +186,14 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
                     style={{ 
                       fontSize: '20px',
                       fontWeight: 'bold',
-                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.9))'
+                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.9))',
+                      zIndex: 1000
                     }}
                   >
                     {label.category}
                   </text>
                   
-                  {/* Score with enhanced visibility */}
+                  {/* Score with enhanced visibility - HIGHEST Z-INDEX */}
                   <text
                     x={label.x}
                     y={label.y + 12}
@@ -194,7 +203,8 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
                       fontSize: '28px',
                       fontWeight: 'bold',
                       fill: 'url(#scoreGradient)',
-                      filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.8))'
+                      filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.8))',
+                      zIndex: 1001
                     }}
                   >
                     {label.value}
@@ -202,14 +212,6 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
                 </g>
               );
             })}
-            
-            {/* Center point */}
-            <circle
-              cx={center}
-              cy={center}
-              r="3"
-              fill="rgb(147, 51, 234)"
-            />
           </g>
         </svg>
       </div>
