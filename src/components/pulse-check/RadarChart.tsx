@@ -169,16 +169,6 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
               
               return (
                 <g key={label.category}>
-                  {/* Background circle for score visibility */}
-                  <circle
-                    cx={label.x}
-                    cy={label.y + 6}
-                    r="22"
-                    fill="rgba(0, 0, 0, 0.8)"
-                    stroke="url(#scoreGradient)"
-                    strokeWidth="2"
-                  />
-                  
                   {/* Category name with improved positioning */}
                   <text
                     x={label.x}

@@ -131,20 +131,6 @@ const SharedResults = () => {
             />
           </div>
 
-          {/* Insights Display */}
-          {data.results_data.insights && (
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 mb-8 border border-white/10">
-              <h3 className="text-xl font-semibold mb-4 text-purple-300">Key Insights</h3>
-              <div className="space-y-4">
-                {Object.entries(data.results_data.insights).map(([category, insight]) => (
-                  <div key={category} className="border-l-4 border-purple-400 pl-4">
-                    <h4 className="font-semibold text-purple-200 capitalize">{category}</h4>
-                    <p className="text-gray-300 text-sm">{insight as string}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Call to Action */}
           <div className="text-center">
