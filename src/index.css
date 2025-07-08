@@ -3,6 +3,48 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Flip card styles */
+.flip-card {
+  background-color: transparent;
+  perspective: 1000px;
+}
+
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+.flip-card-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.flip-card-front,
+.flip-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  /* Ensure solid background to prevent text bleeding through */
+  background-color: rgba(22, 22, 26, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+.flip-card-back {
+  transform: rotateY(180deg);
+}
+
+/* Prevent text mirroring during flip animation */
+.flip-card-front > *,
+.flip-card-back > * {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -39,7 +81,8 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
+    --primary: 266 83% 70%;
+    --primary-glow: 330 81% 70%;
     --primary-foreground: 222.2 47.4% 11.2%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -75,54 +118,4 @@
 /* Custom gradient for CTA button */
 .bg-gradient-cta {
   background: linear-gradient(to right, #8B5CF6, #EC4899);
-}
-
-/* Flip Card Styles */
-.flip-card {
-  perspective: 1000px;
-}
-
-.flip-card-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  text-align: center;
-  transition: transform 0.6s;
-  transform-style: preserve-3d;
-}
-
-.flip-card-inner.flipped {
-  transform: rotateY(180deg);
-}
-
-.flip-card-front, .flip-card-back {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.flip-card-back {
-  transform: rotateY(180deg);
-}
-
-/* Hover effect for better UX */
-.flip-card:hover .flip-card-inner:not(.flipped) {
-  transform: rotateY(5deg);
-}
-
-/* Animated hint for first card */
-@keyframes subtle-peek {
-  0% { transform: rotateY(0deg); }
-  50% { transform: rotateY(-25deg); }
-  100% { transform: rotateY(0deg); }
-}
-
-.animate-peek {
-  animation: subtle-peek 1.2s ease-in-out;
-  animation-delay: 0.5s;
 }
