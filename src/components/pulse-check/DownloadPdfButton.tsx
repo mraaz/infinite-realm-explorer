@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -18,22 +18,22 @@ interface DownloadPdfButtonProps {
 
 const DownloadPdfButton = ({ data }: DownloadPdfButtonProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
-  const chartsRef = useRef<HTMLDivElement>(null);
+  const pdfContentRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   
   const { handleDownloadReport } = usePdfReport(
-    chartsRef,
-    { current: null }, // insightsRef - not needed for pulse check
-    { current: null }, // architectRef - not needed for pulse check
-    { current: null }, // timelineRef - not needed for pulse check
-    undefined // futureSelfArchitect - not needed for pulse check
+    pdfContentRef,
+    { current: null },
+    { current: null },
+    { current: null },
+    undefined
   );
 
   const generatePdf = async () => {
     console.log('[DownloadPdfButton] PDF generation started', { data });
     
-    if (!chartsRef.current) {
-      console.error('[DownloadPdfButton] Chart ref not found');
+    if (!pdfContentRef.current) {
+      console.error('[DownloadPdfButton] PDF content ref not found');
       toast({
         title: "Error",
         description: "Unable to generate PDF. Please try again.",
@@ -45,7 +45,7 @@ const DownloadPdfButton = ({ data }: DownloadPdfButtonProps) => {
     setIsGenerating(true);
 
     try {
-      console.log('[DownloadPdfButton] Generating PDF...');
+      console.log('[DownloadPdfButton] Starting PDF generation...');
       await handleDownloadReport();
       
       console.log('[DownloadPdfButton] PDF generated successfully');
@@ -60,7 +60,7 @@ const DownloadPdfButton = ({ data }: DownloadPdfButtonProps) => {
       
       toast({
         title: "PDF Generation Failed",
-        description: "Failed to generate PDF. Please try again.",
+        description: error.message || "Failed to generate PDF. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -89,15 +89,34 @@ const DownloadPdfButton = ({ data }: DownloadPdfButtonProps) => {
         )}
       </Button>
 
-      {/* Hidden component for PDF generation */}
-      <div className="fixed top-0 left-0 w-1 h-1 overflow-hidden pointer-events-none opacity-0 scale-[0.001]">
-        <div ref={chartsRef} className="w-[800px] h-[600px] bg-white p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              Pulse Check Results
-            </h1>
+      {/* PDF Content - properly sized and styled for capture */}
+      <div 
+        ref={pdfContentRef} 
+        className="fixed top-[-9999px] left-[-9999px] w-[800px] bg-white p-8"
+        style={{ 
+          fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+          fontSize: '14px',
+          lineHeight: '1.5'
+        }}
+      >
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Pulse Check Results
+          </h1>
+          <p className="text-lg text-gray-600">
+            Life Path Analysis from infinitegame.life
+          </p>
+        </div>
+        
+        <div className="flex justify-center">
+          <div style={{ transform: 'scale(1.2)', transformOrigin: 'center' }}>
+            <RadarChart data={data} insights={data.insights} />
           </div>
-          <RadarChart data={data} insights={data.insights} />
+        </div>
+        
+        <div className="mt-8 text-center text-sm text-gray-500">
+          <p>Generated on {new Date().toLocaleDateString()}</p>
+          <p>Visit infinitegame.life for more insights</p>
         </div>
       </div>
     </>
