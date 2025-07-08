@@ -1,9 +1,11 @@
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { API_GATEWAY_URL } from '@/config/api';
 
 export const useSocialAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleLoginClick = (provider: 'google' | 'facebook' | 'discord') => {
     console.log(`[OAuth] Starting ${provider} popup login flow`);
@@ -57,11 +59,19 @@ export const useSocialAuth = () => {
           window.removeEventListener('message', handleMessage);
           popup.close();
           
-          // The AuthCallback component will handle the actual login logic
-          // and dispatch a custom event that we can listen to
-          window.addEventListener('auth-complete', () => {
-            console.log('[OAuth] Auth complete event received');
-          }, { once: true });
+          // Clean up URL parameters and stay on the same page
+          const currentUrl = new URL(window.location.href);
+          const wasGuest = currentUrl.searchParams.has('guest');
+          
+          if (wasGuest) {
+            console.log('[OAuth] Cleaning up guest parameter from URL');
+            currentUrl.searchParams.delete('guest');
+            
+            // Use replaceState to update URL without navigation
+            window.history.replaceState({}, '', currentUrl.toString());
+            
+            console.log('[OAuth] URL cleaned, staying on current page');
+          }
           
         } else if (event.data.type === 'OAUTH_ERROR') {
           console.error('[OAuth] Error from popup:', event.data.error);
