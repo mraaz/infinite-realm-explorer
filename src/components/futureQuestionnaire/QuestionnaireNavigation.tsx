@@ -32,7 +32,8 @@ export const QuestionnaireNavigation: React.FC<
   const isLastStep = step === maxStep;
 
   return (
-    <div className="flex justify-between items-center mt-8">
+    // --- CHANGE: Added gap-4 to create space between flex items ---
+    <div className="flex justify-between items-center mt-8 gap-4">
       {showPrevious ? (
         // --- Updated "Previous" Button styles ---
         <Button

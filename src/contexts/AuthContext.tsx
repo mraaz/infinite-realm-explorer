@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 
@@ -11,8 +10,10 @@ interface User {
   [key: string]: any;
 }
 
+// --- MODIFIED --- Renamed 'token' to 'authToken'
 interface AuthContextType {
   user: User | null;
+  authToken: string | null; // The raw JWT token string
   isLoggedIn: boolean;
   login: (token: string) => void;
   logout: () => void;
@@ -22,57 +23,52 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  // --- NEW --- State to hold the raw token, renamed to 'authToken'
+  const [authToken, setAuthToken] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('[AuthContext] Initializing - checking for existing token');
     // Check for a token in localStorage when the app first loads
-    const token = localStorage.getItem("infinitelife_jwt");
-    if (token) {
-      console.log('[AuthContext] Found existing token');
+    const storedToken = localStorage.getItem("infinitelife_jwt");
+    if (storedToken) {
       try {
-        const decodedUser = jwtDecode<User>(token);
-        console.log('[AuthContext] Token decoded successfully:', { sub: decodedUser.sub, email: decodedUser.email });
+        const decodedUser = jwtDecode<User>(storedToken);
         // Check if the token is expired
         if (decodedUser.exp * 1000 > Date.now()) {
-          console.log('[AuthContext] Token is valid, setting user');
           setUser(decodedUser);
+          setAuthToken(storedToken); // --- NEW --- Set the token in state
         } else {
-          console.log('[AuthContext] Token is expired, removing');
           // Token is expired, remove it
           localStorage.removeItem("infinitelife_jwt");
         }
       } catch (error) {
-        console.error("[AuthContext] Invalid token:", error);
         localStorage.removeItem("infinitelife_jwt");
       }
-    } else {
-      console.log('[AuthContext] No existing token found');
     }
   }, []);
 
-  const login = (token: string) => {
-    console.log('[AuthContext] Login called with token');
-    localStorage.setItem("infinitelife_jwt", token);
+  const login = (newToken: string) => {
+    localStorage.setItem("infinitelife_jwt", newToken);
     try {
-      const decodedUser = jwtDecode<User>(token);
-      console.log('[AuthContext] Login successful:', { sub: decodedUser.sub, email: decodedUser.email });
+      const decodedUser = jwtDecode<User>(newToken);
       setUser(decodedUser);
+      setAuthToken(newToken); // --- NEW --- Set the token on login
     } catch (error) {
-      console.error("[AuthContext] Invalid token during login:", error);
       localStorage.removeItem("infinitelife_jwt");
     }
   };
 
   const logout = () => {
-    console.log('[AuthContext] Logout called');
     localStorage.removeItem("infinitelife_jwt");
     setUser(null);
+    setAuthToken(null); // --- NEW --- Clear the token on logout
     // Redirect to homepage
     window.location.href = "/";
   };
 
+  // --- MODIFIED --- Add authToken to the provided value
   const value = {
     user,
+    authToken,
     isLoggedIn: !!user,
     login,
     logout,
