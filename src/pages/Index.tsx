@@ -116,7 +116,7 @@ const Index = () => {
 
   const handleGetSnapshotClick = () => {
     if (isLoggedIn) {
-      navigate("/onboarding-questionnaire");
+      navigate("/future-questionnaire");
     } else {
       setShowLoginModal(true);
     }
@@ -124,7 +124,7 @@ const Index = () => {
 
   const handleContinueAsGuest = () => {
     setShowLoginModal(false);
-    navigate("/onboarding-questionnaire?guest=true");
+    navigate("/future-questionnaire");
   };
 
   const handleModalOpenChange = (open: boolean) => {

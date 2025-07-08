@@ -1,3 +1,5 @@
+// /src/components/QuestionnaireSteps.tsx (Corrected)
+
 import React from "react";
 import { CheckCircle } from "lucide-react";
 
@@ -31,13 +33,14 @@ export const QuestionnaireSteps: React.FC<QuestionnaireStepsProps> = ({
     <nav aria-label="Progress" className="mb-12">
       <ol role="list" className="flex items-center">
         {stepsToRender.map((s, stepIdx) => (
-          // The <li> is now the only direct child of the map.
-          // The React.Fragment has been removed.
-          <li key={s.id} className="relative flex-1 flex items-center">
-            {/* Step Circle and Name */}
-            <div className="flex flex-col items-center text-center w-24 z-10">
+          // FIXED: We now return a single <li> per step, avoiding React.Fragment
+          // and using a combination of flexbox and relative/absolute positioning
+          // for a more robust layout.
+          <li key={s.id} className="relative flex-1">
+            <div className="flex flex-col items-center text-center">
+              {/* The step circle */}
               <div
-                className={`h-8 w-8 rounded-full flex items-center justify-center transition-colors ${
+                className={`h-8 w-8 rounded-full flex items-center justify-center transition-colors z-10 ${
                   step >= s.id ? "bg-purple-600" : "bg-gray-700"
                 }`}
               >
@@ -45,8 +48,9 @@ export const QuestionnaireSteps: React.FC<QuestionnaireStepsProps> = ({
                   {step > s.id ? <CheckCircle size={20} /> : s.id}
                 </span>
               </div>
+              {/* The step name (visible on medium screens and up) */}
               <span
-                className={`mt-2 block font-medium text-sm transition-colors ${
+                className={`mt-2 hidden md:block font-medium text-sm transition-colors md:w-24 ${
                   step >= s.id ? "text-purple-400" : "text-gray-500"
                 }`}
               >
@@ -54,12 +58,13 @@ export const QuestionnaireSteps: React.FC<QuestionnaireStepsProps> = ({
               </span>
             </div>
 
-            {/* Connector Line - now inside the <li> */}
+            {/* The connector line */}
             {stepIdx < stepsToRender.length - 1 && (
               <div
-                className={`flex-auto border-t-2 transition-colors ${
-                  step > s.id ? "border-purple-600" : "border-gray-700"
+                className={`absolute top-4 left-1/2 w-full h-0.5 transition-colors ${
+                  step > s.id ? "bg-purple-600" : "bg-gray-700"
                 }`}
+                aria-hidden="true"
               />
             )}
           </li>

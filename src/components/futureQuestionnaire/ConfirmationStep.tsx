@@ -1,10 +1,12 @@
+// /src/components/futureQuestionnaire/ConfirmationStep.tsx (Modified)
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Pillar } from "@/components/priority-ranking/types";
 import { questionnaireData } from "./questionnaireData";
 import { PrioritiesSummary } from "./PrioritiesSummary";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react"; // Import Loader2 icon
 
 // --- Type Definitions ---
 type Priorities = {
@@ -15,11 +17,13 @@ type Priorities = {
 type PillarAnswers = Record<string, string>;
 type Answers = { [key in Pillar]?: PillarAnswers };
 
+// Add the new `isConfirming` prop to the interface
 interface ConfirmationStepProps {
   priorities: Priorities | null;
   answers: Answers;
   onConfirm: () => void;
   onPrevious: () => void;
+  isConfirming: boolean; // This prop will control the loading state
 }
 
 const AnswerSummary: React.FC<{
@@ -51,6 +55,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   answers,
   onConfirm,
   onPrevious,
+  isConfirming, // Destructure the new prop
 }) => {
   if (!priorities) {
     return <div className="text-center text-gray-400">Loading summary...</div>;
@@ -101,19 +106,26 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         </div>
       </div>
 
-      {/* This container is now using `justify-between` */}
       <div className="flex justify-between items-center pt-4">
         <Button
           size="lg"
           variant="outline"
           className="bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700"
           onClick={onPrevious}
+          disabled={isConfirming} // Disable button when confirming
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Previous
         </Button>
-        <Button size="lg" onClick={onConfirm}>
-          Show Me My Future Self
+        <Button size="lg" onClick={onConfirm} disabled={isConfirming}>
+          {isConfirming ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Analyzing...
+            </>
+          ) : (
+            "Show Me My Future Self"
+          )}
         </Button>
       </div>
     </div>

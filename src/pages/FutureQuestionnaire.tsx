@@ -1,15 +1,17 @@
+// FutureQuestionnaire.tsx (Refactored for 3-Step AI Chat Flow)
+
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import { PriorityRanking } from "@/components/PriorityRanking";
-import { PillarQuestions } from "@/components/futureQuestionnaire/PillarQuestions";
 import { ConfirmationStep } from "@/components/futureQuestionnaire/ConfirmationStep";
 import { QuestionnaireSteps } from "@/components/futureQuestionnaire/QuestionnaireSteps";
 import { QuestionnaireNavigation } from "@/components/futureQuestionnaire/QuestionnaireNavigation";
-import { questionnaireData } from "@/components/futureQuestionnaire/questionnaireData";
-import { Pillar } from "@/components/priority-ranking/types";
+// NEW: Import the placeholder for the AI Chat component
+import { AIChatQuestionnaire } from "@/components/futureQuestionnaire/AIChatQuestionnaire";
+import { Pillar, Priorities } from "@/components/priority-ranking/types";
 
-// Import our hooks and services
+// Import hooks and services
 import { useQuestionnaireState } from "@/hooks/useQuestionnaireState.tsx";
 import { saveQuestionnaireProgress } from "@/services/apiService.tsx";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,9 +25,9 @@ const FutureQuestionnaire: React.FC = () => {
 
   const { user, authToken } = useAuth();
   const [step, setStep] = useState(1);
-  const [isSaving, setIsSaving] = useState(false); // For UI feedback
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Pass only the user object to the hook
   const {
     isLoading,
     priorities,
@@ -36,69 +38,64 @@ const FutureQuestionnaire: React.FC = () => {
 
   const handlePrevious = () => setStep((prev) => Math.max(prev - 1, 1));
 
-  // This function now correctly handles the save-on-click logic
   const handleNext = async () => {
+    setSaveError(null);
     if (user && authToken) {
       setIsSaving(true);
       try {
         await saveQuestionnaireProgress({ priorities, answers }, authToken);
-        console.log("Progress saved successfully on Next click!");
-      } catch (error) {
-        console.error("handleNext save failed:", error);
-        // Optionally show an error message to the user here
+        setStep((prev) => prev + 1);
+      } catch (error: any) {
+        setSaveError("Failed to save progress. Please try again.");
       } finally {
         setIsSaving(false);
       }
+    } else {
+      setStep((prev) => prev + 1);
     }
-    setStep((prev) => prev + 1);
   };
 
   const handleConfirm = async () => {
-    const futureQuestionnaireAnswers = { priorities, answers };
+    // The final payload no longer includes an 'analysis' key
+    const finalPayload = { priorities, answers };
     if (user && authToken) {
-      // Final save before showing results
-      await saveQuestionnaireProgress({ priorities, answers }, authToken);
+      await saveQuestionnaireProgress(finalPayload, authToken);
     }
-    // Clear localStorage for both guests and logged-in users upon completion
     localStorage.removeItem("futureQuestionnaireGuestProgress");
     navigate("/results", {
       state: {
         ...location.state,
-        futureQuestionnaire: futureQuestionnaireAnswers,
+        futureQuestionnaire: finalPayload,
       },
     });
   };
 
-  const totalSteps = 5;
+  // The total number of steps is now 3
+  const totalSteps = 3;
 
   const isNextDisabled = (): boolean => {
-    if (isSaving) return true; // Disable button while API call is in progress
-    if (!priorities) return true;
-    const checkAnswers = (
-      pillarName: Pillar,
-      focusType: "main" | "secondary" | "maintenance"
-    ): boolean => {
-      const pillarAnswerObject = answers[pillarName];
-      if (!pillarAnswerObject) return true;
-      const questionsForPillar =
-        questionnaireData[pillarName][focusType].questions;
-      return questionsForPillar.some(
-        (q) =>
-          !pillarAnswerObject[q.id] || pillarAnswerObject[q.id].trim() === ""
-      );
-    };
+    if (isSaving) return true;
+    if (!priorities) return true; // Priorities must be set for all steps past 1
+
     switch (step) {
       case 1:
-        return !priorities;
-      case 2:
-        return checkAnswers(priorities.mainFocus, "main");
-      case 3:
-        return checkAnswers(priorities.secondaryFocus, "secondary");
-      case 4:
-        return priorities.maintenance.some((p) =>
-          checkAnswers(p, "maintenance")
+        // Step 1 is complete when all priorities are set
+        return (
+          !priorities.mainFocus ||
+          !priorities.secondaryFocus ||
+          priorities.maintenance.length !== 2
         );
+      case 2:
+        // Step 2 is complete when the answers object is populated for all required pillars
+        const requiredPillars: Pillar[] = [
+          priorities.mainFocus,
+          priorities.secondaryFocus,
+          ...priorities.maintenance,
+        ];
+        // The button is disabled if any required pillar does not have an entry in the answers object
+        return requiredPillars.some((p) => !answers[p]);
       default:
+        // Disable by default on the confirmation step
         return true;
     }
   };
@@ -107,13 +104,8 @@ const FutureQuestionnaire: React.FC = () => {
     if (isLoading) {
       return <div className="text-center text-gray-500">Loading...</div>;
     }
-    if (!priorities && step > 1) {
-      return (
-        <div className="text-center text-gray-500">
-          Please complete Step 1 first.
-        </div>
-      );
-    }
+
+    // Render based on the new 3-step flow
     switch (step) {
       case 1:
         return (
@@ -123,58 +115,25 @@ const FutureQuestionnaire: React.FC = () => {
           />
         );
       case 2:
+        // Render the new AI Chat component if priorities are set
         return (
           priorities && (
-            <PillarQuestions
-              key={priorities.mainFocus}
-              pillarName={priorities.mainFocus}
-              focusType="main"
-              onComplete={(pAnswers) =>
-                handlePillarAnswersUpdate(priorities.mainFocus, pAnswers)
-              }
-              initialAnswers={answers[priorities.mainFocus]}
+            <AIChatQuestionnaire
+              priorities={priorities}
+              // The chat component will call this function with the complete answers object when done
+              onComplete={handlePillarAnswersUpdate}
             />
           )
         );
       case 3:
-        return (
-          priorities && (
-            <PillarQuestions
-              key={priorities.secondaryFocus}
-              pillarName={priorities.secondaryFocus}
-              focusType="secondary"
-              onComplete={(pAnswers) =>
-                handlePillarAnswersUpdate(priorities.secondaryFocus, pAnswers)
-              }
-              initialAnswers={answers[priorities.secondaryFocus]}
-            />
-          )
-        );
-      case 4:
-        return (
-          priorities && (
-            <div className="space-y-8">
-              {priorities.maintenance.map((p) => (
-                <PillarQuestions
-                  key={p}
-                  pillarName={p}
-                  focusType="maintenance"
-                  onComplete={(pAnswers) =>
-                    handlePillarAnswersUpdate(p, pAnswers)
-                  }
-                  initialAnswers={answers[p]}
-                />
-              ))}
-            </div>
-          )
-        );
-      case 5:
+        // The final confirmation step
         return (
           <ConfirmationStep
             priorities={priorities}
             answers={answers}
             onConfirm={handleConfirm}
             onPrevious={handlePrevious}
+            isConfirming={false} // This can be removed or repurposed if needed
           />
         );
       default:
@@ -187,9 +146,7 @@ const FutureQuestionnaire: React.FC = () => {
       <Header />
       <main className="flex-grow flex flex-col items-center px-4 py-8 md:py-12">
         <div className="w-full max-w-5xl">
-          <div className="flex justify-end items-center mb-4 min-h-[40px]">
-            {/* ... Cancel Dialog ... */}
-          </div>
+          <div className="flex justify-end items-center mb-4 min-h-[40px]"></div>
           <div className="bg-[#1e1e24] p-6 md:p-10 rounded-2xl shadow-lg border border-gray-700">
             <div className="text-center mb-8">
               <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
@@ -200,15 +157,27 @@ const FutureQuestionnaire: React.FC = () => {
                 for the next five years.
               </p>
             </div>
-            <QuestionnaireSteps step={step} isArchitect={isArchitect} />
+            {/* Pass the new totalSteps to the stepper */}
+            <QuestionnaireSteps
+              step={step}
+              totalSteps={totalSteps}
+              isArchitect={isArchitect}
+            />
             <div className="mt-10 min-h-[400px]">{renderCurrentStep()}</div>
             {step < totalSteps && (
-              <QuestionnaireNavigation
-                step={step}
-                onPrevious={step > 1 ? handlePrevious : undefined}
-                onNext={handleNext}
-                nextDisabled={isNextDisabled()}
-              />
+              <>
+                {saveError && (
+                  <div className="text-center text-red-400 my-4">
+                    <p>{saveError}</p>
+                  </div>
+                )}
+                <QuestionnaireNavigation
+                  step={step}
+                  onPrevious={step > 1 ? handlePrevious : undefined}
+                  onNext={handleNext}
+                  nextDisabled={isNextDisabled()}
+                />
+              </>
             )}
           </div>
         </div>
