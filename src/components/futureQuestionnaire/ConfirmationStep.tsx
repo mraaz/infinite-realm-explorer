@@ -1,173 +1,133 @@
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { futureQuestions } from "@/data/futureQuestions";
-import { QuestionnaireNavigation } from "./QuestionnaireNavigation";
-import { Pillar } from "@/components/priority-ranking/types";
+// /src/components/futureQuestionnaire/ConfirmationStep.tsx (Modified)
 
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Pillar } from "@/components/priority-ranking/types";
+import { questionnaireData } from "./questionnaireData";
+import { PrioritiesSummary } from "./PrioritiesSummary";
+import { ArrowLeft, Loader2 } from "lucide-react"; // Import Loader2 icon
+
+// --- Type Definitions ---
+type Priorities = {
+  mainFocus: Pillar;
+  secondaryFocus: Pillar;
+  maintenance: Pillar[];
+};
+type PillarAnswers = Record<string, string>;
+type Answers = { [key in Pillar]?: PillarAnswers };
+
+// Add the new `isConfirming` prop to the interface
 interface ConfirmationStepProps {
-  isArchitect: boolean;
-  priorities: {
-    mainFocus: Pillar;
-    secondaryFocus: Pillar;
-    maintenance: Pillar[];
-  } | null;
-  answers: Record<string, string>;
-  architectAnswers: { identity: string; system: string; proof: string };
-  onPrevious: () => void;
-  onRetake: () => void;
+  priorities: Priorities | null;
+  answers: Answers;
   onConfirm: () => void;
+  onPrevious: () => void;
+  isConfirming: boolean; // This prop will control the loading state
 }
 
+const AnswerSummary: React.FC<{
+  pillarName: Pillar;
+  pillarAnswers?: PillarAnswers;
+  focusType: "main" | "secondary" | "maintenance";
+}> = ({ pillarName, pillarAnswers, focusType }) => {
+  const questionSet = questionnaireData[pillarName]?.[focusType];
+  if (!questionSet || !pillarAnswers) return null;
+  return (
+    <div className="space-y-4">
+      <h4 className="text-lg font-semibold text-purple-400">{pillarName}</h4>
+      <div className="space-y-4 pl-4 border-l-2 border-gray-700">
+        {questionSet.questions.map((q) => (
+          <div key={q.id}>
+            <Label className="text-sm text-gray-400">{q.label}</Label>
+            <p className="text-white whitespace-pre-wrap mt-1">
+              {pillarAnswers[q.id] || "No answer provided."}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
-  isArchitect,
   priorities,
   answers,
-  architectAnswers,
-  onPrevious,
-  onRetake,
   onConfirm,
+  onPrevious,
+  isConfirming, // Destructure the new prop
 }) => {
-  const renderStandardConfirmation = () => (
-    <div>
-      {/* Updated title styles */}
-      <h2 className="text-3xl font-bold text-center text-white mb-8">
-        Confirm Your Future Self
-      </h2>
+  if (!priorities) {
+    return <div className="text-center text-gray-400">Loading summary...</div>;
+  }
 
-      {priorities && (
-        // Updated card styles for "Your Priorities"
-        <div className="bg-gray-800/50 p-6 rounded-xl ring-1 ring-white/10 mb-6 text-left">
-          <h3 className="text-xl font-semibold text-white mb-4">
-            Your Priorities
-          </h3>
-          <p className="mb-2 text-gray-300">
-            <strong>Main Focus:</strong>{" "}
-            <span className="text-purple-400 font-semibold">
-              {priorities.mainFocus}
-            </span>
-          </p>
-          <p className="mb-2 text-gray-300">
-            <strong>Secondary Focus:</strong>{" "}
-            <span className="font-semibold">{priorities.secondaryFocus}</span>
-          </p>
-          <p className="text-gray-300">
-            <strong>Maintenance Pillars:</strong>{" "}
-            {priorities.maintenance.join(", ")}
-          </p>
-        </div>
-      )}
-
-      {Object.keys(answers).length > 0 && (
-        // Updated card styles for "Your Plan"
-        <div className="bg-gray-800/50 p-6 rounded-xl ring-1 ring-white/10 mb-6 text-left">
-          <h3 className="text-xl font-semibold text-white mb-4">Your Plan</h3>
-          {Object.entries(answers)
-            .sort(
-              ([keyA], [keyB]) =>
-                futureQuestions.findIndex((q) => q.id === keyA) -
-                futureQuestions.findIndex((q) => q.id === keyB)
-            )
-            .map(([key, value]) => {
-              const question = futureQuestions.find((q) => q.id === key);
-              if (!question) return null;
-              return (
-                <div
-                  key={key}
-                  className="mb-4 border-b border-gray-700 pb-4 last:border-b-0 last:pb-0"
-                >
-                  <p className="font-semibold text-gray-300">
-                    {question.question}
-                  </p>
-                  <p className="text-gray-400 pl-4 mt-1 italic">"{value}"</p>
-                </div>
-              );
-            })}
-        </div>
-      )}
-
-      <QuestionnaireNavigation
-        step={5}
-        isArchitect={false}
-        onPrevious={onPrevious}
-        onRetake={onRetake}
-        onConfirm={onConfirm}
-        showRetake={true}
-        showConfirm={true}
-      />
-    </div>
-  );
-
-  const renderArchitectConfirmation = () => (
-    <div>
-      {/* Updated title styles */}
-      <h2 className="text-3xl font-bold text-center text-white mb-8">
-        Confirm Your Future Identity
-      </h2>
-
-      <div className="space-y-6">
-        {/* Updated card styles for Architect flow */}
-        <Card className="bg-gray-800/50 border-none ring-1 ring-white/10 text-white">
-          <CardHeader>
-            <CardTitle className="text-lg text-gray-200">
-              Your Chosen Identity
-            </CardTitle>
-            <p className="text-sm text-gray-400">
-              Step 1: The person you will become.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-300 italic">
-              "{architectAnswers.identity || "Not set"}"
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gray-800/50 border-none ring-1 ring-white/10 text-white">
-          <CardHeader>
-            <CardTitle className="text-lg text-gray-200">
-              Your Core System
-            </CardTitle>
-            <p className="text-sm text-gray-400">
-              Step 2: The habits that will forge your identity.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-300 italic">
-              "{architectAnswers.system || "Not set"}"
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gray-800/50 border-none ring-1 ring-white/10 text-white">
-          <CardHeader>
-            <CardTitle className="text-lg text-gray-200">
-              Your Proof of Identity
-            </CardTitle>
-            <p className="text-sm text-gray-400">
-              Step 3: Your first step on this new path.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-300 italic">
-              "{architectAnswers.proof || "Not set"}"
-            </p>
-          </CardContent>
-        </Card>
+  return (
+    <div className="space-y-8">
+      <div className="text-center">
+        <h3 className="text-2xl font-bold text-white">
+          Your Future Self Blueprint
+        </h3>
+        <p className="text-gray-400 mt-2">
+          Review your answers below. This is the foundation for the habits
+          you're about to build.
+        </p>
       </div>
 
-      <QuestionnaireNavigation
-        step={4}
-        isArchitect={true}
-        onPrevious={onPrevious}
-        onRetake={onRetake}
-        onConfirm={onConfirm}
-        showRetake={true}
-        showConfirm={true}
-      />
+      <div className="space-y-3">
+        <h3 className="text-sm uppercase font-bold text-gray-500 tracking-wider">
+          Your Priorities
+        </h3>
+        <PrioritiesSummary priorities={priorities} />
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm uppercase font-bold text-gray-500 tracking-wider">
+          Your Answers
+        </h3>
+        <div className="space-y-8 bg-black/20 rounded-lg p-6">
+          <AnswerSummary
+            pillarName={priorities.mainFocus}
+            pillarAnswers={answers[priorities.mainFocus]}
+            focusType="main"
+          />
+          <AnswerSummary
+            pillarName={priorities.secondaryFocus}
+            pillarAnswers={answers[priorities.secondaryFocus]}
+            focusType="secondary"
+          />
+          {priorities.maintenance.map((pillar) => (
+            <AnswerSummary
+              key={pillar}
+              pillarName={pillar}
+              pillarAnswers={answers[pillar]}
+              focusType="maintenance"
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center pt-4">
+        <Button
+          size="lg"
+          variant="outline"
+          className="bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700"
+          onClick={onPrevious}
+          disabled={isConfirming} // Disable button when confirming
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Previous
+        </Button>
+        <Button size="lg" onClick={onConfirm} disabled={isConfirming}>
+          {isConfirming ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Analyzing...
+            </>
+          ) : (
+            "Show Me My Future Self"
+          )}
+        </Button>
+      </div>
     </div>
   );
-
-  return isArchitect
-    ? renderArchitectConfirmation()
-    : renderStandardConfirmation();
 };

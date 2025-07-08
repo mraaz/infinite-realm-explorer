@@ -114,7 +114,7 @@ const Index = () => {
 
   const handleGetSnapshotClick = () => {
     if (isLoggedIn) {
-      navigate("/onboarding-questionnaire");
+      navigate("/future-questionnaire");
     } else {
       setModalSource('snapshot');
       setShowLoginModal(true);

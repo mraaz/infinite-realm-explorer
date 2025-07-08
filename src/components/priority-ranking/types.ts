@@ -1,17 +1,22 @@
+// /src/components/priority-ranking/types.ts (Corrected)
 
-import { PillarProgress } from '@/components/NewQuadrantChart';
+export type Pillar = "Career" | "Financials" | "Health" | "Connections";
 
-export type Pillar = 'Career' | 'Financials' | 'Health' | 'Connections';
+// The Priorities type now allows for null values, representing an incomplete state.
+export interface Priorities {
+  mainFocus: Pillar | null;
+  secondaryFocus: Pillar | null;
+  maintenance: Pillar[];
+}
 
-export type PillarInfo = {
+export interface PillarInfo {
   id: Pillar;
   name: Pillar;
-  score: number;
   icon: React.ReactNode;
-};
+}
 
 export interface PriorityRankingProps {
-  progress: PillarProgress;
-  onComplete: (priorities: { mainFocus: Pillar; secondaryFocus: Pillar; maintenance: Pillar[] }) => void;
-  value?: { mainFocus: Pillar; secondaryFocus: Pillar; maintenance: Pillar[] } | null;
+  // onComplete now receives the current state, whether partial or complete.
+  onComplete: (priorities: Priorities | null) => void;
+  value?: Priorities | null;
 }

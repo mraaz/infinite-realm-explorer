@@ -1,22 +1,20 @@
 /*
 ================================================================================
-File: /components/priority-ranking/PillarCard.tsx (Child Component)
+File: /components/priority-ranking/PillarCard.tsx (Child Component) - CORRECTED
 ================================================================================
-- Styles have been updated for the dark theme.
 */
 import React from "react";
-import { Badge } from "@/components/ui/badge";
 import { PillarInfo } from "./types";
 import { cn } from "@/lib/utils";
 
+// The props are simplified, removing `recommendedPillars`.
 interface PillarCardProps extends React.HTMLAttributes<HTMLDivElement> {
   pillar: PillarInfo;
-  recommendedPillars: string[];
 }
 
 const PillarCard = React.forwardRef<HTMLDivElement, PillarCardProps>(
-  ({ pillar, recommendedPillars, ...props }, ref) => {
-    const isRecommended = recommendedPillars.includes(pillar.id);
+  ({ pillar, ...props }, ref) => {
+    // The logic for `isRecommended` and the score is completely removed.
     return (
       <div
         ref={ref}
@@ -30,16 +28,10 @@ const PillarCard = React.forwardRef<HTMLDivElement, PillarCardProps>(
           {pillar.icon}
           <div>
             <p className="font-bold text-white">{pillar.name}</p>
-            <p className="text-xs text-gray-400">
-              Current score: {pillar.score}
-            </p>
+            {/* The line displaying the score has been removed. */}
           </div>
         </div>
-        {isRecommended && (
-          <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-            Recommended
-          </Badge>
-        )}
+        {/* The "Recommended" badge has been removed. */}
       </div>
     );
   }
