@@ -212,7 +212,7 @@ const PulseCheck = () => {
 
           {/* Main card swiping area */}
           <div className="flex-1 flex items-center justify-center px-4 md:px-8 pb-4 md:pb-8">
-            <div className="relative w-full max-w-md h-[360px] md:h-96 lg:h-[600px]">
+            <div className="relative w-full max-w-md h-[250px] md:h-96 lg:h-[480px]">
               {" "}
               {/* Retained h-[360px] for mobile card container */}
               {/* Render visible SwipeCards */}

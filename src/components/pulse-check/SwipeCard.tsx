@@ -127,22 +127,24 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
           {/* Front of card (hidden, but structure maintained for flip animation) */}
           <div className="flip-card-front">
             <div
-              className={`w-full h-full rounded-2xl border ${categoryColor.border} bg-gradient-to-br ${categoryColor.gradient} backdrop-blur-sm p-4 md:p-6 flex flex-col items-center justify-center text-center relative overflow-hidden`} // Reverted initial p to original
+              className={`w-full h-full rounded-2xl border ${categoryColor.border} bg-gradient-to-br ${categoryColor.gradient} backdrop-blur-sm p-3 md:p-4 flex flex-col items-center justify-center text-center relative overflow-hidden`} /* Reduced p */
             >
               {/* This content is technically not visible due to immediate flip, keeping original size for consistency if ever visible */}
               <div
-                className={`absolute top-3 left-3 md:top-4 md:left-4 flex items-center gap-2 md:gap-3 ${categoryColor.bg} px-3 py-1.5 md:px-4 md:py-2 rounded-full shadow-lg border border-white/20`}
+                className={`absolute top-2 left-2 flex items-center gap-2 ${categoryColor.bg} px-2.5 py-1 rounded-full shadow-lg border border-white/20`}
               >
+                {" "}
+                {/* Reduced top, left, px, py, gap */}
                 <img
                   src={iconPath}
                   alt={card.category}
-                  className="w-5 h-5 md:w-6 md:h-6"
-                />
-                <span
-                  className={`text-sm md:text-lg font-bold ${categoryColor.text}`}
-                >
+                  className="w-4 h-4"
+                />{" "}
+                {/* Reduced w, h */}
+                <span className={`text-xs font-bold ${categoryColor.text}`}>
                   {card.category}
-                </span>
+                </span>{" "}
+                {/* Reduced font size */}
               </div>
             </div>
           </div>
@@ -150,52 +152,50 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
           {/* Back of card (the main visible content) */}
           <div className="flip-card-back">
             <div
-              className={`w-full h-full rounded-2xl border ${categoryColor.border} bg-gradient-to-br ${categoryColor.gradient} backdrop-blur-sm p-4 md:p-6 flex flex-col justify-between relative overflow-hidden`}
+              className={`w-full h-full rounded-2xl border ${categoryColor.border} bg-gradient-to-br ${categoryColor.gradient} backdrop-blur-sm p-3 md:p-4 flex flex-col justify-between relative overflow-hidden`}
             >
               {" "}
-              {/* Reverted padding here as well for overall space */}
+              {/* Reduced p */}
               {/* Category indicator (top-left badge) */}
               <div
-                className={`flex items-center gap-2 md:gap-3 ${categoryColor.bg} px-3 py-1.5 md:px-4 md:py-2 rounded-full w-fit shadow-lg border border-white/20`}
+                className={`flex items-center gap-2 ${categoryColor.bg} px-2.5 py-1 rounded-full w-fit shadow-lg border border-white/20`}
               >
                 {" "}
-                {/* Reverted to original padding and gaps */}
+                {/* Reduced px, py, gap */}
                 <img
                   src={iconPath}
                   alt={card.category}
-                  className="w-5 h-5 md:w-6 md:h-6"
+                  className="w-4 h-4"
                 />{" "}
-                {/* Reverted icon size */}
-                <span
-                  className={`text-sm md:text-lg font-bold ${categoryColor.text}`}
-                >
+                {/* Reduced w, h */}
+                <span className={`text-xs font-bold ${categoryColor.text}`}>
                   {card.category}
                 </span>{" "}
-                {/* Reverted text size */}
+                {/* Reduced font size */}
               </div>
               {/* Card text (the quote) */}
-              <div className="flex-1 flex items-center justify-center px-4 py-4 md:py-8">
+              <div className="flex-1 flex items-center justify-center px-0 py-0 md:py-0">
                 {" "}
-                {/* Reverted padding */}
-                <p className="text-base md:text-xl text-white font-medium leading-relaxed text-center">
+                {/* Reduced py */}
+                <p className="text-base text-white font-medium leading-relaxed text-center">
                   {" "}
-                  {/* Reverted font size for responsiveness but added md:text-xl */}
-                  "{card.text}"
+                  {/* Kept text-base, if needed reduce to text-sm */}"
+                  {card.text}"
                 </p>
               </div>
               {/* Action buttons */}
-              <div className="flex justify-between items-center gap-3 md:gap-4">
+              <div className="flex justify-between items-center gap-2 mt-0">
                 {" "}
-                {/* Reverted gap */}
+                {/* Reduced gap, added mt-2 to pull closer */}
                 <button
                   onClick={() => handleButtonClick("pass")}
-                  className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-4 py-3 rounded-xl font-medium transition-all duration-200 hover:scale-105 text-sm md:text-base" // Reverted padding and font size
+                  className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-3 py-2 rounded-xl font-medium transition-all duration-200 hover:scale-105 text-sm" /* Reduced px, py, text-sm */
                 >
                   {passMessage}
                 </button>
                 <button
                   onClick={() => handleButtonClick("keep")}
-                  className="flex-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 px-4 py-3 rounded-xl font-medium transition-all duration-200 hover:scale-105 text-sm md:text-base" // Reverted padding and font size
+                  className="flex-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 px-3 py-2 rounded-xl font-medium transition-all duration-200 hover:scale-105 text-sm" /* Reduced px, py, text-sm */
                 >
                   {keepMessage}
                 </button>
