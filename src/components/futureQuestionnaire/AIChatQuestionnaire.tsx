@@ -1,232 +1,269 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
-import { MessageCircle, ArrowRight, CheckCircle } from "lucide-react";
-import { Pillar, Priorities } from "../priority-ranking/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckCircle, MessageSquare, ArrowRight } from "lucide-react";
+import { Pillar, Priorities } from "@/components/priority-ranking/types";
 import { questionnaireData } from "./questionnaireData";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AIChatQuestionnaireProps {
   priorities: Priorities;
   onComplete: (answers: Record<Pillar, Record<string, string>>) => void;
 }
 
-interface CategoryProgress {
-  total: number;
-  completed: number;
-  questions: Array<{ id: string; label: string; answer?: string }>;
-}
-
 export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
   priorities,
   onComplete,
 }) => {
-  console.log("🎯 AI Chat starting with priorities:", priorities);
-
-  const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [currentAnswer, setCurrentAnswer] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Create the categories array with proper typing
-  const categories: Array<{ pillar: Pillar; focusType: "main" | "secondary" | "maintenance" }> = [
-    { pillar: priorities.mainFocus, focusType: "main" },
-    { pillar: priorities.secondaryFocus, focusType: "secondary" },
-    ...priorities.maintenance.map(pillar => ({ pillar, focusType: "maintenance" as const })),
-  ];
-
-  // Initialize answers with proper typing - create empty records for each pillar
+  // Initialize answers with correct type structure
   const [answers, setAnswers] = useState<Record<Pillar, Record<string, string>>>(() => {
-    const initialAnswers = {} as Record<Pillar, Record<string, string>>;
-    categories.forEach(({ pillar }) => {
-      initialAnswers[pillar] = {};
-    });
+    const initialAnswers: Record<Pillar, Record<string, string>> = {
+      Career: {},
+      Health: {},
+      Financials: {},
+      Connections: {},
+    };
     return initialAnswers;
   });
 
-  const [categoryProgress, setCategoryProgress] = useState<Record<string, CategoryProgress>>({});
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [chatHistory, setChatHistory] = useState<Array<{
+    role: 'user' | 'assistant';
+    content: string;
+    pillar?: Pillar;
+  }>>([]);
 
-  useEffect(() => {
-    const progress: Record<string, CategoryProgress> = {};
-    
-    categories.forEach(({ pillar, focusType }) => {
-      const questionSet = questionnaireData[pillar]?.[focusType];
-      if (questionSet) {
-        progress[pillar] = {
-          total: questionSet.questions.length,
-          completed: 0,
-          questions: questionSet.questions.map(q => ({ id: q.id, label: q.label })),
-        };
-      }
-    });
-    
-    setCategoryProgress(progress);
-    console.log("📊 Category progress initialized:", progress);
-  }, [priorities]);
+  // Build the category sequence based on priorities
+  const categorySequence: Array<{ pillar: Pillar; focusType: 'main' | 'secondary' | 'maintenance' }> = [
+    { pillar: priorities.mainFocus!, focusType: 'main' as const },
+    { pillar: priorities.secondaryFocus!, focusType: 'secondary' as const },
+    ...priorities.maintenance.map(pillar => ({ pillar, focusType: 'maintenance' as const }))
+  ];
 
-  const getCurrentCategory = () => categories[currentCategoryIndex];
-  
-  const getCurrentQuestion = () => {
-    const category = getCurrentCategory();
-    if (!category) return null;
-    
-    const questionSet = questionnaireData[category.pillar]?.[category.focusType];
-    return questionSet?.questions[currentQuestionIndex] || null;
+  console.log('🎯 AIChatQuestionnaire - Category sequence:', categorySequence);
+
+  const currentCategory = currentStep < categorySequence.length ? categorySequence[currentStep] : null;
+
+  // Get expected question count for current category
+  const getExpectedQuestionCount = (focusType: 'main' | 'secondary' | 'maintenance'): number => {
+    return focusType === 'maintenance' ? 1 : 3;
   };
 
-  const getTotalProgress = () => {
-    const totalQuestions = Object.values(categoryProgress).reduce((sum, cat) => sum + cat.total, 0);
-    const completedQuestions = Object.values(categoryProgress).reduce((sum, cat) => sum + cat.completed, 0);
-    return totalQuestions > 0 ? (completedQuestions / totalQuestions) * 100 : 0;
-  };
+  const processWithAI = async (userInput: string) => {
+    if (!currentCategory) return;
 
-  const handleAnswerSubmit = async () => {
-    const category = getCurrentCategory();
-    const question = getCurrentQuestion();
-    
-    if (!category || !question || !currentAnswer.trim()) return;
-
-    console.log(`💬 Submitting answer for ${category.pillar} - ${question.id}:`, currentAnswer);
-
-    setIsLoading(true);
+    setIsProcessing(true);
+    console.log(`🤖 Processing AI for ${currentCategory.pillar} (${currentCategory.focusType})`);
 
     try {
-      // Store the answer
-      setAnswers(prev => ({
-        ...prev,
-        [category.pillar]: {
-          ...prev[category.pillar],
-          [question.id]: currentAnswer.trim()
-        }
-      }));
+      const expectedQuestions = getExpectedQuestionCount(currentCategory.focusType);
+      const questionSet = questionnaireData[currentCategory.pillar][currentCategory.focusType];
 
-      // Update progress
-      setCategoryProgress(prev => {
-        const updated = { ...prev };
-        if (updated[category.pillar]) {
-          updated[category.pillar] = {
-            ...updated[category.pillar],
-            completed: updated[category.pillar].completed + 1,
-            questions: updated[category.pillar].questions.map(q => 
-              q.id === question.id ? { ...q, answer: currentAnswer.trim() } : q
-            )
-          };
+      console.log(`📊 Expected questions for ${currentCategory.pillar}: ${expectedQuestions}`);
+      console.log(`📋 Question set:`, questionSet);
+
+      const { data, error } = await supabase.functions.invoke('future-self-dialogue', {
+        body: {
+          userInput,
+          pillar: currentCategory.pillar,
+          focusType: currentCategory.focusType,
+          expectedQuestions,
+          chatHistory: chatHistory.filter(msg => msg.pillar === currentCategory.pillar),
+          questionContext: {
+            title: questionSet?.title || `${currentCategory.pillar} Questions`,
+            subtitle: questionSet?.subtitle || '',
+            sampleQuestions: questionSet?.questions?.map(q => q.label) || []
+          }
         }
-        return updated;
       });
 
-      // Move to next question or category
-      const currentCategoryQuestions = categoryProgress[category.pillar]?.questions || [];
-      
-      if (currentQuestionIndex + 1 < currentCategoryQuestions.length) {
-        // More questions in current category
-        setCurrentQuestionIndex(prev => prev + 1);
-        console.log(`➡️ Moving to next question in ${category.pillar}`);
-      } else if (currentCategoryIndex + 1 < categories.length) {
-        // Move to next category
-        setCurrentCategoryIndex(prev => prev + 1);
-        setCurrentQuestionIndex(0);
-        console.log(`📂 Moving to next category: ${categories[currentCategoryIndex + 1]?.pillar}`);
-      } else {
-        // All categories completed
-        console.log("🎉 All categories completed!");
-        console.log("📋 Final answers:", answers);
-        
-        // Create final answers object with the new answer included
-        const finalAnswers = {
-          ...answers,
-          [category.pillar]: {
-            ...answers[category.pillar],
-            [question.id]: currentAnswer.trim()
-          }
-        };
-        
-        onComplete(finalAnswers);
-        return;
+      if (error) {
+        console.error('❌ AI processing error:', error);
+        throw error;
       }
 
-      setCurrentAnswer("");
+      console.log('✅ AI response received:', data);
+
+      // Update chat history
+      setChatHistory(prev => [
+        ...prev,
+        { role: 'user', content: userInput, pillar: currentCategory.pillar },
+        { role: 'assistant', content: data.response, pillar: currentCategory.pillar }
+      ]);
+
+      // Process extracted answers
+      if (data.extractedAnswers && Object.keys(data.extractedAnswers).length > 0) {
+        console.log(`📝 Extracted answers for ${currentCategory.pillar}:`, data.extractedAnswers);
+        
+        setAnswers(prev => ({
+          ...prev,
+          [currentCategory.pillar]: {
+            ...prev[currentCategory.pillar],
+            ...data.extractedAnswers
+          }
+        }));
+
+        // Check if we have enough answers for this category
+        const totalAnswers = Object.keys({
+          ...answers[currentCategory.pillar],
+          ...data.extractedAnswers
+        }).length;
+
+        console.log(`📊 ${currentCategory.pillar} answers: ${totalAnswers}/${expectedQuestions}`);
+
+        if (totalAnswers >= expectedQuestions) {
+          console.log(`✅ ${currentCategory.pillar} category complete!`);
+          setTimeout(() => {
+            setCurrentStep(prev => prev + 1);
+          }, 1500);
+        }
+      }
+
     } catch (error) {
-      console.error("❌ Error submitting answer:", error);
+      console.error('❌ Error in AI processing:', error);
+      toast.error('Failed to process your response. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsProcessing(false);
     }
   };
 
-  const category = getCurrentCategory();
-  const question = getCurrentQuestion();
+  // Check if all categories are complete
+  useEffect(() => {
+    if (currentStep >= categorySequence.length) {
+      console.log('🎉 All categories complete! Final answers:', answers);
+      
+      // Verify we have answers for all categories
+      const missingCategories = categorySequence.filter(({ pillar, focusType }) => {
+        const pillarAnswers = answers[pillar];
+        const expectedCount = getExpectedQuestionCount(focusType);
+        const actualCount = Object.keys(pillarAnswers || {}).length;
+        console.log(`🔍 ${pillar}: ${actualCount}/${expectedCount} answers`);
+        return actualCount < expectedCount;
+      });
 
-  if (!category || !question) {
+      if (missingCategories.length === 0) {
+        console.log('✅ All categories have sufficient answers, calling onComplete');
+        onComplete(answers);
+      } else {
+        console.log('⚠️ Missing answers for categories:', missingCategories.map(c => c.pillar));
+      }
+    }
+  }, [currentStep, answers, categorySequence, onComplete]);
+
+  if (!currentCategory) {
     return (
-      <div className="text-center text-gray-400">
-        <p>Loading questions...</p>
+      <div className="text-center py-8">
+        <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-white mb-2">
+          All Categories Complete!
+        </h3>
+        <p className="text-gray-400">
+          Processing your responses...
+        </p>
       </div>
     );
   }
 
-  const progress = getTotalProgress();
-  const categoryQuestionSet = questionnaireData[category.pillar]?.[category.focusType];
+  const expectedQuestions = getExpectedQuestionCount(currentCategory.focusType);
+  const currentAnswers = answers[currentCategory.pillar] || {};
+  const answeredCount = Object.keys(currentAnswers).length;
+  const questionSet = questionnaireData[currentCategory.pillar][currentCategory.focusType];
+
+  const progressPercentage = (answeredCount / expectedQuestions) * 100;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Progress indicator */}
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm text-gray-400">
-          <span>Step {currentCategoryIndex + 2} of 5: {category.pillar}</span>
-          <span>{Math.round(progress)}% Complete</span>
+      {/* Progress Header */}
+      <div className="text-center space-y-4">
+        <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
+          <span>Step {currentStep + 2} of 4</span>
+          <span>•</span>
+          <span>{currentCategory.pillar} ({currentCategory.focusType})</span>
         </div>
-        <Progress value={progress} className="w-full" />
+        
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-white">
+            {questionSet?.title || `${currentCategory.pillar} Focus`}
+          </h2>
+          <p className="text-gray-400">
+            {questionSet?.subtitle || `Let's explore your ${currentCategory.pillar.toLowerCase()} aspirations`}
+          </p>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="w-full bg-gray-700 rounded-full h-2">
+          <div 
+            className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
+        <p className="text-sm text-gray-400">
+          {answeredCount} of {expectedQuestions} questions answered
+        </p>
       </div>
 
-      {/* Category context */}
-      <Card className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 border-purple-500/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-purple-300">
-            <MessageCircle className="h-5 w-5" />
-            {categoryQuestionSet?.title || `${category.pillar} Focus`}
+      {/* Chat Interface */}
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-white">
+            <MessageSquare className="w-5 h-5" />
+            AI Conversation
           </CardTitle>
-          <p className="text-gray-300 text-sm">
-            {categoryQuestionSet?.description || `Let's explore your ${category.pillar.toLowerCase()} aspirations.`}
-          </p>
         </CardHeader>
-      </Card>
-
-      {/* Current question */}
-      <Card className="bg-[#1e1e24] border-gray-700">
-        <CardContent className="p-6 space-y-4">
-          <div className="space-y-2">
-            <Label className="text-gray-300 font-medium">
-              Question {currentQuestionIndex + 1} of {categoryProgress[category.pillar]?.total || 0}
-            </Label>
-            <h3 className="text-xl text-white">{question.label}</h3>
+        <CardContent className="space-y-4">
+          {/* Chat History for Current Category */}
+          <div className="space-y-3 max-h-60 overflow-y-auto">
+            {chatHistory
+              .filter(msg => msg.pillar === currentCategory.pillar)
+              .map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`p-3 rounded-lg ${
+                    msg.role === 'user'
+                      ? 'bg-purple-600 text-white ml-8'
+                      : 'bg-gray-700 text-gray-300 mr-8'
+                  }`}
+                >
+                  <p className="text-sm">{msg.content}</p>
+                </div>
+              ))}
           </div>
 
-          <Textarea
-            value={currentAnswer}
-            onChange={(e) => setCurrentAnswer(e.target.value)}
-            placeholder="Share your thoughts here..."
-            className="min-h-[120px] bg-[#16161a] border-gray-600 text-white placeholder-gray-400"
-            disabled={isLoading}
-          />
-
-          <div className="flex justify-end">
+          {/* Input Area */}
+          <div className="space-y-3">
+            <Textarea
+              placeholder={`Tell me about your ${currentCategory.pillar.toLowerCase()} goals and aspirations...`}
+              className="bg-gray-700 border-gray-600 text-white min-h-[100px]"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  const target = e.target as HTMLTextAreaElement;
+                  if (target.value.trim()) {
+                    processWithAI(target.value.trim());
+                    target.value = '';
+                  }
+                }
+              }}
+            />
             <Button
-              onClick={handleAnswerSubmit}
-              disabled={!currentAnswer.trim() || isLoading}
-              className="bg-purple-600 hover:bg-purple-700"
+              onClick={() => {
+                const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+                if (textarea?.value.trim()) {
+                  processWithAI(textarea.value.trim());
+                  textarea.value = '';
+                }
+              }}
+              disabled={isProcessing}
+              className="w-full bg-purple-600 hover:bg-purple-700"
             >
-              {isLoading ? (
-                "Processing..."
-              ) : currentCategoryIndex === categories.length - 1 && 
-                 currentQuestionIndex === (categoryProgress[category.pillar]?.total || 1) - 1 ? (
+              {isProcessing ? 'Processing...' : (
                 <>
-                  Complete <CheckCircle className="ml-2 h-4 w-4" />
-                </>
-              ) : (
-                <>
-                  Next <ArrowRight className="ml-2 h-4 w-4" />
+                  Send Message
+                  <ArrowRight className="w-4 h-4 ml-2" />
                 </>
               )}
             </Button>
@@ -234,41 +271,24 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
         </CardContent>
       </Card>
 
-      {/* Category overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {categories.map(({ pillar }, index) => {
-          const catProgress = categoryProgress[pillar];
-          const isActive = index === currentCategoryIndex;
-          const isCompleted = index < currentCategoryIndex;
-          
-          return (
-            <Card 
-              key={pillar}
-              className={`transition-all ${
-                isActive 
-                  ? 'border-purple-500 bg-purple-900/20' 
-                  : isCompleted
-                  ? 'border-green-500/50 bg-green-900/10'
-                  : 'border-gray-700 bg-[#1e1e24]'
-              }`}
-            >
-              <CardContent className="p-4 text-center">
-                <div className={`font-medium mb-2 ${
-                  isActive ? 'text-purple-300' : isCompleted ? 'text-green-300' : 'text-gray-400'
-                }`}>
-                  {pillar}
+      {/* Current Answers Preview */}
+      {answeredCount > 0 && (
+        <Card className="bg-gray-800 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white">Captured Insights</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {Object.entries(currentAnswers).map(([questionId, answer]) => (
+                <div key={questionId} className="text-sm">
+                  <span className="text-gray-400">{questionId}:</span>
+                  <span className="text-gray-300 ml-2">{answer.substring(0, 100)}...</span>
                 </div>
-                <div className="text-sm text-gray-500">
-                  {catProgress ? `${catProgress.completed}/${catProgress.total}` : '0/0'}
-                </div>
-                {isCompleted && (
-                  <CheckCircle className="h-4 w-4 text-green-400 mx-auto mt-2" />
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
