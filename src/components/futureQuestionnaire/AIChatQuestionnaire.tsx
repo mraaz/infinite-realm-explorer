@@ -1,416 +1,274 @@
-
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import { Pillar } from "@/components/priority-ranking/types";
-
-type Priorities = {
-  mainFocus: Pillar;
-  secondaryFocus: Pillar;
-  maintenance: Pillar[];
-};
-
-interface Message {
-  role: "hero" | "doubt" | "user";
-  content: string;
-}
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { MessageCircle, ArrowRight, CheckCircle } from "lucide-react";
+import { Pillar, Priorities } from "../priority-ranking/types";
+import { questionnaireData } from "./questionnaireData";
 
 interface AIChatQuestionnaireProps {
   priorities: Priorities;
   onComplete: (answers: Record<Pillar, Record<string, string>>) => void;
 }
 
+interface CategoryProgress {
+  total: number;
+  completed: number;
+  questions: Array<{ id: string; label: string; answer?: string }>;
+}
+
 export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
   priorities,
   onComplete,
 }) => {
-  // Initialize ordered categories based on user's priorities
-  const orderedCategories: Pillar[] = [
-    priorities.mainFocus,
-    priorities.secondaryFocus,
-    ...priorities.maintenance,
-  ];
+  console.log("🎯 AI Chat starting with priorities:", priorities);
 
-  console.log("🎯 AIChatQuestionnaire initialized with priorities:", priorities);
-  console.log("📋 Ordered categories:", orderedCategories);
-
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [currentInput, setCurrentInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<Pillar, Record<string, string>>>({});
-  const [hasStarted, setHasStarted] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [currentAnswer, setCurrentAnswer] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Get question count based on category type - FIXED LOGIC
-  const getQuestionCount = (categoryIndex: number): number => {
-    if (categoryIndex === 0 || categoryIndex === 1) {
-      // Main focus and secondary focus get 3 questions each
-      return 3;
-    } else {
-      // Maintenance categories get 1 question each
-      return 1;
-    }
-  };
+  // Create the categories array with proper typing
+  const categories: Array<{ pillar: Pillar; focusType: "main" | "secondary" | "maintenance" }> = [
+    { pillar: priorities.mainFocus, focusType: "main" },
+    { pillar: priorities.secondaryFocus, focusType: "secondary" },
+    ...priorities.maintenance.map(pillar => ({ pillar, focusType: "maintenance" as const })),
+  ];
 
-  // Get current category info for logging
-  const getCurrentCategoryInfo = () => {
-    const category = orderedCategories[currentCategoryIndex];
-    const isMainFocus = currentCategoryIndex === 0;
-    const isSecondaryFocus = currentCategoryIndex === 1;
-    const isMaintenance = currentCategoryIndex >= 2;
-    const questionCount = getQuestionCount(currentCategoryIndex);
-    
-    return {
-      category,
-      isMainFocus,
-      isSecondaryFocus,
-      isMaintenance,
-      questionCount,
-      categoryIndex: currentCategoryIndex,
-      questionIndex: currentQuestionIndex
-    };
-  };
+  // Initialize answers with proper typing - create empty records for each pillar
+  const [answers, setAnswers] = useState<Record<Pillar, Record<string, string>>>(() => {
+    const initialAnswers = {} as Record<Pillar, Record<string, string>>;
+    categories.forEach(({ pillar }) => {
+      initialAnswers[pillar] = {};
+    });
+    return initialAnswers;
+  });
 
-  // Calculate overall progress for the progress bar
-  const calculateOverallProgress = () => {
-    let totalCompleted = 0;
-    let totalQuestions = 0;
-
-    // Count completed questions from previous categories
-    for (let i = 0; i < currentCategoryIndex; i++) {
-      totalCompleted += getQuestionCount(i);
-      totalQuestions += getQuestionCount(i);
-    }
-
-    // Add current category progress
-    totalCompleted += currentQuestionIndex;
-    totalQuestions += getQuestionCount(currentCategoryIndex);
-
-    // Add remaining categories to total
-    for (let i = currentCategoryIndex + 1; i < orderedCategories.length; i++) {
-      totalQuestions += getQuestionCount(i);
-    }
-
-    return { completed: totalCompleted, total: totalQuestions };
-  };
-
-  // Get current step for the 5-step flow visualization
-  const getCurrentStep = (): number => {
-    if (currentCategoryIndex === 0) return 2; // Main Focus
-    if (currentCategoryIndex === 1) return 3; // Secondary Focus
-    if (currentCategoryIndex >= 2) return 4; // Maintenance
-    return 2;
-  };
-
-  const getCurrentStepName = (): string => {
-    if (currentCategoryIndex === 0) return "Main Focus";
-    if (currentCategoryIndex === 1) return "Secondary Focus"; 
-    if (currentCategoryIndex >= 2) return "Maintenance";
-    return "Main Focus";
-  };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const [categoryProgress, setCategoryProgress] = useState<Record<string, CategoryProgress>>({});
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    const progress: Record<string, CategoryProgress> = {};
+    
+    categories.forEach(({ pillar, focusType }) => {
+      const questionSet = questionnaireData[pillar]?.[focusType];
+      if (questionSet) {
+        progress[pillar] = {
+          total: questionSet.questions.length,
+          completed: 0,
+          questions: questionSet.questions.map(q => ({ id: q.id, label: q.label })),
+        };
+      }
+    });
+    
+    setCategoryProgress(progress);
+    console.log("📊 Category progress initialized:", progress);
+  }, [priorities]);
 
-  const startChat = async () => {
-    console.log("🚀 Starting chat for category:", getCurrentCategoryInfo());
-    setHasStarted(true);
-    await generateNextQuestion();
+  const getCurrentCategory = () => categories[currentCategoryIndex];
+  
+  const getCurrentQuestion = () => {
+    const category = getCurrentCategory();
+    if (!category) return null;
+    
+    const questionSet = questionnaireData[category.pillar]?.[category.focusType];
+    return questionSet?.questions[currentQuestionIndex] || null;
   };
 
-  const generateNextQuestion = async () => {
-    const categoryInfo = getCurrentCategoryInfo();
-    console.log("❓ Generating question for:", categoryInfo);
+  const getTotalProgress = () => {
+    const totalQuestions = Object.values(categoryProgress).reduce((sum, cat) => sum + cat.total, 0);
+    const completedQuestions = Object.values(categoryProgress).reduce((sum, cat) => sum + cat.completed, 0);
+    return totalQuestions > 0 ? (completedQuestions / totalQuestions) * 100 : 0;
+  };
+
+  const handleAnswerSubmit = async () => {
+    const category = getCurrentCategory();
+    const question = getCurrentQuestion();
     
+    if (!category || !question || !currentAnswer.trim()) return;
+
+    console.log(`💬 Submitting answer for ${category.pillar} - ${question.id}:`, currentAnswer);
+
     setIsLoading(true);
-    
+
     try {
-      const { data, error } = await supabase.functions.invoke('future-self-dialogue', {
-        body: {
-          pillar: categoryInfo.category,
-          questionNumber: categoryInfo.questionIndex + 1,
-          totalQuestions: categoryInfo.questionCount,
-          focusType: categoryInfo.isMainFocus ? 'main' : categoryInfo.isSecondaryFocus ? 'secondary' : 'maintenance',
-          previousAnswers: answers[categoryInfo.category] || {},
-          isFirstQuestion: categoryInfo.questionIndex === 0
+      // Store the answer
+      setAnswers(prev => ({
+        ...prev,
+        [category.pillar]: {
+          ...prev[category.pillar],
+          [question.id]: currentAnswer.trim()
         }
+      }));
+
+      // Update progress
+      setCategoryProgress(prev => {
+        const updated = { ...prev };
+        if (updated[category.pillar]) {
+          updated[category.pillar] = {
+            ...updated[category.pillar],
+            completed: updated[category.pillar].completed + 1,
+            questions: updated[category.pillar].questions.map(q => 
+              q.id === question.id ? { ...q, answer: currentAnswer.trim() } : q
+            )
+          };
+        }
+        return updated;
       });
 
-      console.log("🔄 Edge function response:", { data, error });
-
-      if (error) {
-        console.error("❌ Error from edge function:", error);
-        throw error;
-      }
-
-      if (data?.heroMessage && data?.doubtMessage) {
-        setMessages(prev => [
-          ...prev,
-          { role: "hero", content: data.heroMessage },
-          { role: "doubt", content: data.doubtMessage }
-        ]);
-        console.log("✅ Messages added successfully");
+      // Move to next question or category
+      const currentCategoryQuestions = categoryProgress[category.pillar]?.questions || [];
+      
+      if (currentQuestionIndex + 1 < currentCategoryQuestions.length) {
+        // More questions in current category
+        setCurrentQuestionIndex(prev => prev + 1);
+        console.log(`➡️ Moving to next question in ${category.pillar}`);
+      } else if (currentCategoryIndex + 1 < categories.length) {
+        // Move to next category
+        setCurrentCategoryIndex(prev => prev + 1);
+        setCurrentQuestionIndex(0);
+        console.log(`📂 Moving to next category: ${categories[currentCategoryIndex + 1]?.pillar}`);
       } else {
-        console.error("❌ Invalid response format:", data);
-        throw new Error("Invalid response format from dialogue service");
+        // All categories completed
+        console.log("🎉 All categories completed!");
+        console.log("📋 Final answers:", answers);
+        
+        // Create final answers object with the new answer included
+        const finalAnswers = {
+          ...answers,
+          [category.pillar]: {
+            ...answers[category.pillar],
+            [question.id]: currentAnswer.trim()
+          }
+        };
+        
+        onComplete(finalAnswers);
+        return;
       }
+
+      setCurrentAnswer("");
     } catch (error) {
-      console.error("❌ Error generating question:", error);
-      setMessages(prev => [
-        ...prev,
-        { role: "hero", content: "Let's talk about your vision for this area of your life." },
-        { role: "doubt", content: "But are you really ready to commit to change?" }
-      ]);
+      console.error("❌ Error submitting answer:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentInput.trim() || isLoading) return;
+  const category = getCurrentCategory();
+  const question = getCurrentQuestion();
 
-    const userMessage = currentInput.trim();
-    const categoryInfo = getCurrentCategoryInfo();
-    
-    console.log("📝 User submitted answer:", {
-      answer: userMessage,
-      categoryInfo,
-      currentAnswers: answers[categoryInfo.category] || {}
-    });
-
-    // Add user message
-    setMessages(prev => [...prev, { role: "user", content: userMessage }]);
-    setCurrentInput("");
-
-    // Store the answer with proper question ID format
-    const questionId = `q${categoryInfo.questionIndex + 1}`;
-    const updatedAnswers = {
-      ...answers,
-      [categoryInfo.category]: {
-        ...answers[categoryInfo.category],
-        [questionId]: userMessage
-      }
-    };
-    
-    setAnswers(updatedAnswers);
-    console.log("💾 Answer stored:", {
-      category: categoryInfo.category,
-      questionId,
-      answer: userMessage,
-      allAnswers: updatedAnswers
-    });
-
-    // Move to next question or category
-    const nextQuestionIndex = categoryInfo.questionIndex + 1;
-    const maxQuestions = categoryInfo.questionCount;
-
-    if (nextQuestionIndex < maxQuestions) {
-      // More questions in current category
-      console.log(`➡️ Moving to question ${nextQuestionIndex + 1} in ${categoryInfo.category}`);
-      setCurrentQuestionIndex(nextQuestionIndex);
-      setTimeout(() => generateNextQuestion(), 1000);
-    } else {
-      // Move to next category or complete
-      const nextCategoryIndex = categoryInfo.categoryIndex + 1;
-      
-      if (nextCategoryIndex < orderedCategories.length) {
-        console.log(`🔄 Moving to next category: ${orderedCategories[nextCategoryIndex]} (index ${nextCategoryIndex})`);
-        setCurrentCategoryIndex(nextCategoryIndex);
-        setCurrentQuestionIndex(0);
-        setTimeout(() => generateNextQuestion(), 1500);
-      } else {
-        // All categories completed
-        console.log("🎉 All categories completed! Final answers:", updatedAnswers);
-        console.log("📊 Answer summary:");
-        Object.entries(updatedAnswers).forEach(([pillar, pillarAnswers]) => {
-          console.log(`  ${pillar}:`, Object.keys(pillarAnswers).length, "answers");
-          Object.entries(pillarAnswers).forEach(([qId, answer]) => {
-            console.log(`    ${qId}: ${answer.substring(0, 50)}...`);
-          });
-        });
-        onComplete(updatedAnswers);
-      }
-    }
-  };
-
-  // Progress calculation
-  const progress = calculateOverallProgress();
-  const progressPercentage = Math.round((progress.completed / progress.total) * 100);
-
-  if (!hasStarted) {
+  if (!category || !question) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center space-y-6">
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-white">Ready to Explore Your Future?</h2>
-          <p className="text-gray-400 max-w-md">
-            I'll guide you through a conversation about your vision for each priority area. 
-            Let's dive deep and uncover what success really means to you.
-          </p>
-          <div className="text-sm text-gray-500 space-y-1">
-            <div>📋 Categories to explore: {orderedCategories.join(", ")}</div>
-            <div>📊 Total questions: {orderedCategories.reduce((total, _, index) => total + getQuestionCount(index), 0)}</div>
-          </div>
-        </div>
-        <Button 
-          onClick={startChat}
-          size="lg" 
-          className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
-        >
-          <Sparkles className="mr-2 h-5 w-5" />
-          Start the Journey
-        </Button>
+      <div className="text-center text-gray-400">
+        <p>Loading questions...</p>
       </div>
     );
   }
 
+  const progress = getTotalProgress();
+  const categoryQuestionSet = questionnaireData[category.pillar]?.[category.focusType];
+
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto p-4">
-      {/* Enhanced Progress indicator with detailed logging */}
-      <div className="mb-6 p-5 bg-card/50 backdrop-blur-sm rounded-2xl border border-border/50 shadow-lg">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 text-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-gradient-cta animate-pulse"></div>
-            <span className="font-semibold text-foreground">
-              Step {getCurrentStep()}: {getCurrentStepName()}
-            </span>
-            <span className="text-muted-foreground">
-              ({orderedCategories[currentCategoryIndex]})
-            </span>
-          </div>
-          <div className="flex flex-col sm:items-end gap-1">
-            <span className="text-muted-foreground font-medium">
-              Question {currentQuestionIndex + 1} of {getQuestionCount(currentCategoryIndex)}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              Overall: {progress.completed} of {progress.total} ({progressPercentage}%)
-            </span>
-          </div>
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Progress indicator */}
+      <div className="space-y-2">
+        <div className="flex justify-between text-sm text-gray-400">
+          <span>Step {currentCategoryIndex + 2} of 5: {category.pillar}</span>
+          <span>{Math.round(progress)}% Complete</span>
         </div>
-        <div className="w-full bg-muted/30 rounded-full h-3 mt-4 overflow-hidden">
-          <div 
-            className="bg-gradient-cta h-3 rounded-full transition-all duration-700 ease-out shadow-sm" 
-            style={{ width: `${progressPercentage}%` }}
+        <Progress value={progress} className="w-full" />
+      </div>
+
+      {/* Category context */}
+      <Card className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 border-purple-500/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-purple-300">
+            <MessageCircle className="h-5 w-5" />
+            {categoryQuestionSet?.title || `${category.pillar} Focus`}
+          </CardTitle>
+          <p className="text-gray-300 text-sm">
+            {categoryQuestionSet?.description || `Let's explore your ${category.pillar.toLowerCase()} aspirations.`}
+          </p>
+        </CardHeader>
+      </Card>
+
+      {/* Current question */}
+      <Card className="bg-[#1e1e24] border-gray-700">
+        <CardContent className="p-6 space-y-4">
+          <div className="space-y-2">
+            <Label className="text-gray-300 font-medium">
+              Question {currentQuestionIndex + 1} of {categoryProgress[category.pillar]?.total || 0}
+            </Label>
+            <h3 className="text-xl text-white">{question.label}</h3>
+          </div>
+
+          <Textarea
+            value={currentAnswer}
+            onChange={(e) => setCurrentAnswer(e.target.value)}
+            placeholder="Share your thoughts here..."
+            className="min-h-[120px] bg-[#16161a] border-gray-600 text-white placeholder-gray-400"
+            disabled={isLoading}
           />
-        </div>
-      </div>
 
-      {/* Chat messages */}
-      <div className="flex-1 overflow-y-auto space-y-6 mb-6 pr-2">
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={cn(
-              "flex gap-4 animate-in slide-in-from-bottom-4 duration-500",
-              msg.role === "user" ? "flex-row-reverse" : "flex-row"
-            )}
-          >
-            {msg.role !== "user" && (
-              <div className="flex flex-col items-center space-y-1 mt-1">
-                <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-lg",
-                  msg.role === "hero" 
-                    ? "bg-gradient-to-br from-purple-500 to-purple-600 text-white" 
-                    : "bg-gradient-to-br from-gray-600 to-gray-700 text-white"
-                )}>
-                  {msg.role === "hero" ? "✨" : "😰"}
-                </div>
-                <div className={cn(
-                  "text-[10px] font-bold uppercase tracking-wider",
-                  msg.role === "hero" ? "text-primary" : "text-black"
-                )}>
-                  {msg.role === "hero" ? "Future" : "Doubt"}
-                </div>
-              </div>
-            )}
-            
-            <div className={cn(
-              "flex-1 max-w-[80%]",
-              msg.role === "user" ? "text-right" : "text-left"
-            )}>
-              {msg.role !== "user" && (
-                <div className={cn(
-                  "text-xs font-semibold mb-2 px-2",
-                  msg.role === "hero" ? "text-primary" : "text-black"
-                )}>
-                  {msg.role === "hero" ? "Your Future Self speaks:" : "Your Inner Doubt whispers:"}
-                </div>
+          <div className="flex justify-end">
+            <Button
+              onClick={handleAnswerSubmit}
+              disabled={!currentAnswer.trim() || isLoading}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {isLoading ? (
+                "Processing..."
+              ) : currentCategoryIndex === categories.length - 1 && 
+                 currentQuestionIndex === (categoryProgress[category.pillar]?.total || 1) - 1 ? (
+                <>
+                  Complete <CheckCircle className="ml-2 h-4 w-4" />
+                </>
+              ) : (
+                <>
+                  Next <ArrowRight className="ml-2 h-4 w-4" />
+                </>
               )}
-              
-              <div className={cn(
-                "px-4 py-3 rounded-2xl shadow-sm",
-                msg.role === "user"
-                  ? "bg-primary text-primary-foreground ml-auto"
-                  : msg.role === "hero"
-                  ? "bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 text-purple-900"
-                  : "bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 text-gray-800"
-              )}>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {msg.content}
-                </p>
-              </div>
-            </div>
-
-            {msg.role === "user" && (
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg mt-1">
-                You
-              </div>
-            )}
+            </Button>
           </div>
-        ))}
-        
-        {isLoading && (
-          <div className="flex gap-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white animate-pulse">
-              ✨
-            </div>
-            <div className="flex-1">
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 px-4 py-3 rounded-2xl">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+        </CardContent>
+      </Card>
+
+      {/* Category overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {categories.map(({ pillar }, index) => {
+          const catProgress = categoryProgress[pillar];
+          const isActive = index === currentCategoryIndex;
+          const isCompleted = index < currentCategoryIndex;
+          
+          return (
+            <Card 
+              key={pillar}
+              className={`transition-all ${
+                isActive 
+                  ? 'border-purple-500 bg-purple-900/20' 
+                  : isCompleted
+                  ? 'border-green-500/50 bg-green-900/10'
+                  : 'border-gray-700 bg-[#1e1e24]'
+              }`}
+            >
+              <CardContent className="p-4 text-center">
+                <div className={`font-medium mb-2 ${
+                  isActive ? 'text-purple-300' : isCompleted ? 'text-green-300' : 'text-gray-400'
+                }`}>
+                  {pillar}
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
+                <div className="text-sm text-gray-500">
+                  {catProgress ? `${catProgress.completed}/${catProgress.total}` : '0/0'}
+                </div>
+                {isCompleted && (
+                  <CheckCircle className="h-4 w-4 text-green-400 mx-auto mt-2" />
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
-
-      {/* Input form */}
-      <form onSubmit={handleSubmit} className="flex gap-3">
-        <Textarea
-          value={currentInput}
-          onChange={(e) => setCurrentInput(e.target.value)}
-          placeholder="Share your thoughts..."
-          className="flex-1 min-h-[60px] resize-none bg-background/50 backdrop-blur-sm border-border/50"
-          disabled={isLoading}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSubmit(e);
-            }
-          }}
-        />
-        <Button 
-          type="submit" 
-          disabled={!currentInput.trim() || isLoading}
-          className="h-[60px] px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
-        >
-          <Send className="h-5 w-5" />
-        </Button>
-      </form>
     </div>
   );
 };
