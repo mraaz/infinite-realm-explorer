@@ -1,5 +1,4 @@
-
-import { PulseCheckCard } from '@/data/pulseCheckCards';
+import { PulseCheckCard } from "@/data/pulseCheckCards";
 
 // Fisher-Yates shuffle algorithm
 export function shuffleArray<T>(array: T[]): T[] {
@@ -11,64 +10,79 @@ export function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
-// Get one positive card per category for initial presentation
-export function getInitialPositiveCards(cards: PulseCheckCard[]): PulseCheckCard[] {
-  const categories = ['Career', 'Finances', 'Health', 'Connections'];
-  const positiveCards: PulseCheckCard[] = [];
-  
-  categories.forEach(category => {
-    const categoryPositiveCards = cards.filter(
-      card => card.category === category && card.tone === 'positive'
+// Get one card per category for initial presentation (any tone)
+export function getInitialCategoryCards(
+  cards: PulseCheckCard[]
+): PulseCheckCard[] {
+  const categories = ["Career", "Finances", "Health", "Connections"];
+  const initialCards: PulseCheckCard[] = [];
+  const usedCardIds = new Set<number>(); // Track used card IDs to prevent duplicates
+
+  categories.forEach((category) => {
+    // Filter cards for the current category that haven't been used yet
+    const categoryCards = cards.filter(
+      (card) => card.category === category && !usedCardIds.has(card.id)
     );
-    if (categoryPositiveCards.length > 0) {
-      // Randomly select one positive card from this category
-      const randomIndex = Math.floor(Math.random() * categoryPositiveCards.length);
-      positiveCards.push(categoryPositiveCards[randomIndex]);
+    if (categoryCards.length > 0) {
+      // Randomly select one card from this category (any tone)
+      const randomIndex = Math.floor(Math.random() * categoryCards.length);
+      const selectedCard = categoryCards[randomIndex];
+      initialCards.push(selectedCard);
+      usedCardIds.add(selectedCard.id);
     }
   });
-  
-  return positiveCards;
+
+  return initialCards;
 }
 
-// Get remaining cards (excluding the selected positive cards) and shuffle them
+// Get remaining cards (excluding the selected initial cards) and shuffle them
 export function getRemainingShuffledCards(
   allCards: PulseCheckCard[],
   usedCards: PulseCheckCard[]
 ): PulseCheckCard[] {
-  const usedIds = new Set(usedCards.map(card => card.id));
-  const remainingCards = allCards.filter(card => !usedIds.has(card.id));
+  const usedIds = new Set(usedCards.map((card) => card.id));
+  const remainingCards = allCards.filter((card) => !usedIds.has(card.id));
   return shuffleArray(remainingCards);
 }
 
-// Check if minimum category requirements are met
+// Check if minimum category requirements are met (e.g., at least one 'keep' per category)
 export function canShowResults(
-  answers: { [key: number]: 'keep' | 'pass' },
+  answers: { [key: number]: "keep" | "pass" },
   cards: PulseCheckCard[]
 ): boolean {
-  const categories = ['Career', 'Finances', 'Health', 'Connections'];
-  
-  return categories.every(category => {
-    const categoryCards = cards.filter(card => card.category === category);
-    return categoryCards.some(card => 
-      answers[card.id] === 'keep'
-    );
+  const categories = ["Career", "Finances", "Health", "Connections"];
+
+  return categories.every((category) => {
+    const categoryCards = cards.filter((card) => card.category === category);
+    return categoryCards.some((card) => answers[card.id] === "keep");
   });
 }
 
-// Get category completion status
+// Get category completion status (how many questions answered vs. total per category)
 export function getCategoryCompletion(
-  answers: { [key: number]: 'keep' | 'pass' },
+  answers: { [key: number]: "keep" | "pass" },
   cards: PulseCheckCard[]
-): { [category: string]: boolean } {
-  const categories = ['Career', 'Finances', 'Health', 'Connections'];
-  const completion: { [category: string]: boolean } = {};
-  
-  categories.forEach(category => {
-    const categoryCards = cards.filter(card => card.category === category);
-    completion[category] = categoryCards.some(card => 
-      answers[card.id] === 'keep'
-    );
+): { [category: string]: { completed: number; total: number } } {
+  const categories = ["Career", "Finances", "Health", "Connections"];
+  const completion: {
+    [category: string]: { completed: number; total: number };
+  } = {
+    Career: { completed: 0, total: 0 },
+    Finances: { completed: 0, total: 0 },
+    Health: { completed: 0, total: 0 },
+    Connections: { completed: 0, total: 0 },
+  };
+
+  cards.forEach((card) => {
+    // Iterate through all cards to get total
+    if (completion[card.category]) {
+      completion[card.category].total++;
+      if (answers[card.id]) {
+        // Check if answered
+        completion[card.category].completed++;
+      }
+    }
   });
-  
+
   return completion;
 }
