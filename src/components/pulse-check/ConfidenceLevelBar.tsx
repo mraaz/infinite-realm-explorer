@@ -11,7 +11,7 @@ const ConfidenceLevelBar: React.FC<ConfidenceLevelBarProps> = ({ value }) => {
     <div className="w-full max-w-lg mx-auto mb-4 relative px-4 sm:px-0">
       {/* Label "Confidence Level" at the top-center */}
       {/* Adjusted -top to create more space, making it -top-10 or -top-12 */}
-      <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-gray-400 text-sm font-semibold whitespace-nowrap">
+      <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-gray-400 text-sm font-semibold whitespace-nowrap">
         {" "}
         {/* Adjusted -top value again */}
         Confidence Level: {Math.round(clampedValue)}%
