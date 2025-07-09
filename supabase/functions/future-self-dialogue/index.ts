@@ -1,90 +1,13 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-// Hero-Villain dialogue prompts
-const dialoguePrompts = {
-  "Career": [
-    {
-      "hero_prompt": "Imagine it's five years from now… what does your *dream career* look like? What's different, what's exciting? *Try closing your eyes for 10 seconds to picture it first.*",
-      "villain_reply": "Dream careers are cute… but what if things just stay the same? Isn't it safer not to change?",
-      "hero_closing": "I hear the fear—but you wouldn't be dreaming this if it didn't matter. *Write down one small step you could take this week to start moving toward it.*"
-    },
-    {
-      "hero_prompt": "Let's break it down: what are the *three biggest milestones* you'd love to hit in your career over the next five years? *First three things that pop up—no perfection needed.*",
-      "villain_reply": "Milestones? Sounds like a fast track to disappointment…",
-      "hero_closing": "Every bold move starts with a small spark. *Capture those milestones somewhere—naming them is the first win.*"
-    },
-    {
-      "hero_prompt": "Why does this matter to you? What's the *real* reason you want this change? *Your 'why' will fuel your follow-through.*",
-      "villain_reply": "Are you sure you even care that much? Or is this just… something to do?",
-      "hero_closing": "The fact that you paused to answer this tells me you care. *Remind yourself of your 'why' whenever things get tough.*"
-    }
-  ],
-  "Financials": [
-    {
-      "hero_prompt": "Five years ahead—what's your *ideal financial situation*? Paint me the lifestyle or feeling, not just the bank balance. *What would financial ease feel like for you?*",
-      "villain_reply": "Money plans? We both know life gets in the way…",
-      "hero_closing": "Even small steps create momentum. *Define what 'enough' feels like—clarity fuels action.*"
-    },
-    {
-      "hero_prompt": "What are the *three biggest financial outcomes* you'd love to achieve by then? *Could be freedom from debt, a safety net, or a dream purchase.*",
-      "villain_reply": "Three? How about just hoping to survive next month first…",
-      "hero_closing": "Aiming higher doesn't mean ignoring reality—it means shaping it. *Write these down, even if they feel far away.*"
-    },
-    {
-      "hero_prompt": "Why do these money goals matter to you? What would change in your life if you made them real? *Think beyond dollars—what's the feeling?*",
-      "villain_reply": "Does it really matter? Money stress never really goes away anyway…",
-      "hero_closing": "Financial peace is possible—one decision at a time. *Focus on the freedom, not the fear.*"
-    }
-  ],
-  "Health": [
-    {
-      "hero_prompt": "In five years, how do you want to *feel* in your body, mind, and energy? *Not about perfection—what's 'healthy enough' for your happiest self?*",
-      "villain_reply": "Honestly… isn't 'fine' good enough? No need to overdo it.",
-      "hero_closing": "You deserve to feel good in your skin. *Pick one tiny habit you can start today.*"
-    },
-    {
-      "hero_prompt": "What are *three small but meaningful outcomes* you'd like for your health by then? *Could be sleeping better, moving more, or less stress.*",
-      "villain_reply": "Goals? That sounds like a lot of spinach and jogging…",
-      "hero_closing": "It doesn't have to be hard to matter. *One tiny shift leads to the next.*"
-    },
-    {
-      "hero_prompt": "Why does your health matter to you in the long run? What will it allow you to do, feel, or experience more of? *Your 'why' will make the how easier.*",
-      "villain_reply": "Maybe it doesn't matter that much… just coast along, right?",
-      "hero_closing": "The stronger you feel, the fuller you live. *Hold onto that vision.*"
-    }
-  ],
-  "Connections": [
-    {
-      "hero_prompt": "Five years from now—what do you want your *relationships and connections* to look and feel like? *Think close friends, family, your community vibe.*",
-      "villain_reply": "Relationships? People come and go… is it really worth the trouble?",
-      "hero_closing": "It's always worth it. *Name one person you'd love to stay connected to—and reach out this week.*"
-    },
-    {
-      "hero_prompt": "What are *three key outcomes* you'd love to see in your social or personal life by then? *Deeper friendships? New circles? Stronger bonds?*",
-      "villain_reply": "Key outcomes? Or maybe you'll just end up more isolated?",
-      "hero_closing": "Your connections shape your joy. *List them out—one step closer to making them real.*"
-    },
-    {
-      "hero_prompt": "Why do these relationships matter to you? What would having them give you in your life? *Connection is fuel too—what does it mean to you?*",
-      "villain_reply": "Why bother? It's safer to keep your distance sometimes…",
-      "hero_closing": "Real connection nourishes the soul. *Reach out before you need to—small gestures matter most.*"
-    }
-  ]
-};
-
-interface FutureSelfRequest {
-  user_id: string;
-  category: string;
-  sequence: number;
-  user_response: string;
-  existing_json?: any;
-}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -93,134 +16,170 @@ serve(async (req) => {
   }
 
   try {
-    const { user_id, category, sequence, user_response, existing_json }: FutureSelfRequest = await req.json();
+    const { 
+      pillar, 
+      questionNumber, 
+      totalQuestions, 
+      focusType, 
+      previousAnswers = {},
+      isFirstQuestion = false 
+    } = await req.json();
 
-    console.log('Future Self Dialogue Request:', { user_id, category, sequence, user_response });
+    console.log('🎯 Future Self Dialogue Request:', {
+      pillar,
+      questionNumber,
+      totalQuestions,
+      focusType,
+      isFirstQuestion,
+      previousAnswersCount: Object.keys(previousAnswers).length
+    });
 
-    // Validate inputs
-    if (!category || !dialoguePrompts[category]) {
-      throw new Error('Invalid category provided');
+    // Validate required parameters
+    if (!pillar || !questionNumber || !totalQuestions || !focusType) {
+      console.error('❌ Missing required parameters:', { pillar, questionNumber, totalQuestions, focusType });
+      throw new Error('Missing required parameters');
     }
 
-    if (sequence < 0 || sequence >= dialoguePrompts[category].length) {
-      throw new Error('Invalid sequence number for category');
+    // Create context-aware prompts based on focus type and question progression
+    let systemPrompt = "";
+    let questionContext = "";
+
+    if (focusType === 'main') {
+      systemPrompt = `You are creating a dialogue between someone's Future Self (confident, inspiring, visionary) and their Inner Doubt (worried, skeptical, fearful) about their MAIN FOCUS area: ${pillar}. This is their primary area for growth and achievement over the next 5 years.`;
+      
+      if (questionNumber === 1) {
+        questionContext = "Start by exploring their big vision and what success looks like in this area.";
+      } else if (questionNumber === 2) {
+        questionContext = "Dive deeper into specific goals and what they want to achieve.";
+      } else {
+        questionContext = "Focus on the practical steps and commitment needed to make this vision reality.";
+      }
+    } else if (focusType === 'secondary') {
+      systemPrompt = `You are creating a dialogue between someone's Future Self and their Inner Doubt about their SECONDARY FOCUS area: ${pillar}. This is important but not their main priority.`;
+      
+      if (questionNumber === 1) {
+        questionContext = "Explore how this area supports their main focus and overall life balance.";
+      } else if (questionNumber === 2) {
+        questionContext = "Discuss specific improvements they want to see in this area.";
+      } else {
+        questionContext = "Address how they'll maintain progress here while focusing primarily elsewhere.";
+      }
+    } else { // maintenance
+      systemPrompt = `You are creating a dialogue between someone's Future Self and their Inner Doubt about maintaining their ${pillar} area. This is about keeping things stable and healthy, not major growth.`;
+      questionContext = "Focus on what 'good enough' looks like and how to maintain stability in this area without it becoming a problem.";
     }
 
-    const questionData = dialoguePrompts[category][sequence];
-    const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
-
-    if (!openRouterApiKey) {
-      throw new Error('OpenRouter API key not configured');
+    // Add previous answers context if available
+    let previousContext = "";
+    if (Object.keys(previousAnswers).length > 0) {
+      previousContext = `\n\nPrevious answers in this category: ${JSON.stringify(previousAnswers)}`;
     }
 
-    // Generate Villain response with strict character limits
-    const villainPrompt = `You are the "Inner Doubt" voice. Be extremely brief and gentle. MAXIMUM 15 words.
+    const prompt = `${systemPrompt}
 
-User answered: "${user_response}"
+Question ${questionNumber} of ${totalQuestions} for ${pillar} (${focusType} focus).
+${questionContext}
+${previousContext}
 
-Respond with subtle doubt based on: "${questionData.villain_reply}"
+Create a dialogue where:
+1. Future Self asks an insightful, specific question about their vision for ${pillar}
+2. Inner Doubt raises a realistic concern or fear about that area
 
-RULES:
-- Maximum 15 words total
-- Gentle, not harsh
-- One sentence only
-- No questions, just soft doubt`;
+The Future Self should be inspiring but practical. The Inner Doubt should be concerned but not completely negative - more like a worried friend.
 
-    const villainResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+Keep both messages concise (2-3 sentences each) and make them feel like a natural conversation. The question should help them think deeply about what they really want in this area.
+
+Return ONLY a JSON object with this exact format:
+{
+  "heroMessage": "Future Self's inspiring question here",
+  "doubtMessage": "Inner Doubt's concerned response here"
+}`;
+
+    console.log('📝 Sending prompt to Claude:', {
+      promptLength: prompt.length,
+      pillar,
+      questionNumber,
+      focusType
+    });
+
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openRouterApiKey}`,
         'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://infinitegame.life',
+        'X-Title': 'Infinite Game Future Self Dialogue'
       },
       body: JSON.stringify({
         model: 'anthropic/claude-3.5-sonnet',
         messages: [
-          { role: 'system', content: villainPrompt },
-          { role: 'user', content: user_response }
+          { 
+            role: 'user', 
+            content: prompt
+          }
         ],
-        max_tokens: 50,
-        temperature: 0.5,
-      }),
+        temperature: 0.8,
+        max_tokens: 300
+      })
     });
 
-    if (!villainResponse.ok) {
-      throw new Error(`OpenRouter villain API error: ${await villainResponse.text()}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ OpenRouter API error:', { status: response.status, error: errorText });
+      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
     }
 
-    const villainData = await villainResponse.json();
-    const villainMessage = villainData.choices[0].message.content;
+    const aiResponse = await response.json();
+    console.log('🤖 Raw AI response:', aiResponse);
 
-    // Generate Hero response with strict character limits
-    const heroPrompt = `You are the "Hero" voice - future successful self. Be inspiring but brief. MAXIMUM 20 words.
-
-User answered: "${user_response}"
-Doubt said: "${villainMessage}"
-
-Respond based on: "${questionData.hero_closing}"
-
-RULES:
-- Maximum 20 words total
-- Include one *italicized action* word
-- Encouraging and actionable
-- One sentence only`;
-
-    const heroResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openRouterApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'anthropic/claude-3.5-sonnet',
-        messages: [
-          { role: 'system', content: heroPrompt },
-          { role: 'user', content: user_response }
-        ],
-        max_tokens: 60,
-        temperature: 0.5,
-      }),
-    });
-
-    if (!heroResponse.ok) {
-      throw new Error(`OpenRouter hero API error: ${await heroResponse.text()}`);
+    if (!aiResponse.choices?.[0]?.message?.content) {
+      console.error('❌ Invalid AI response structure:', aiResponse);
+      throw new Error('Invalid response from AI');
     }
 
-    const heroData = await heroResponse.json();
-    const heroMessage = heroData.choices[0].message.content;
-
-    // Fix answer format to match confirmation step expectations
-    const updatedJson = { ...existing_json };
-    if (!updatedJson[category]) {
-      updatedJson[category] = {};
-    }
+    let content = aiResponse.choices[0].message.content.trim();
     
-    // Store answer with proper question ID format for confirmation step
-    const questionId = `q${sequence + 1}`;
-    updatedJson[category][questionId] = user_response;
+    // Clean up the content to ensure it's valid JSON
+    if (content.startsWith('```json')) {
+      content = content.replace(/```json\n?/, '').replace(/\n?```$/, '');
+    } else if (content.startsWith('```')) {
+      content = content.replace(/```\n?/, '').replace(/\n?```$/, '');
+    }
 
-    console.log('Generated responses:', { 
-      villain: villainMessage, 
-      hero: heroMessage, 
-      updated_json: updatedJson 
-    });
+    let dialogueData;
+    try {
+      dialogueData = JSON.parse(content);
+    } catch (parseError) {
+      console.error('❌ JSON parse error:', parseError, 'Content:', content);
+      // Fallback with context-appropriate defaults
+      dialogueData = {
+        heroMessage: `What does success in your ${pillar} area look like 5 years from now? Paint me a picture of your ideal scenario.`,
+        doubtMessage: `But what if you're not capable of achieving that? What if you're setting yourself up for disappointment?`
+      };
+    }
 
-    return new Response(JSON.stringify({
-      villain: villainMessage,
-      hero: heroMessage,
-      updated_json: updatedJson
-    }), {
+    console.log('✅ Final dialogue data:', dialogueData);
+
+    if (!dialogueData.heroMessage || !dialogueData.doubtMessage) {
+      console.error('❌ Missing required message fields:', dialogueData);
+      throw new Error('AI response missing required message fields');
+    }
+
+    return new Response(JSON.stringify(dialogueData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Error in future-self-dialogue function:', error);
-    return new Response(JSON.stringify({ 
-      error: error.message,
-      villain: "I'm having trouble connecting right now...",
-      hero: "Don't worry, we can continue this conversation. *Take a moment to reflect on your thoughts while we reconnect.*"
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.error('❌ Error in future-self-dialogue function:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: error.message,
+        details: 'Check function logs for more information'
+      }), 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   }
 });
