@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { useNavigate } from "react-router-dom"; // Use useNavigate from react-router-dom
+import { useNavigate } from "react-router-dom";
 import { Check, Star, User, Target, Wrench, FileText } from "lucide-react";
 
 // Define the types for the sidebar steps for clarity and type safety
@@ -18,7 +18,7 @@ interface Step {
 
 // Define the sidebar component
 export default function YourJourneySidebar() {
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
   const steps: Step[] = [
     {
       id: 1,
@@ -137,11 +137,31 @@ export default function YourJourneySidebar() {
                   <div
                     className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full border-2 ${
                       step.completed
-                        ? "bg-gray-700 border-gray-600"
-                        : step.current
-                        ? "bg-gray-700 border-gray-600"
-                        : "bg-gray-700 border-gray-600"
-                    }`}
+                        ? "bg-gray-700 border-gray-600" // If completed
+                        : step.current || step.title === "Future Self"
+                        ? "bg-gray-700 border-gray-600 animate-pulse" // If current or Future Self, apply pulse
+                        : "bg-gray-700 border-gray-600" // Otherwise, default style
+                    } ${step.title === "Future Self" ? "cursor-pointer" : ""}`}
+                    onClick={
+                      step.title === "Future Self"
+                        ? () => navigate("/future-questionnaire")
+                        : undefined
+                    }
+                    role={
+                      step.title === "Future Self" && !step.completed
+                        ? "button"
+                        : undefined
+                    }
+                    aria-label={
+                      step.title === "Future Self" && !step.completed
+                        ? `Start ${step.title} step`
+                        : undefined
+                    }
+                    tabIndex={
+                      step.title === "Future Self" && !step.completed
+                        ? 0
+                        : undefined
+                    }
                   >
                     {step.completed ? (
                       <Check className="w-6 h-6 text-white" />

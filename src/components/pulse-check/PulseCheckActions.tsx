@@ -1,12 +1,11 @@
-
-import React, { useState } from 'react';
-import { Share2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import DownloadPdfButton from './DownloadPdfButton';
-import ShareButton from './ShareButton';
-import PulseCheckLoginModal from './PulseCheckLoginModal';
-import { useAuth } from '@/contexts/AuthContext';
-import { isGuestMode } from '@/utils/guestUtils';
+import React, { useState } from "react";
+import { Share2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import DownloadPdfButton from "./DownloadPdfButton";
+import ShareButton from "./ShareButton";
+import PulseCheckLoginModal from "./PulseCheckLoginModal";
+import { useAuth } from "@/contexts/AuthContext";
+import { isGuestMode } from "@/utils/guestUtils";
 
 interface PulseCheckActionsProps {
   data: {
@@ -37,6 +36,14 @@ const PulseCheckActions = ({ data }: PulseCheckActionsProps) => {
         {/* Two main action buttons */}
         <div className="flex flex-col w-full max-w-sm space-y-3">
           {/* Download as PDF Button - Always available */}
+          {/* New Future Self Button */}
+          <Button
+            onClick={() => (window.location.href = "/future-questionnaire")} // Simple redirect for now
+            variant="outline"
+            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 transition-all duration-300 hover:scale-105 font-semibold"
+          >
+            Proceed to Future Self
+          </Button>
           <DownloadPdfButton data={data} />
 
           {/* Create Magic Link Button - direct ShareButton for authenticated users */}
@@ -55,7 +62,8 @@ const PulseCheckActions = ({ data }: PulseCheckActionsProps) => {
 
         {/* Description text under Magic Link button */}
         <p className="text-center text-sm text-gray-400 max-w-sm leading-relaxed">
-          Thriving or surviving? Share your Pulse Check and see how your friends stack up.
+          Thriving or surviving? Share your Pulse Check and see how your friends
+          stack up.
         </p>
       </div>
 
@@ -67,7 +75,9 @@ const PulseCheckActions = ({ data }: PulseCheckActionsProps) => {
         onSuccessfulAuth={() => {
           // After successful auth, the user will be redirected back
           // and the ShareButton will be available
-          console.log('[PulseCheckActions] Auth successful, user will be redirected');
+          console.log(
+            "[PulseCheckActions] Auth successful, user will be redirected"
+          );
         }}
       />
     </>
