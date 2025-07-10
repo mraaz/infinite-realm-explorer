@@ -21,9 +21,6 @@ const RadarChart: React.FC<RadarChartProps> = ({
   insights,
   confidenceLevel,
 }) => {
-  console.log("[RadarChart] Rendering with data:", data);
-  console.log("[RadarChart] Category positions being calculated...");
-
   const categories = ["Career", "Finances", "Health", "Connections"] as const;
   const svgSize = 400;
   const center = svgSize / 2;
@@ -40,9 +37,6 @@ const RadarChart: React.FC<RadarChartProps> = ({
   const polarToCartesian = (angle: number, radius: number) => {
     const x = center + radius * Math.cos(angle);
     const y = center + radius * Math.sin(angle);
-    console.log(
-      `[RadarChart] Position calculated - angle: ${angle}, radius: ${radius}, x: ${x}, y: ${y}`
-    );
     return { x, y };
   };
 
@@ -60,10 +54,6 @@ const RadarChart: React.FC<RadarChartProps> = ({
     const angle = getAngleRadians(index);
     const position = polarToCartesian(angle, labelRadius);
     const value = data[category];
-
-    console.log(
-      `[RadarChart] Label for ${category}: value=${value}, position=(${position.x}, ${position.y})`
-    );
 
     return {
       category,

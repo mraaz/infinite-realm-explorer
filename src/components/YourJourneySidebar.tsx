@@ -2,6 +2,7 @@
 "use client";
 
 import React from "react";
+import { useNavigate } from "react-router-dom"; // Use useNavigate from react-router-dom
 import { Check, Star, User, Target, Wrench, FileText } from "lucide-react";
 
 // Define the types for the sidebar steps for clarity and type safety
@@ -17,6 +18,7 @@ interface Step {
 
 // Define the sidebar component
 export default function YourJourneySidebar() {
+  const navigate = useNavigate(); // Initialize useNavigate
   const steps: Step[] = [
     {
       id: 1,
@@ -98,7 +100,16 @@ export default function YourJourneySidebar() {
                   className="relative flex flex-col items-center mb-8"
                 >
                   {/* Step content - title above, completed to the right */}
-                  <div className="relative">
+                  <div
+                    className={`relative ${
+                      step.title === "Future Self" ? "cursor-pointer" : ""
+                    }`}
+                    onClick={
+                      step.title === "Future Self"
+                        ? () => navigate("/future-questionnaire")
+                        : undefined
+                    }
+                  >
                     {/* Title above the circle */}
                     <div className="text-center mb-2">
                       <h4

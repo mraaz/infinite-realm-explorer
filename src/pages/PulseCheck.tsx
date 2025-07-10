@@ -188,13 +188,15 @@ const PulseCheck = () => {
           {isCompleted && (
             <div className="flex-1 flex flex-col items-center justify-center">
               <div className="w-full max-w-6xl mx-auto text-center">
-                <h1 className="text-3xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  Your Pulse Check Results
-                </h1>
+                {/* Modified: Added flex and items-center to align title and icon */}
+                <div className="flex items-center justify-center relative mb-3">
+                  <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                    Your Pulse Check Results
+                  </h1>
 
-                <div className="flex justify-center items-center relative">
                   {/* Mobile Menu Trigger (Hamburger) - visible only on small screens */}
-                  <div className="md:hidden absolute top-0 right-0">
+                  {/* Adjusted positioning to be relative to the h1 container */}
+                  <div className="md:hidden absolute -right-2 top-1/2 transform -translate-y-1/2 ml-2 z-20">
                     <Drawer
                       direction="right"
                       open={isSidebarDrawerOpen}
@@ -203,9 +205,19 @@ const PulseCheck = () => {
                       <DrawerTrigger asChild>
                         <Button
                           variant="ghost"
-                          className="h-8 w-8 p-0 text-gray-400 hover:text-white"
+                          // Changed text-gray-300 to a gradient for the icon color
+                          className="h-10 w-10 p-0 rounded-full bg-gray-700 hover:bg-gray-600 border border-gray-600 shadow-lg"
                         >
-                          <Menu className="h-6 w-6" />
+                          {/* Apply gradient to the Menu icon directly */}
+                          <Menu
+                            size={24}
+                            style={{
+                              background:
+                                "linear-gradient(to right, #a855f7, #ec4899)", // Purple to pink gradient
+                              WebkitBackgroundClip: "text",
+                              WebkitTextFillColor: "transparent",
+                            }}
+                          />
                         </Button>
                       </DrawerTrigger>
                       <DrawerContent className="w-80 bg-gray-800 border-l border-gray-700 h-full mt-0 fixed bottom-0 right-0 rounded-none">
@@ -220,14 +232,7 @@ const PulseCheck = () => {
                         <YourJourneySidebar />{" "}
                         {/* Render the reusable sidebar component here */}
                         <DrawerFooter className="p-4 border-t border-gray-700">
-                          <DrawerClose asChild>
-                            <Button
-                              variant="outline"
-                              className="border-gray-600 text-white hover:bg-gray-700"
-                            >
-                              Close
-                            </Button>
-                          </DrawerClose>
+                          <DrawerClose asChild></DrawerClose>
                         </DrawerFooter>
                       </DrawerContent>
                     </Drawer>
