@@ -59,7 +59,7 @@ const PulseCheck = () => {
     };
     checkIsMobile();
     window.addEventListener("resize", checkIsMobile);
-    return () => removeEventListener("resize", checkIsMobile);
+    return () => window.removeEventListener("resize", checkIsMobile);
   }, []);
 
   const toggleMobileBars = () => {
@@ -176,225 +176,219 @@ const PulseCheck = () => {
 
   return (
     <div className="min-h-screen bg-[#16161a] text-white overflow-hidden flex">
-      {/* Main Content Area */}
-      <div className="flex-1 p-4 md:p-8">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-            <span className="text-lg font-medium">Infinite Life</span>
-          </div>
-          <Button
-            variant="outline"
-            className="border-gray-600 text-white hover:bg-gray-800 bg-transparent"
-          >
-            Login
-          </Button>
-        </div>
+      {/* Container for main content and sidebar */}
+      <div className="flex-1 flex flex-col">
+        {" "}
+        {/* This div will take up the main content area and stack header/body */}
+        <Header /> {/* Header is now inside this main content area */}
+        <div className="flex-1 p-4 md:p-4">
+          {" "}
+          {/* This flex-1 div contains the Pulse Check content */}
+          {/* Results Section - Now wrapped to accommodate mobile drawer */}
+          {isCompleted && (
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="w-full max-w-6xl mx-auto text-center">
+                <h1 className="text-3xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  Your Pulse Check Results
+                </h1>
 
-        {/* Results Section - Now wrapped to accommodate mobile drawer */}
-        {isCompleted && (
-          <div className="flex-1 flex flex-col items-center justify-center">
-            <div className="w-full max-w-6xl mx-auto text-center">
-              <h1 className="text-3xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Your Pulse Check Results
-              </h1>
-
-              <div className="flex justify-center items-center relative">
-                {/* Mobile Menu Trigger (Hamburger) - visible only on small screens */}
-                <div className="md:hidden absolute top-0 right-0">
-                  <Drawer
-                    direction="right"
-                    open={isSidebarDrawerOpen}
-                    onOpenChange={setIsSidebarDrawerOpen}
-                  >
-                    <DrawerTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="h-8 w-8 p-0 text-gray-400 hover:text-white"
-                      >
-                        <Menu className="h-6 w-6" />
-                      </Button>
-                    </DrawerTrigger>
-                    <DrawerContent className="w-80 bg-gray-800 border-l border-gray-700 h-full mt-0 fixed bottom-0 right-0 rounded-none">
-                      <DrawerHeader>
-                        <DrawerTitle className="sr-only">
-                          Your Journey Menu
-                        </DrawerTitle>
-                        <DrawerDescription className="sr-only">
-                          Navigation for your journey steps
-                        </DrawerDescription>
-                      </DrawerHeader>
-                      <YourJourneySidebar />{" "}
-                      {/* Render the reusable sidebar component here */}
-                      <DrawerFooter className="p-4 border-t border-gray-700">
-                        <DrawerClose asChild>
-                          <Button
-                            variant="outline"
-                            className="border-gray-600 text-white hover:bg-gray-700"
-                          >
-                            Close
-                          </Button>
-                        </DrawerClose>
-                      </DrawerFooter>
-                    </DrawerContent>
-                  </Drawer>
-                </div>
-              </div>
-
-              {aiLoading && (
-                <div className="mb-8">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto mb-4"></div>
-                  <p className="text-gray-300">
-                    Analyzing your responses with AI...
-                  </p>
-                </div>
-              )}
-
-              {aiResults && !aiLoading && (
-                <>
-                  <div className="mb-6 md:mb-8">
-                    <RadarChart
-                      data={aiResults}
-                      insights={aiResults.insights}
-                      confidenceLevel={confidenceLevelValue}
-                    />
-                  </div>
-
-                  <div className="flex justify-center mb-6 md:mb-8">
-                    <PulseCheckActions data={aiResults} />
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Pulse Check Interface */}
-        {!isCompleted && cardSequence.length > 0 && (
-          <div className="flex-1 flex flex-col">
-            {/* Header section with title and description */}
-            <div className="text-center py-4 md:py-8 px-4">
-              <h1 className="text-2xl md:text-4xl font-bold mb-2 md:mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Life Path Pulse Check
-              </h1>
-              <p className="text-gray-400 text-sm md:text-lg max-w-2xl mx-auto">
-                Swipe through insights about your life across four key areas.
-                Keep what resonates, pass what doesn't.
-              </p>
-            </div>
-
-            {/* Category Progress (Rings - Always shown, non-clickable) */}
-            <CategoryProgress categories={categoryProgressDataForComponents} />
-
-            {/* Mobile-only Collapsible Bar Graph Section */}
-            <div
-              className={`block md:hidden w-full max-w-5xl mx-auto px-4 sm:px-0 mb-6`}
-            >
-              <div
-                onClick={isMobileScreen ? toggleMobileBars : undefined}
-                className={`bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl p-3 cursor-pointer transition-all duration-300 ease-in-out overflow-hidden`}
-              >
-                <div
-                  className={`space-y-4 py-4 px-6 transition-all duration-300 ease-in-out ${
-                    isMobileBarsCollapsed
-                      ? "max-h-0 opacity-0"
-                      : "max-h-[200px] opacity-100"
-                  }`}
-                >
-                  {categoryProgressDataForComponents.map((category) => {
-                    const categoryColor =
-                      categoryColors[
-                        category.name as keyof typeof categoryColors
-                      ];
-                    const percentage =
-                      category.total > 0
-                        ? (category.completed / category.total) * 100
-                        : 0;
-                    return (
-                      <div
-                        key={category.name}
-                        className="flex items-center gap-4"
-                      >
-                        <span
-                          className={`text-sm font-semibold w-24 flex-shrink-0 ${categoryColor.text} pl-2`}
+                <div className="flex justify-center items-center relative">
+                  {/* Mobile Menu Trigger (Hamburger) - visible only on small screens */}
+                  <div className="md:hidden absolute top-0 right-0">
+                    <Drawer
+                      direction="right"
+                      open={isSidebarDrawerOpen}
+                      onOpenChange={setIsSidebarDrawerOpen}
+                    >
+                      <DrawerTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="h-8 w-8 p-0 text-gray-400 hover:text-white"
                         >
-                          {category.name}
-                        </span>
-                        <div className="flex-1 bg-gray-700 rounded-full h-2">
-                          <div
-                            className="h-full rounded-full transition-all duration-500 ease-out"
-                            style={{
-                              width: `${percentage}%`,
-                              background: `linear-gradient(to right, ${
-                                getGradientColors(category.name).start
-                              }, ${getGradientColors(category.name).end})`,
-                            }}
-                          ></div>
-                        </div>
-                        <span className="text-xs text-gray-400 font-medium w-10 text-right pr-2">
-                          {Math.round(percentage)}%
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* Confidence Level Bar */}
-            <ConfidenceLevelBar value={confidenceLevelValue} />
-
-            {/* "See Results Now" option - conditional display */}
-            <div className="text-center mb-4">
-              {showResultsOption && !isCompleted && (
-                <button
-                  onClick={handleShowResults}
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg text-base"
-                >
-                  See Results Now
-                </button>
-              )}
-              <p className="text-gray-400 text-sm mt-2">
-                {showResultsOption && !isCompleted
-                  ? "You can see your results now, or continue swiping."
-                  : "Answer at least one question from each category to see results."}
-              </p>
-            </div>
-
-            {/* Main card swiping area */}
-            <div className="flex-1 flex items-center justify-center px-4 md:px-8 pb-4 md:pb-8">
-              <div className="relative w-full max-w-md h-[250px] md:h-96 lg:h-[500px]">
-                {/* Render visible SwipeCards */}
-                {visibleCards.map((card, index) => (
-                  <SwipeCard
-                    key={card.id}
-                    card={card}
-                    onSwipe={handleSwipe}
-                    isActive={index === 0}
-                    zIndex={visibleCards.length - index}
-                  />
-                ))}
-
-                {visibleCards.length === 0 && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <p className="text-xl font-semibold mb-4">All done!</p>
-                      <button
-                        onClick={handleShowResults}
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors text-base"
-                      >
-                        See Your Results
-                      </button>
-                    </div>
+                          <Menu className="h-6 w-6" />
+                        </Button>
+                      </DrawerTrigger>
+                      <DrawerContent className="w-80 bg-gray-800 border-l border-gray-700 h-full mt-0 fixed bottom-0 right-0 rounded-none">
+                        <DrawerHeader>
+                          <DrawerTitle className="sr-only">
+                            Your Journey Menu
+                          </DrawerTitle>
+                          <DrawerDescription className="sr-only">
+                            Navigation for your journey steps
+                          </DrawerDescription>
+                        </DrawerHeader>
+                        <YourJourneySidebar />{" "}
+                        {/* Render the reusable sidebar component here */}
+                        <DrawerFooter className="p-4 border-t border-gray-700">
+                          <DrawerClose asChild>
+                            <Button
+                              variant="outline"
+                              className="border-gray-600 text-white hover:bg-gray-700"
+                            >
+                              Close
+                            </Button>
+                          </DrawerClose>
+                        </DrawerFooter>
+                      </DrawerContent>
+                    </Drawer>
                   </div>
+                </div>
+
+                {aiLoading && (
+                  <div className="mb-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto mb-4"></div>
+                    <p className="text-gray-300">
+                      Analyzing your responses with AI...
+                    </p>
+                  </div>
+                )}
+
+                {aiResults && !aiLoading && (
+                  <>
+                    <div className="mb-6 md:mb-8">
+                      <RadarChart
+                        data={aiResults}
+                        insights={aiResults.insights}
+                        confidenceLevel={confidenceLevelValue}
+                      />
+                    </div>
+
+                    <div className="flex justify-center mb-6 md:mb-8">
+                      <PulseCheckActions data={aiResults} />
+                    </div>
+                  </>
                 )}
               </div>
             </div>
-          </div>
-        )}
+          )}
+          {/* Pulse Check Interface */}
+          {!isCompleted && cardSequence.length > 0 && (
+            <div className="flex-1 flex flex-col">
+              {/* Header section with title and description */}
+              <div className="text-center py-3 md:py-6 px-4">
+                <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  Life Path Pulse Check
+                </h1>
+                <p className="text-gray-400 text-sm md:text-lg max-w-2xl mx-auto">
+                  Swipe through insights about your life across four key areas.
+                  Keep what resonates, pass what doesn't.
+                </p>
+              </div>
+
+              {/* Category Progress (Rings - Always shown, non-clickable) */}
+              <CategoryProgress
+                categories={categoryProgressDataForComponents}
+              />
+
+              {/* Mobile-only Collapsible Bar Graph Section */}
+              <div
+                className={`block md:hidden w-full max-w-5xl mx-auto px-4 sm:px-0 mb-4`}
+              >
+                <div
+                  onClick={isMobileScreen ? toggleMobileBars : undefined}
+                  className={`bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl p-3 cursor-pointer transition-all duration-300 ease-in-out overflow-hidden`}
+                >
+                  <div
+                    className={`space-y-4 py-4 px-6 transition-all duration-300 ease-in-out ${
+                      isMobileBarsCollapsed
+                        ? "max-h-0 opacity-0"
+                        : "max-h-[200px] opacity-100"
+                    }`}
+                  >
+                    {categoryProgressDataForComponents.map((category) => {
+                      const categoryColor =
+                        categoryColors[
+                          category.name as keyof typeof categoryColors
+                        ];
+                      const percentage =
+                        category.total > 0
+                          ? (category.completed / category.total) * 100
+                          : 0;
+                      return (
+                        <div
+                          key={category.name}
+                          className="flex items-center gap-4"
+                        >
+                          <span
+                            className={`text-sm font-semibold w-24 flex-shrink-0 ${categoryColor.text} pl-2`}
+                          >
+                            {category.name}
+                          </span>
+                          <div className="flex-1 bg-gray-700 rounded-full h-2">
+                            <div
+                              className="h-full rounded-full transition-all duration-500 ease-out"
+                              style={{
+                                width: `${percentage}%`,
+                                background: `linear-gradient(to right, ${
+                                  getGradientColors(category.name).start
+                                }, ${getGradientColors(category.name).end})`,
+                              }}
+                            ></div>
+                          </div>
+                          <span className="text-xs text-gray-400 font-medium w-10 text-right pr-2">
+                            {Math.round(percentage)}%
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Confidence Level Bar */}
+              <ConfidenceLevelBar value={confidenceLevelValue} />
+
+              {/* "See Results Now" option - conditional display */}
+              <div className="text-center mb-4">
+                {showResultsOption && !isCompleted && (
+                  <button
+                    onClick={handleShowResults}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg text-base"
+                  >
+                    See Results Now
+                  </button>
+                )}
+                <p className="text-gray-400 text-sm mt-2">
+                  {showResultsOption && !isCompleted
+                    ? "You can see your results now, or continue swiping."
+                    : "Answer at least one question from each category to see results."}
+                </p>
+              </div>
+
+              {/* Main card swiping area */}
+              <div className="flex-1 flex items-center justify-center px-4 md:px-8 pb-4 md:pb-8">
+                <div className="relative w-full max-w-md h-[250px] md:h-96 lg:h-[500px]">
+                  {/* Render visible SwipeCards */}
+                  {visibleCards.map((card, index) => (
+                    <SwipeCard
+                      key={card.id}
+                      card={card}
+                      onSwipe={handleSwipe}
+                      isActive={index === 0}
+                      zIndex={visibleCards.length - index}
+                    />
+                  ))}
+
+                  {visibleCards.length === 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                        <p className="text-xl font-semibold mb-4">All done!</p>
+                        <button
+                          onClick={handleShowResults}
+                          className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors text-base"
+                        >
+                          See Your Results
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-      {/* Progress Bar Sidebar - Visible only on desktop (md and up) */}
+      {/* Progress Bar Sidebar - Always visible on desktop (md and up) */}
       <div className="hidden md:block w-80 bg-gray-800 border-l border-gray-700 flex flex-col justify-end">
         <YourJourneySidebar />{" "}
         {/* Render the reusable sidebar component here */}
