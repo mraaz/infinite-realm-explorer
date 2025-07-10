@@ -2,13 +2,13 @@
 "use client";
 
 import React from "react";
-import { Check, Star, User, Target, Wrench, FileText } from "lucide-react"; // Import icons
+import { Check, Star, User, Target, Wrench, FileText } from "lucide-react";
 
 // Define the types for the sidebar steps for clarity and type safety
 interface Step {
   id: number;
   title: string;
-  icon: React.ElementType; // Lucide icon component
+  icon: React.ElementType;
   completed: boolean;
   current: boolean;
   type: "linear" | "branch" | "final";
@@ -78,31 +78,19 @@ export default function YourJourneySidebar() {
     return null;
   };
 
-  console.log("--- YourJourneySidebar Component Render ---");
-  console.log("Initial steps data:", steps);
-  console.log("Initial branchSteps data:", branchSteps);
-  console.log("Initial finalStep data:", finalStep);
-
   return (
-    <div className="w-80 bg-gray-800 border-l border-gray-700 p-6 h-full overflow-y-auto">
+    <div className="w-80 bg-gray-800 border-l border-gray-700 px-4 py-6 h-full overflow-hidden">
       <div className="sticky top-6">
         <h3 className="text-lg font-semibold mb-6 text-center">Your Journey</h3>
 
         <div className="relative">
           {/* Linear steps - centered */}
           <div className="relative flex flex-col items-center">
-            {/* Vertical line for linear steps */}
-            <div className="absolute left-1/2 top-12 w-0.5 h-20 bg-gray-600 transform -translate-x-0.5"></div>
+            {/* Vertical line for linear steps - Increased height to connect more segments */}
+            {/* Starts at top-12 (center of first icon), extends h-48 to cover multiple steps down to the pill */}
+            <div className="absolute left-1/2 top-12 w-0.5 h-48 bg-gray-600 transform -translate-x-0.5"></div>
 
             {steps.map((step) => {
-              // --- DEBUGGING LOGS FOR LINEAR STEPS ---
-              console.log(
-                `Processing linear step ID: ${step.id}, Title: "${step.title}"`
-              );
-              console.log(`Linear Step Icon Value:`, step.icon);
-              console.log(`Type of Linear Step Icon:`, typeof step.icon);
-              // --- END DEBUGGING LOGS ---
-
               const Icon = step.icon;
               return (
                 <div
@@ -124,15 +112,6 @@ export default function YourJourneySidebar() {
                       </h4>
                     </div>
 
-                    {/* Completed status to the right of circle */}
-                    {step.completed && (
-                      <div className="absolute -right-16 top-1/2 transform -translate-y-1/2">
-                        <span className="text-sm text-gray-400">
-                          Completed ✓
-                        </span>
-                      </div>
-                    )}
-
                     {/* Description below for non-completed steps */}
                     {!step.completed && (
                       <div className="text-center mt-2">
@@ -143,7 +122,7 @@ export default function YourJourneySidebar() {
                     )}
                   </div>
 
-                  {/* Step indicator */}
+                  {/* Step indicator (the circle) - now contains the "Completed" text */}
                   <div
                     className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full border-2 ${
                       step.completed
@@ -162,16 +141,23 @@ export default function YourJourneySidebar() {
                         }`}
                       />
                     )}
+
+                    {/* Completed status to the right of the circle */}
+                    {step.completed && (
+                      <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-1">
+                        <span className="text-sm text-gray-400 whitespace-nowrap">
+                          Completed ✓
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
             })}
           </div>
 
-          {/* Connection line from Future Self to Choose Your Path */}
-          <div className="flex justify-center mb-4">
-            <div className="w-0.5 h-8 bg-gray-600"></div>
-          </div>
+          {/* Removed the separate connection line from Future Self to Choose Your Path */}
+          {/* This section <div className="flex justify-center mb-4"> <div className="w-0.5 h-8 bg-gray-600"></div> </div> was removed */}
 
           {/* Choose Your Path pill */}
           <div className="flex justify-center mb-6">
@@ -186,14 +172,6 @@ export default function YourJourneySidebar() {
           {/* Branch steps side by side */}
           <div className="flex gap-8 justify-center mb-8">
             {branchSteps.map((step) => {
-              // --- DEBUGGING LOGS FOR BRANCH STEPS ---
-              console.log(
-                `Processing branch step ID: ${step.id}, Title: "${step.title}"`
-              );
-              console.log(`Branch Step Icon Value:`, step.icon);
-              console.log(`Type of Branch Step Icon:`, typeof step.icon);
-              // --- END DEBUGGING LOGS ---
-
               const Icon = step.icon;
               return (
                 <div key={step.id} className="flex flex-col items-center">

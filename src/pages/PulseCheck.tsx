@@ -174,10 +174,6 @@ const PulseCheck = () => {
       ? (totalAnsweredQuestions / totalPossibleQuestions) * 100
       : 0;
 
-  console.log("--- PulseCheck Component Render ---");
-  console.log("isCompleted:", isCompleted);
-  console.log("isSidebarDrawerOpen:", isSidebarDrawerOpen);
-
   return (
     <div className="min-h-screen bg-[#16161a] text-white overflow-hidden flex">
       {/* Main Content Area */}
@@ -205,15 +201,8 @@ const PulseCheck = () => {
               </h1>
 
               <div className="flex justify-center items-center relative">
-                {/* Added relative for hamburger positioning */}
-                {/* Confidence Level (positioned for alignment) */}
-                <div className="text-sm font-semibold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent absolute top-0 right-0 transform -translate-y-full mr-4">
-                  {/* Positioned relative to this flex container */}
-                  Confidence Level: {Math.round(confidenceLevelValue)}%
-                </div>
                 {/* Mobile Menu Trigger (Hamburger) - visible only on small screens */}
                 <div className="md:hidden absolute top-0 right-0">
-                  {/* Positioned to top right of results area */}
                   <Drawer
                     direction="right"
                     open={isSidebarDrawerOpen}
@@ -236,14 +225,8 @@ const PulseCheck = () => {
                           Navigation for your journey steps
                         </DrawerDescription>
                       </DrawerHeader>
-                      {/* --- DEBUGGING LOG FOR SIDEBAR IN DRAWER --- */}
-                      {console.log(
-                        "Rendering YourJourneySidebar in Drawer. isCompleted:",
-                        isCompleted
-                      )}
                       <YourJourneySidebar />{" "}
                       {/* Render the reusable sidebar component here */}
-                      {/* --- END DEBUGGING LOG --- */}
                       <DrawerFooter className="p-4 border-t border-gray-700">
                         <DrawerClose asChild>
                           <Button
@@ -413,14 +396,8 @@ const PulseCheck = () => {
       </div>
       {/* Progress Bar Sidebar - Visible only on desktop (md and up) */}
       <div className="hidden md:block w-80 bg-gray-800 border-l border-gray-700 p-6 h-screen overflow-y-auto">
-        {/* --- DEBUGGING LOG FOR DESKTOP SIDEBAR --- */}
-        {console.log(
-          "Rendering YourJourneySidebar on Desktop. isCompleted:",
-          isCompleted
-        )}
         <YourJourneySidebar />{" "}
         {/* Render the reusable sidebar component here */}
-        {/* --- END DEBUGGING LOG --- */}
       </div>
     </div>
   );
