@@ -285,52 +285,48 @@ const PulseCheck = () => {
                 className={`block md:hidden w-full max-w-5xl mx-auto px-4 sm:px-0 mb-4`}
               >
                 <div
-                  className={`cursor-pointer transition-all duration-300 ease-in-out overflow-hidden`}
+                  className={`space-y-4 py-4 px-6 transition-all duration-300 ease-in-out ${
+                    isMobileBarsCollapsed
+                      ? "max-h-0 opacity-0"
+                      : "max-h-[200px] opacity-100"
+                  }`}
                 >
-                  <div
-                    className={`space-y-4 py-4 px-6 transition-all duration-300 ease-in-out ${
-                      isMobileBarsCollapsed
-                        ? "max-h-0 opacity-0"
-                        : "max-h-[200px] opacity-100"
-                    }`}
-                  >
-                    {categoryProgressDataForComponents.map((category) => {
-                      const categoryColor =
-                        categoryColors[
-                          category.name as keyof typeof categoryColors
-                        ];
-                      const percentage =
-                        category.total > 0
-                          ? (category.completed / category.total) * 100
-                          : 0;
-                      return (
-                        <div
-                          key={category.name}
-                          className="flex items-center gap-4"
+                  {categoryProgressDataForComponents.map((category) => {
+                    const categoryColor =
+                      categoryColors[
+                        category.name as keyof typeof categoryColors
+                      ];
+                    const percentage =
+                      category.total > 0
+                        ? (category.completed / category.total) * 100
+                        : 0;
+                    return (
+                      <div
+                        key={category.name}
+                        className="flex items-center gap-4"
+                      >
+                        <span
+                          className={`text-sm font-semibold w-24 flex-shrink-0 ${categoryColor.text} pl-2`}
                         >
-                          <span
-                            className={`text-sm font-semibold w-24 flex-shrink-0 ${categoryColor.text} pl-2`}
-                          >
-                            {category.name}
-                          </span>
-                          <div className="flex-1 bg-gray-700 rounded-full h-2">
-                            <div
-                              className="h-full rounded-full transition-all duration-500 ease-out"
-                              style={{
-                                width: `${percentage}%`,
-                                background: `linear-gradient(to right, ${
-                                  getGradientColors(category.name).start
-                                }, ${getGradientColors(category.name).end})`,
-                              }}
-                            ></div>
-                          </div>
-                          <span className="text-xs text-gray-400 font-medium w-10 text-right pr-2">
-                            {Math.round(percentage)}%
-                          </span>
+                          {category.name}
+                        </span>
+                        <div className="flex-1 bg-gray-700 rounded-full h-2">
+                          <div
+                            className="h-full rounded-full transition-all duration-500 ease-out"
+                            style={{
+                              width: `${percentage}%`,
+                              background: `linear-gradient(to right, ${
+                                getGradientColors(category.name).start
+                              }, ${getGradientColors(category.name).end})`,
+                            }}
+                          ></div>
                         </div>
-                      );
-                    })}
-                  </div>
+                        <span className="text-xs text-gray-400 font-medium w-10 text-right pr-2">
+                          {Math.round(percentage)}%
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -387,11 +383,13 @@ const PulseCheck = () => {
           )}
         </div>
       </div>
-      {/* Progress Bar Sidebar - Always visible on desktop (md and up) */}
-      <div className="hidden md:block w-80 bg-gray-800 border-l border-gray-700 flex flex-col justify-end">
-        <YourJourneySidebar />{" "}
-        {/* Render the reusable sidebar component here */}
-      </div>
+      {/* Progress Bar Sidebar - Now conditionally rendered */}
+      {isCompleted && (
+        <div className="hidden md:block w-80 bg-gray-800 border-l border-gray-700 flex flex-col justify-end">
+          <YourJourneySidebar />{" "}
+          {/* Render the reusable sidebar component here */}
+        </div>
+      )}
     </div>
   );
 };
