@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface RadarChartProps {
   data: {
@@ -13,13 +13,18 @@ interface RadarChartProps {
     Health: string;
     Connections: string;
   };
+  confidenceLevel?: number; // Added optional confidenceLevel prop
 }
 
-const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
-  console.log('[RadarChart] Rendering with data:', data);
-  console.log('[RadarChart] Category positions being calculated...');
-  
-  const categories = ['Career', 'Finances', 'Health', 'Connections'] as const;
+const RadarChart: React.FC<RadarChartProps> = ({
+  data,
+  insights,
+  confidenceLevel,
+}) => {
+  console.log("[RadarChart] Rendering with data:", data);
+  console.log("[RadarChart] Category positions being calculated...");
+
+  const categories = ["Career", "Finances", "Health", "Connections"] as const;
   const svgSize = 400;
   const center = svgSize / 2;
   const chartRadius = 120;
@@ -27,7 +32,7 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
 
   // Calculate positions for each category (starting from top, going clockwise)
   const getAngleRadians = (index: number) => {
-    const degrees = (index * 90) - 90; // Start at top (-90°), then go clockwise
+    const degrees = index * 90 - 90; // Start at top (-90°), then go clockwise
     return (degrees * Math.PI) / 180;
   };
 
@@ -35,7 +40,9 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
   const polarToCartesian = (angle: number, radius: number) => {
     const x = center + radius * Math.cos(angle);
     const y = center + radius * Math.sin(angle);
-    console.log(`[RadarChart] Position calculated - angle: ${angle}, radius: ${radius}, x: ${x}, y: ${y}`);
+    console.log(
+      `[RadarChart] Position calculated - angle: ${angle}, radius: ${radius}, x: ${x}, y: ${y}`
+    );
     return { x, y };
   };
 
@@ -53,15 +60,17 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
     const angle = getAngleRadians(index);
     const position = polarToCartesian(angle, labelRadius);
     const value = data[category];
-    
-    console.log(`[RadarChart] Label for ${category}: value=${value}, position=(${position.x}, ${position.y})`);
-    
+
+    console.log(
+      `[RadarChart] Label for ${category}: value=${value}, position=(${position.x}, ${position.y})`
+    );
+
     return {
       category,
       value,
       x: position.x,
       y: position.y,
-      angle
+      angle,
     };
   });
 
@@ -74,16 +83,23 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
       x1: center,
       y1: center,
       x2: endPoint.x,
-      y2: endPoint.y
+      y2: endPoint.y,
     };
   });
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto relative">
+      {" "}
+      {/* Added relative for absolute positioning of confidence */}
+      {confidenceLevel !== undefined && ( // Conditionally render if confidenceLevel is provided
+        <div className="absolute top-0 right-0 text-sm font-semibold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+          Confidence level: {Math.round(confidenceLevel)}%
+        </div>
+      )}
       <div className="w-full flex justify-center mb-2">
-        <svg 
-          width={svgSize} 
-          height={svgSize} 
+        <svg
+          width={svgSize}
+          height={svgSize}
           viewBox={`0 0 ${svgSize} ${svgSize}`}
           className="w-full h-auto max-w-md md:max-w-lg"
         >
@@ -93,7 +109,13 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
               <stop offset="0%" stopColor="rgba(147, 51, 234, 0.1)" />
               <stop offset="100%" stopColor="rgba(147, 51, 234, 0.03)" />
             </radialGradient>
-            <linearGradient id="dataGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient
+              id="dataGradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%"
+            >
               <stop offset="0%" stopColor="rgba(147, 51, 234, 0.8)" />
               <stop offset="50%" stopColor="rgba(168, 85, 247, 0.6)" />
               <stop offset="100%" stopColor="rgba(196, 181, 253, 0.4)" />
@@ -139,7 +161,9 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
 
           {/* Data polygon */}
           <polygon
-            points={dataPoints.map(point => `${point.x},${point.y}`).join(' ')}
+            points={dataPoints
+              .map((point) => `${point.x},${point.y}`)
+              .join(" ")}
             fill="url(#dataGradient)"
             stroke="rgb(147, 51, 234)"
             strokeWidth="2"
@@ -160,12 +184,7 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
           ))}
 
           {/* Center point */}
-          <circle
-            cx={center}
-            cy={center}
-            r="3"
-            fill="rgb(147, 51, 234)"
-          />
+          <circle cx={center} cy={center} r="3" fill="rgb(147, 51, 234)" />
 
           {/* Category labels and scores */}
           {labelPositions.map((label) => (
@@ -179,13 +198,13 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
                 fill="white"
                 fontSize="12"
                 fontWeight="600"
-                style={{ 
-                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))'
+                style={{
+                  filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.8))",
                 }}
               >
                 {label.category}
               </text>
-              
+
               {/* Score number */}
               <text
                 x={label.x}
@@ -195,8 +214,8 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
                 fill="rgb(168, 85, 247)"
                 fontSize="24"
                 fontWeight="bold"
-                style={{ 
-                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))'
+                style={{
+                  filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.8))",
                 }}
               >
                 {label.value}
@@ -205,12 +224,14 @@ const RadarChart: React.FC<RadarChartProps> = ({ data, insights }) => {
           ))}
         </svg>
       </div>
-
       {/* AI Insights */}
       {insights && (
         <div className="mt-2 grid gap-4 md:grid-cols-2">
           {categories.map((category) => (
-            <div key={category} className="bg-gray-900/50 backdrop-blur-sm p-4 rounded-xl border border-gray-700">
+            <div
+              key={category}
+              className="bg-gray-900/50 backdrop-blur-sm p-4 rounded-xl border border-gray-700"
+            >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-3 h-3 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full"></div>
                 <h4 className="font-semibold text-white">{category}</h4>
