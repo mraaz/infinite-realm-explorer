@@ -285,8 +285,7 @@ const PulseCheck = () => {
                 className={`block md:hidden w-full max-w-5xl mx-auto px-4 sm:px-0 mb-4`}
               >
                 <div
-                  onClick={isMobileScreen ? toggleMobileBars : undefined}
-                  className={`bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl p-3 cursor-pointer transition-all duration-300 ease-in-out overflow-hidden`}
+                  className={`cursor-pointer transition-all duration-300 ease-in-out overflow-hidden`}
                 >
                   <div
                     className={`space-y-4 py-4 px-6 transition-all duration-300 ease-in-out ${
