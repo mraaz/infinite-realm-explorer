@@ -59,7 +59,7 @@ const PulseCheck = () => {
     };
     checkIsMobile();
     window.addEventListener("resize", checkIsMobile);
-    return () => window.removeEventListener("resize", checkIsMobile);
+    return () => removeEventListener("resize", checkIsMobile);
   }, []);
 
   const toggleMobileBars = () => {
@@ -395,7 +395,7 @@ const PulseCheck = () => {
         )}
       </div>
       {/* Progress Bar Sidebar - Visible only on desktop (md and up) */}
-      <div className="hidden md:block w-80 bg-gray-800 border-l border-gray-700 p-6 h-screen overflow-y-auto">
+      <div className="hidden md:block w-80 bg-gray-800 border-l border-gray-700 flex flex-col justify-end">
         <YourJourneySidebar />{" "}
         {/* Render the reusable sidebar component here */}
       </div>
