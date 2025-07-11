@@ -17,6 +17,10 @@ import {
   getCategoryCompletion,
 } from "@/utils/cardRandomization";
 import { useAIResults } from "@/hooks/useAIResults";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+// Removed uuidv4 import, as it will be generated on the backend
+import { useNavigate } from "react-router-dom";
 
 // Import sidebar component
 import YourJourneySidebar from "@/components/YourJourneySidebar";
@@ -43,24 +47,82 @@ const PulseCheck = () => {
   const [isCompleted, setIsCompleted] = useState(false);
   const [cardSequence, setCardSequence] = useState<PulseCheckCard[]>([]);
   const [showResultsOption, setShowResultsOption] = useState(false);
+  const [isSavingResults, setIsSavingResults] = useState(false);
 
-  // State for mobile bar graph collapse/expand, controlled here in PulseCheck
   const [isMobileBarsCollapsed, setIsMobileBarsCollapsed] = useState(true);
-
-  // State to determine if we are on a mobile screen size (client-side detection for conditional click)
   const [isMobileScreen, setIsMobileScreen] = useState(false);
-
-  // State to manage the mobile sidebar drawer open/close
   const [isSidebarDrawerOpen, setIsSidebarDrawerOpen] = useState(false);
+
+  const { user, isLoggedIn, authToken } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Determine if it's guest mode from URL
+  const isGuest =
+    new URLSearchParams(window.location.search).get("guest") === "true";
 
   useEffect(() => {
     const checkIsMobile = () => {
-      setIsMobileScreen(window.innerWidth < 768); // Tailwind's 'md' breakpoint
+      setIsMobileScreen(window.innerWidth < 768);
     };
     checkIsMobile();
     window.addEventListener("resize", checkIsMobile);
     return () => window.removeEventListener("resize", checkIsMobile);
   }, []);
+
+  // Effect to check if user has already completed Pulse Check and redirect
+  useEffect(() => {
+    const checkIfPulseCheckCompleted = async () => {
+      if (isLoggedIn && !isGuest && user?.sub && authToken) {
+        console.log(
+          "Checking if Pulse Check is already completed for user:",
+          user.sub
+        );
+        try {
+          // --- REPLACE THIS PLACEHOLDER URL WITH YOUR ACTUAL LAMBDA API GATEWAY ENDPOINT for CHECKING ---
+          const checkEndpoint = `https://ffwkwcix01.execute-api.us-east-1.amazonaws.com/prod/pulse-check-data/user/${user.sub}`;
+
+          const response = await fetch(checkEndpoint, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`,
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data.publicId) {
+              console.log(
+                "Pulse Check already completed. Redirecting to results page:",
+                data.publicId
+              );
+              navigate(`/pulse-check-results?id=${data.publicId}`);
+              toast({
+                title: "Welcome Back!",
+                description:
+                  "You've already completed your Pulse Check. Here are your results.",
+              });
+              return;
+            }
+          }
+          console.log(
+            "No existing Pulse Check data found or issue checking. User can proceed."
+          );
+        } catch (error) {
+          console.error("Error checking existing Pulse Check data:", error);
+          toast({
+            title: "Error",
+            description:
+              "Could not verify existing Pulse Check data. You may proceed.",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+
+    checkIfPulseCheckCompleted();
+  }, [isLoggedIn, isGuest, user, authToken, navigate, toast]);
 
   const toggleMobileBars = () => {
     setIsMobileBarsCollapsed((prev) => !prev);
@@ -123,11 +185,121 @@ const PulseCheck = () => {
     }
   };
 
+  // Trigger save only ONCE after aiResults are loaded AND isCompleted is true, AND user is signed in
+  useEffect(() => {
+    if (
+      isCompleted &&
+      aiResults &&
+      !aiLoading &&
+      !isSavingResults && // Ensure we only try to save once
+      isLoggedIn &&
+      !isGuest
+    ) {
+      console.log(
+        "AI Results available and user signed in. Attempting to save to DB."
+      );
+      savePulseCheckResultsToDB(aiResults);
+    }
+  }, [isCompleted, aiResults, aiLoading, isSavingResults, isLoggedIn, isGuest]); // Added isSavingResults to dependencies
+
+  const savePulseCheckResultsToDB = async (results: typeof aiResults) => {
+    if (!user || isGuest || !authToken) {
+      console.log(
+        "Not saving results: User is not signed in, is a guest, or token is missing."
+      );
+      toast({
+        title: "Sign in to save!",
+        description:
+          "Your results will be saved if you sign in. Otherwise, you can share an image or PDF.",
+        variant: "default",
+      });
+      return;
+    }
+
+    setIsSavingResults(true); // Indicate saving process has started
+    try {
+      const userId = user.sub;
+      const createdAt = new Date().toISOString();
+
+      const payload = {
+        userId: userId,
+        // publicId is now generated on the backend, removed from payload here
+        careerScore: results.Career,
+        financesScore: results.Finances,
+        healthScore: results.Health,
+        connectionsScore: results.Connections,
+        careerInsight: results.insights?.Career || "",
+        financesInsight: results.insights?.Finances || "",
+        healthInsight: results.insights?.Health || "",
+        connectionsInsight: results.insights?.Connections || "",
+        createdAt: createdAt,
+      };
+
+      console.log(
+        "Sending Pulse Check results payload to backend for saving:",
+        payload
+      );
+
+      // --- REPLACE THIS PLACEHOLDER URL WITH YOUR ACTUAL LAMBDA API GATEWAY ENDPOINT for SAVING ---
+      const lambdaEndpoint =
+        "https://ffwkwcix01.execute-api.us-east-1.amazonaws.com/prod/pulse-check-data";
+
+      const response = await fetch(lambdaEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message || "Failed to save Pulse Check results."
+        );
+      }
+
+      // Expecting the backend to return the generated publicId
+      const responseData = await response.json();
+      const receivedPublicId = responseData.publicId; // Assuming publicId is returned
+
+      if (!receivedPublicId) {
+        throw new Error("Backend did not return a public ID for the results.");
+      }
+
+      console.log(
+        "Pulse Check results saved successfully. Public ID:",
+        receivedPublicId
+      );
+      toast({
+        title: "Results Saved!",
+        description:
+          "Your Pulse Check results have been saved to your account.",
+      });
+
+      // Redirect to the public results page after successful save, using the ID from backend
+      navigate(`/pulse-check-results?id=${receivedPublicId}`);
+    } catch (error: any) {
+      console.error("Error saving Pulse Check results:", error);
+      toast({
+        title: "Save Failed",
+        description:
+          error.message ||
+          "Could not save your Pulse Check results. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingResults(false);
+    }
+  };
+
   const handleRetake = () => {
     setIsCompleted(false);
     setCurrentCardIndex(0);
     setAnswers({});
     setShowResultsOption(false);
+    setIsSavingResults(false);
 
     const initialFourCategoryCards = getInitialCategoryCards(pulseCheckCards);
     const remainingShuffled = getRemainingShuffledCards(
@@ -176,67 +348,50 @@ const PulseCheck = () => {
 
   return (
     <div className="min-h-screen bg-[#16161a] text-white overflow-hidden flex">
-      {/* Container for main content and sidebar */}
       <div className="flex-1 flex flex-col">
-        {" "}
-        {/* This div will take up the main content area and stack header/body */}
-        <Header /> {/* Header is now inside this main content area */}
+        <Header />
         <div className="flex-1 p-4 md:p-4">
-          {" "}
-          {/* This flex-1 div contains the Pulse Check content */}
-          {/* Results Section - Now wrapped to accommodate mobile drawer */}
           {isCompleted && (
             <div className="flex-1 flex flex-col items-center justify-center">
-              <div className="w-full max-w-6xl mx-auto text-center">
-                {/* Modified: Added flex and items-center to align title and icon */}
-                <div className="flex items-center justify-center relative mb-3">
-                  <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                    Your Pulse Check Results
-                  </h1>
+              <div className="w-full max-w-6xl mx-auto text-center relative">
+                <h1 className="text-3xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  Your Pulse Check Results
+                </h1>
 
-                  {/* Mobile Menu Trigger (Hamburger) - visible only on small screens */}
-                  {/* Adjusted positioning to be relative to the h1 container */}
-                  <div className="md:hidden absolute -right-2 top-1/2 transform -translate-y-1/2 ml-2 z-20">
-                    <Drawer
-                      direction="right"
-                      open={isSidebarDrawerOpen}
-                      onOpenChange={setIsSidebarDrawerOpen}
-                    >
-                      <DrawerTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          // Changed text-gray-300 to a gradient for the icon color
-                          className="h-10 w-10 p-0 rounded-full bg-gray-700 hover:bg-gray-600 border border-gray-600 shadow-lg"
-                        >
-                          {/* Apply gradient to the Menu icon directly */}
-                          <Menu
-                            size={24}
-                            style={{
-                              background:
-                                "linear-gradient(to right, #a855f7, #ec4899)", // Purple to pink gradient
-                              WebkitBackgroundClip: "text",
-                              WebkitTextFillColor: "transparent",
-                            }}
-                          />
-                        </Button>
-                      </DrawerTrigger>
-                      <DrawerContent className="w-80 bg-gray-800 border-l border-gray-700 h-full mt-0 fixed bottom-0 right-0 rounded-none">
-                        <DrawerHeader>
-                          <DrawerTitle className="sr-only">
-                            Your Journey Menu
-                          </DrawerTitle>
-                          <DrawerDescription className="sr-only">
-                            Navigation for your journey steps
-                          </DrawerDescription>
-                        </DrawerHeader>
-                        <YourJourneySidebar />{" "}
-                        {/* Render the reusable sidebar component here */}
-                        <DrawerFooter className="p-4 border-t border-gray-700">
-                          <DrawerClose asChild></DrawerClose>
-                        </DrawerFooter>
-                      </DrawerContent>
-                    </Drawer>
-                  </div>
+                <div className="md:hidden absolute top-4 right-4 z-20">
+                  <Drawer
+                    direction="right"
+                    open={isSidebarDrawerOpen}
+                    onOpenChange={setIsSidebarDrawerOpen}
+                  >
+                    <DrawerTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="h-10 w-10 p-0 rounded-full bg-gray-700 hover:bg-gray-600 border border-gray-600 shadow-lg"
+                      >
+                        <Menu
+                          size={24}
+                          style={{
+                            background:
+                              "linear-gradient(to right, #a855f7, #ec4899)",
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                          }}
+                        />
+                      </Button>
+                    </DrawerTrigger>
+                    <DrawerContent className="w-80 bg-gray-800 border-l border-gray-700 h-full mt-0 fixed bottom-0 right-0 rounded-none overflow-y-auto flex flex-col">
+                      <DrawerHeader>
+                        <DrawerTitle className="sr-only">
+                          Your Journey Menu
+                        </DrawerTitle>
+                        <DrawerDescription className="sr-only">
+                          Navigation for your journey steps
+                        </DrawerDescription>
+                      </DrawerHeader>
+                      <YourJourneySidebar />
+                    </DrawerContent>
+                  </Drawer>
                 </div>
 
                 {aiLoading && (
@@ -266,10 +421,8 @@ const PulseCheck = () => {
               </div>
             </div>
           )}
-          {/* Pulse Check Interface */}
           {!isCompleted && cardSequence.length > 0 && (
             <div className="flex-1 flex flex-col">
-              {/* Header section with title and description */}
               <div className="text-center py-3 md:py-6 px-4">
                 <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                   Life Path Pulse Check
@@ -280,12 +433,10 @@ const PulseCheck = () => {
                 </p>
               </div>
 
-              {/* Category Progress (Rings - Always shown, non-clickable) */}
               <CategoryProgress
                 categories={categoryProgressDataForComponents}
               />
 
-              {/* Mobile-only Collapsible Bar Graph Section */}
               <div
                 className={`block md:hidden w-full max-w-5xl mx-auto px-4 sm:px-0 mb-4`}
               >
@@ -335,10 +486,8 @@ const PulseCheck = () => {
                 </div>
               </div>
 
-              {/* Confidence Level Bar */}
               <ConfidenceLevelBar value={confidenceLevelValue} />
 
-              {/* "See Results Now" option - conditional display */}
               <div className="text-center mb-4">
                 {showResultsOption && !isCompleted && (
                   <button
@@ -355,10 +504,8 @@ const PulseCheck = () => {
                 </p>
               </div>
 
-              {/* Main card swiping area */}
               <div className="flex-1 flex items-center justify-center px-4 md:px-8 pb-4 md:pb-8">
                 <div className="relative w-full max-w-md h-[250px] md:h-96 lg:h-[500px]">
-                  {/* Render visible SwipeCards */}
                   {visibleCards.map((card, index) => (
                     <SwipeCard
                       key={card.id}
@@ -388,11 +535,9 @@ const PulseCheck = () => {
           )}
         </div>
       </div>
-      {/* Progress Bar Sidebar - Now conditionally rendered */}
       {isCompleted && (
         <div className="hidden md:block w-80 bg-gray-800 border-l border-gray-700 flex flex-col justify-end">
-          <YourJourneySidebar />{" "}
-          {/* Render the reusable sidebar component here */}
+          <YourJourneySidebar />
         </div>
       )}
     </div>
