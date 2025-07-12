@@ -276,30 +276,30 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
 
   return (
     <div className="flex flex-col h-full max-w-4xl mx-auto p-4">
-      {/* Enhanced Progress indicator with detailed logging */}
-      <div className="mb-6 p-5 bg-card/50 backdrop-blur-sm rounded-2xl border border-border/50 shadow-lg">
+      {/* Enhanced Progress indicator with gradient design */}
+      <div className="mb-6 p-5 bg-gradient-to-br from-gray-800/30 to-gray-900/50 border border-purple-500/20 rounded-2xl shadow-xl backdrop-blur-sm">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 text-sm">
           <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-gradient-cta animate-pulse"></div>
-            <span className="font-semibold text-foreground">
+            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-600 to-purple-700 animate-pulse shadow-lg"></div>
+            <span className="font-semibold text-white">
               Step {getCurrentStep()}: {getCurrentStepName()}
             </span>
-            <span className="text-muted-foreground">
+            <span className="text-purple-300">
               ({orderedCategories[currentCategoryIndex]})
             </span>
           </div>
           <div className="flex flex-col sm:items-end gap-1">
-            <span className="text-muted-foreground font-medium">
+            <span className="text-gray-300 font-medium">
               Question {currentQuestionIndex + 1} of {getQuestionCount(currentCategoryIndex)}
             </span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-gray-400">
               Overall: {progress.completed} of {progress.total} ({progressPercentage}%)
             </span>
           </div>
         </div>
-        <div className="w-full bg-muted/30 rounded-full h-3 mt-4 overflow-hidden">
+        <div className="w-full bg-gray-700/50 rounded-full h-3 mt-4 overflow-hidden border border-gray-600/30">
           <div 
-            className="bg-gradient-cta h-3 rounded-full transition-all duration-700 ease-out shadow-sm" 
+            className="bg-gradient-to-r from-purple-600 to-purple-700 h-3 rounded-full transition-all duration-700 ease-out shadow-lg shadow-purple-500/20" 
             style={{ width: `${progressPercentage}%` }}
           />
         </div>
@@ -327,7 +327,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
                 </div>
                 <div className={cn(
                   "text-[10px] font-bold uppercase tracking-wider",
-                  msg.role === "hero" ? "text-primary" : "text-gray-300"
+                  msg.role === "hero" ? "text-purple-300" : "text-gray-300"
                 )}>
                   {msg.role === "hero" ? "Future" : "Doubt"}
                 </div>
@@ -341,7 +341,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
               {msg.role !== "user" && (
                 <div className={cn(
                   "text-xs font-semibold mb-2 px-2",
-                  msg.role === "hero" ? "text-primary" : "text-gray-300"
+                  msg.role === "hero" ? "text-white" : "text-gray-300"
                 )}>
                   {msg.role === "hero" ? "Your Future Self speaks:" : "Your Inner Doubt whispers:"}
                 </div>
