@@ -1,12 +1,12 @@
 // /src/components/futureQuestionnaire/ConfirmationStep.tsx (Modified)
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Pillar } from "@/components/priority-ranking/types";
 import { questionnaireData } from "./questionnaireData";
 import { PrioritiesSummary } from "./PrioritiesSummary";
-import { ArrowLeft, Loader2 } from "lucide-react"; // Import Loader2 icon
+import { ArrowLeft, Loader2 } from "lucide-react";
 
 // --- Type Definitions ---
 type Priorities = {
@@ -17,13 +17,12 @@ type Priorities = {
 type PillarAnswers = Record<string, string>;
 type Answers = { [key in Pillar]?: PillarAnswers };
 
-// Add the new `isConfirming` prop to the interface
 interface ConfirmationStepProps {
   priorities: Priorities | null;
   answers: Answers;
   onConfirm: () => void;
   onPrevious: () => void;
-  isConfirming: boolean; // This prop will control the loading state
+  isConfirming: boolean;
 }
 
 const AnswerSummary: React.FC<{
@@ -55,8 +54,31 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   answers,
   onConfirm,
   onPrevious,
-  isConfirming, // Destructure the new prop
+  isConfirming,
 }) => {
+  useEffect(() => {
+    if (priorities && answers && Object.keys(answers).length > 0) {
+      const blueprintData = {
+        priorities,
+        answers,
+        savedAt: new Date().toISOString(),
+      };
+
+      try {
+        localStorage.setItem(
+          "futureSelfBlueprint",
+          JSON.stringify(blueprintData)
+        );
+        console.log(
+          "Future Self Blueprint data has been saved to local storage.",
+          blueprintData
+        );
+      } catch (error) {
+        console.error("Failed to save blueprint data to local storage:", error);
+      }
+    }
+  }, [priorities, answers]);
+
   if (!priorities) {
     return <div className="text-center text-gray-400">Loading summary...</div>;
   }
@@ -106,18 +128,14 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         </div>
       </div>
 
-      <div className="flex justify-between items-center pt-4">
+      {/* --- START: MODIFICATION --- */}
+      <div className="flex flex-col md:flex-row md:justify-between items-center gap-4 pt-4">
         <Button
           size="lg"
-          variant="outline"
-          className="bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700"
-          onClick={onPrevious}
-          disabled={isConfirming} // Disable button when confirming
+          onClick={onConfirm}
+          disabled={isConfirming}
+          className="w-full md:w-auto"
         >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Previous
-        </Button>
-        <Button size="lg" onClick={onConfirm} disabled={isConfirming}>
           {isConfirming ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -128,6 +146,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
           )}
         </Button>
       </div>
+      {/* --- END: MODIFICATION --- */}
     </div>
   );
 };
