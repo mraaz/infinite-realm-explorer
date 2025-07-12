@@ -36,16 +36,27 @@ const FutureQuestionnaire: React.FC = () => {
     handlePillarAnswersUpdate,
   } = useQuestionnaireState(user);
 
+  console.log("🔧 FutureQuestionnaire state:", {
+    step,
+    priorities,
+    answersCount: Object.keys(answers).length,
+    isArchitect
+  });
+
   const handlePrevious = () => setStep((prev) => Math.max(prev - 1, 1));
 
   const handleNext = async () => {
     setSaveError(null);
+    console.log("⏭️ Moving to next step from:", step);
+    
     if (user && authToken) {
       setIsSaving(true);
       try {
         await saveQuestionnaireProgress({ priorities, answers }, authToken);
+        console.log("💾 Progress saved successfully");
         setStep((prev) => prev + 1);
       } catch (error: any) {
+        console.error("❌ Save error:", error);
         setSaveError("Failed to save progress. Please try again.");
       } finally {
         setIsSaving(false);
@@ -56,7 +67,17 @@ const FutureQuestionnaire: React.FC = () => {
   };
 
   const handleConfirm = async () => {
-    // The final payload no longer includes an 'analysis' key
+    console.log("✅ Confirming questionnaire with data:", { priorities, answers });
+    
+    // Log final data structure for verification
+    console.log("📊 Final answer summary:");
+    Object.entries(answers).forEach(([pillar, pillarAnswers]) => {
+      console.log(`  ${pillar}:`, Object.keys(pillarAnswers).length, "answers");
+      Object.entries(pillarAnswers).forEach(([qId, answer]) => {
+        console.log(`    ${qId}: ${answer.substring(0, 50)}...`);
+      });
+    });
+
     const finalPayload = { priorities, answers };
     if (user && authToken) {
       await saveQuestionnaireProgress(finalPayload, authToken);
@@ -70,32 +91,45 @@ const FutureQuestionnaire: React.FC = () => {
     });
   };
 
-  // The total number of steps is now 3
   const totalSteps = 3;
 
   const isNextDisabled = (): boolean => {
     if (isSaving) return true;
-    if (!priorities) return true; // Priorities must be set for all steps past 1
+    if (!priorities) return true;
+
+    console.log("🔍 Checking if next is disabled for step:", step, {
+      priorities,
+      answersCount: Object.keys(answers).length
+    });
 
     switch (step) {
       case 1:
         // Step 1 is complete when all priorities are set
-        return (
-          !priorities.mainFocus ||
-          !priorities.secondaryFocus ||
-          priorities.maintenance.length !== 2
+        const step1Complete = (
+          priorities.mainFocus &&
+          priorities.secondaryFocus &&
+          priorities.maintenance.length === 2
         );
+        console.log("Step 1 complete:", step1Complete);
+        return !step1Complete;
       case 2:
-        // Step 2 is complete when the answers object is populated for all required pillars
+        // Step 2 is complete when answers exist for all 4 categories (main, secondary, 2 maintenance)
         const requiredPillars: Pillar[] = [
           priorities.mainFocus,
           priorities.secondaryFocus,
           ...priorities.maintenance,
         ];
-        // The button is disabled if any required pillar does not have an entry in the answers object
-        return requiredPillars.some((p) => !answers[p]);
+        
+        const allCategoriesAnswered = requiredPillars.every(pillar => {
+          const pillarAnswers = answers[pillar];
+          const hasAnswers = pillarAnswers && Object.keys(pillarAnswers).length > 0;
+          console.log(`${pillar} has answers:`, hasAnswers, pillarAnswers);
+          return hasAnswers;
+        });
+        
+        console.log("Step 2 complete (all categories answered):", allCategoriesAnswered);
+        return !allCategoriesAnswered;
       default:
-        // Disable by default on the confirmation step
         return true;
     }
   };
@@ -105,7 +139,8 @@ const FutureQuestionnaire: React.FC = () => {
       return <div className="text-center text-gray-500">Loading...</div>;
     }
 
-    // Render based on the new 3-step flow
+    console.log("🎨 Rendering step:", step, { priorities, totalAnswers: Object.keys(answers).length });
+
     switch (step) {
       case 1:
         return (
@@ -115,25 +150,33 @@ const FutureQuestionnaire: React.FC = () => {
           />
         );
       case 2:
-        // Render the new AI Chat component if priorities are set
         return (
           priorities && (
             <AIChatQuestionnaire
               priorities={priorities}
-              // The chat component will call this function with the complete answers object when done
-              onComplete={handlePillarAnswersUpdate}
+              onComplete={(completeAnswers) => {
+                console.log('🎯 AI Chat completed with answers:', completeAnswers);
+                
+                // Store answers directly - they're already in the correct format
+                Object.entries(completeAnswers).forEach(([pillar, pillarAnswers]) => {
+                  console.log(`📝 Updating answers for ${pillar}:`, pillarAnswers);
+                  handlePillarAnswersUpdate(pillar as Pillar, pillarAnswers);
+                });
+                
+                // Move to confirmation step
+                setStep(3);
+              }}
             />
           )
         );
       case 3:
-        // The final confirmation step
         return (
           <ConfirmationStep
             priorities={priorities}
             answers={answers}
             onConfirm={handleConfirm}
             onPrevious={handlePrevious}
-            isConfirming={false} // This can be removed or repurposed if needed
+            isConfirming={false}
           />
         );
       default:
@@ -157,10 +200,8 @@ const FutureQuestionnaire: React.FC = () => {
                 for the next five years.
               </p>
             </div>
-            {/* Pass the new totalSteps to the stepper */}
             <QuestionnaireSteps
               step={step}
-              totalSteps={totalSteps}
               isArchitect={isArchitect}
             />
             <div className="mt-10 min-h-[400px]">{renderCurrentStep()}</div>
@@ -173,6 +214,7 @@ const FutureQuestionnaire: React.FC = () => {
                 )}
                 <QuestionnaireNavigation
                   step={step}
+                  isArchitect={isArchitect}
                   onPrevious={step > 1 ? handlePrevious : undefined}
                   onNext={handleNext}
                   nextDisabled={isNextDisabled()}

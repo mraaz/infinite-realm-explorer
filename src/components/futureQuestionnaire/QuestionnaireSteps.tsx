@@ -1,14 +1,11 @@
-// /src/components/QuestionnaireSteps.tsx (Corrected)
 
 import React from "react";
 import { CheckCircle } from "lucide-react";
 
 const STEPS = [
   { id: 1, name: "Setting Priorities" },
-  { id: 2, name: "Main Focus" },
-  { id: 3, name: "Secondary Focus" },
-  { id: 4, name: "Maintenance" },
-  { id: 5, name: "Confirmation" },
+  { id: 2, name: "AI Chat Journey" },
+  { id: 3, name: "Confirmation" },
 ];
 
 const ARCHITECT_STEPS = [
@@ -33,9 +30,6 @@ export const QuestionnaireSteps: React.FC<QuestionnaireStepsProps> = ({
     <nav aria-label="Progress" className="mb-12">
       <ol role="list" className="flex items-center">
         {stepsToRender.map((s, stepIdx) => (
-          // FIXED: We now return a single <li> per step, avoiding React.Fragment
-          // and using a combination of flexbox and relative/absolute positioning
-          // for a more robust layout.
           <li key={s.id} className="relative flex-1">
             <div className="flex flex-col items-center text-center">
               {/* The step circle */}
