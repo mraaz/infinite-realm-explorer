@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react"; // Added useEffect
-import { Share2, Copy, Check, ExternalLink } from "lucide-react"; // Added Copy, Check, ExternalLink icons
-import { Button } from "@/components/ui/button"; // Still needed for the 'Preview' option or if reverting
+import React, { useState, useEffect } from "react";
+import { Share2, Copy, Check, ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { isGuestMode } from "@/utils/guestUtils";
@@ -18,14 +18,23 @@ interface ShareButtonProps {
 
 const ShareButton = ({ data }: ShareButtonProps) => {
   const [shareUrl, setShareUrl] = useState<string>("");
-  const [copied, setCopied] = useState(false); // State to show 'Copied!' feedback on icon
-  const [showLoginModal, setShowLoginModal] = useState(false); // For guest flow, if needed
+  const [copied, setCopied] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [canNativeShare, setCanNativeShare] = useState(false); // New state to check for native share support
+
   const { toast } = useToast();
-  const { isLoggedIn } = useAuth(); // Only need isLoggedIn here for guest check
+  const { isLoggedIn } = useAuth();
   const location = useLocation();
 
   const isGuest = isGuestMode(isLoggedIn);
   const isTrulyAuthenticated = isLoggedIn && !isGuest;
+
+  // Check for native share support on component mount
+  useEffect(() => {
+    if (navigator.share && navigator.canShare) {
+      setCanNativeShare(true);
+    }
+  }, []);
 
   // Generate the share URL once the component mounts or location changes
   useEffect(() => {
@@ -39,12 +48,12 @@ const ShareButton = ({ data }: ShareButtonProps) => {
         );
       } else {
         console.warn("Public ID not found in URL for shareable link.");
-        setShareUrl(""); // Clear URL if ID is missing
+        setShareUrl("");
       }
     }
   }, [isTrulyAuthenticated, location.search]);
 
-  // Function to handle the actual copying to clipboard
+  // Function to handle copying to clipboard (only copy, no native share attempt here)
   const handleCopyLink = async () => {
     if (!shareUrl) {
       toast({
@@ -55,32 +64,6 @@ const ShareButton = ({ data }: ShareButtonProps) => {
       return;
     }
 
-    // Try native sharing first (for mobile devices)
-    if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) {
-      try {
-        console.log("[ShareButton] Attempting native share...");
-        await navigator.share({
-          title: "My Life Path Pulse Check Results",
-          text: "Check out my Life Path Pulse Check results!",
-          url: shareUrl,
-        });
-        console.log("[ShareButton] Native share successful");
-        toast({
-          title: "Results Shared!",
-          description:
-            "Your pulse check results have been shared successfully via native share.",
-        });
-        return; // Exit if native share was successful
-      } catch (shareError) {
-        console.log(
-          "[ShareButton] Native share failed, falling back to copy:",
-          shareError
-        );
-        // Fall through to copy to clipboard
-      }
-    }
-
-    // Fallback: Copy to clipboard
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
@@ -88,10 +71,10 @@ const ShareButton = ({ data }: ShareButtonProps) => {
         title: "Link Copied!",
         description: "The share link has been copied to your clipboard.",
       });
-      setTimeout(() => setCopied(false), 2000); // Reset 'copied' state after 2 seconds
+      setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error("Failed to copy link:", error);
-      // Fallback for older browsers or restricted environments if clipboard API fails
+      console.error("Failed to copy link via clipboard API:", error);
+      // Fallback for older browsers/restricted environments if clipboard API fails
       const textArea = document.createElement("textarea");
       textArea.value = shareUrl;
       document.body.appendChild(textArea);
@@ -105,6 +88,54 @@ const ShareButton = ({ data }: ShareButtonProps) => {
           "The share link has been copied to your clipboard (fallback).",
       });
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // Function to handle native sharing
+  const handleNativeShare = async () => {
+    if (!shareUrl) {
+      toast({
+        title: "Error",
+        description: "Share link not available.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (canNativeShare) {
+      try {
+        await navigator.share({
+          title: "My Life Path Pulse Check Results",
+          text: "Check out my Life Path Pulse Check results!",
+          url: shareUrl,
+        });
+        toast({
+          title: "Results Shared!",
+          description:
+            "Your pulse check results have been shared successfully.",
+        });
+      } catch (error) {
+        console.error("Native share failed:", error);
+        if (error instanceof DOMException && error.name === "AbortError") {
+          // User cancelled share
+          console.log("Native share cancelled by user.");
+        } else {
+          toast({
+            title: "Sharing Failed",
+            description:
+              "Could not open native share sheet. Please try copying the link.",
+            variant: "destructive",
+          });
+        }
+      }
+    } else {
+      toast({
+        title: "Error",
+        description: "Native sharing is not supported on this device/browser.",
+        variant: "destructive",
+      });
+      // Optionally, fall back to copy if native share isn't supported and this button is clicked
+      handleCopyLink();
     }
   };
 
@@ -125,10 +156,11 @@ const ShareButton = ({ data }: ShareButtonProps) => {
     return (
       <>
         <Button
-          onClick={() => setShowLoginModal(true)} // Opens login modal for guests
+          onClick={() => setShowLoginModal(true)}
           className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 transition-all duration-300 hover:scale-105"
         >
-          <UserPlus size={18} className="mr-2" />
+          <Share2 size={18} className="mr-2" />{" "}
+          {/* Changed icon to Share2 for guest prompt */}
           Sign Up for Magic Links
         </Button>
         <PulseCheckLoginModal
@@ -151,7 +183,7 @@ const ShareButton = ({ data }: ShareButtonProps) => {
           value={shareUrl}
           readOnly
           className="w-full pl-3 pr-10 py-2 rounded-md bg-gray-800 text-gray-300 border border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-          placeholder="Generating share link..."
+          placeholder="Loading share link..."
         />
         {/* Optional: Add a small preview button inside the input or next to it */}
         {shareUrl && (
@@ -178,6 +210,18 @@ const ShareButton = ({ data }: ShareButtonProps) => {
           <Copy size={20} />
         )}
       </Button>
+
+      {/* NEW: Native Share button - appears only if supported */}
+      {canNativeShare && (
+        <Button
+          onClick={handleNativeShare}
+          variant="outline"
+          className="h-10 w-10 p-0 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 transition-all duration-300 hover:scale-105"
+          aria-label="Share via native options"
+        >
+          <Share2 size={20} />
+        </Button>
+      )}
     </div>
   );
 };

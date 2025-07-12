@@ -46,7 +46,6 @@ const PulseCheckActions = ({ data }: PulseCheckActionsProps) => {
           >
             Proceed to Future Self
           </Button>
-          <DownloadPdfButton data={data} />
 
           {/* Create Magic Link Button - direct ShareButton for authenticated users */}
           {isAuthenticated ? (
