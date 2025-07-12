@@ -1,8 +1,12 @@
-
-import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { savePulseCheckData } from '@/utils/pulseCheckStorage';
-import SocialLoginButtons from '@/components/SocialLoginButtons';
+import React from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { savePulseCheckData } from "@/utils/pulseCheckStorage";
+import SocialLoginButtons from "@/components/SocialLoginButtons";
 
 interface PulseCheckLoginModalProps {
   open: boolean;
@@ -14,27 +18,32 @@ interface PulseCheckLoginModalProps {
     Health: number;
     Connections: number;
   };
+  // New prop to specify the return path after successful authentication
+  returnPathAfterAuth?: string;
 }
 
-const PulseCheckLoginModal = ({ 
-  open, 
-  onOpenChange, 
+const PulseCheckLoginModal = ({
+  open,
+  onOpenChange,
   onSuccessfulAuth,
-  pulseCheckData 
+  pulseCheckData,
+  returnPathAfterAuth, // Destructure the new prop
 }: PulseCheckLoginModalProps) => {
-
   const handleLoginClick = () => {
     // Save pulse check data before authentication if provided
     if (pulseCheckData) {
       savePulseCheckData(pulseCheckData);
     }
 
-    // Store return information for after auth
-    sessionStorage.setItem('pulse_check_auth_return', JSON.stringify({
-      data: pulseCheckData,
-      returnUrl: window.location.href,
-      action: 'share'
-    }));
+    // Store return information for after auth, using returnPathAfterAuth if provided
+    sessionStorage.setItem(
+      "pulse_check_auth_return",
+      JSON.stringify({
+        data: pulseCheckData,
+        returnUrl: returnPathAfterAuth || window.location.href, // Use the new prop here
+        action: "share",
+      })
+    );
 
     // Close modal - the SocialLoginButtons will handle the authentication flow
     onOpenChange(false);
@@ -52,21 +61,20 @@ const PulseCheckLoginModal = ({
             Share Your Pulse Check
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-6 pt-4">
           <div className="text-center">
             <p className="text-gray-300 text-sm mb-4">
-              Create an account to generate magic links and share your results with friends
+              Create an account to generate magic links and share your results
+              with friends
             </p>
           </div>
 
-          <SocialLoginButtons 
-            onLoginClick={handleLoginClick}
-            inModal={true}
-          />
+          <SocialLoginButtons onLoginClick={handleLoginClick} inModal={true} />
 
           <p className="text-center text-xs text-gray-500">
-            Sign up to unlock magic links and start sharing your results with friends
+            Sign up to unlock magic links and start sharing your results with
+            friends
           </p>
         </div>
       </DialogContent>

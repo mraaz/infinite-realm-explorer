@@ -19,8 +19,7 @@ import {
 import { useAIResults } from "@/hooks/useAIResults";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-// Removed uuidv4 import, as it will be generated on the backend
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom"; // Import useLocation
 
 // Import sidebar component
 import YourJourneySidebar from "@/components/YourJourneySidebar";
@@ -56,10 +55,23 @@ const PulseCheck = () => {
   const { user, isLoggedIn, authToken } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation(); // Initialize useLocation
 
   // Determine if it's guest mode from URL
   const isGuest =
     new URLSearchParams(window.location.search).get("guest") === "true";
+
+  // --- NEW useEffect for redirection logic ---
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const guestParam = params.get("guest");
+
+    // If guest=true is in the URL AND the user is logged in, redirect
+    if (guestParam === "true" && isLoggedIn) {
+      console.log("Logged-in user accessed with ?guest=true. Redirecting...");
+      navigate("/pulse-check", { replace: true }); // Use replace to avoid adding to history stack
+    }
+  }, [isLoggedIn, location.search, navigate]); // Depend on isLoggedIn and location.search
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -73,6 +85,7 @@ const PulseCheck = () => {
   // Effect to check if user has already completed Pulse Check and redirect
   useEffect(() => {
     const checkIfPulseCheckCompleted = async () => {
+      // Only proceed if user is logged in and NOT in guest mode (i.e., truly authenticated)
       if (isLoggedIn && !isGuest && user?.sub && authToken) {
         console.log(
           "Checking if Pulse Check is already completed for user:",
@@ -193,7 +206,7 @@ const PulseCheck = () => {
       !aiLoading &&
       !isSavingResults && // Ensure we only try to save once
       isLoggedIn &&
-      !isGuest
+      !isGuest // Crucial: only save if truly logged in and not in guest URL mode
     ) {
       console.log(
         "AI Results available and user signed in. Attempting to save to DB."
@@ -204,6 +217,7 @@ const PulseCheck = () => {
 
   const savePulseCheckResultsToDB = async (results: typeof aiResults) => {
     if (!user || isGuest || !authToken) {
+      // Re-check conditions here for safety
       console.log(
         "Not saving results: User is not signed in, is a guest, or token is missing."
       );
@@ -348,6 +362,7 @@ const PulseCheck = () => {
 
   return (
     <div className="min-h-screen bg-[#16161a] text-white overflow-hidden flex">
+      {" "}
       <div className="flex-1 flex flex-col">
         <Header />
         <div className="flex-1 p-4 md:p-4">
@@ -464,6 +479,7 @@ const PulseCheck = () => {
                         <span
                           className={`text-sm font-semibold w-24 flex-shrink-0 ${categoryColor.text} pl-2`}
                         >
+                          {" "}
                           {category.name}
                         </span>
                         <div className="flex-1 bg-gray-700 rounded-full h-2">
@@ -478,6 +494,7 @@ const PulseCheck = () => {
                           ></div>
                         </div>
                         <span className="text-xs text-gray-400 font-medium w-10 text-right pr-2">
+                          {" "}
                           {Math.round(percentage)}%
                         </span>
                       </div>
