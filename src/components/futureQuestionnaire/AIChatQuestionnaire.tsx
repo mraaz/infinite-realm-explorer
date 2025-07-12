@@ -42,7 +42,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<Pillar, Record<string, string>>>({});
+  const [answers, setAnswers] = useState<Partial<Record<Pillar, Record<string, string>>>>({});
   const [hasStarted, setHasStarted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -239,7 +239,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
             console.log(`    ${qId}: ${answer.substring(0, 50)}...`);
           });
         });
-        onComplete(updatedAnswers);
+        onComplete(updatedAnswers as Record<Pillar, Record<string, string>>);
       }
     }
   };
