@@ -327,7 +327,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
                 </div>
                 <div className={cn(
                   "text-[10px] font-bold uppercase tracking-wider",
-                  msg.role === "hero" ? "text-primary" : "text-black"
+                  msg.role === "hero" ? "text-primary" : "text-gray-300"
                 )}>
                   {msg.role === "hero" ? "Future" : "Doubt"}
                 </div>
@@ -341,7 +341,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
               {msg.role !== "user" && (
                 <div className={cn(
                   "text-xs font-semibold mb-2 px-2",
-                  msg.role === "hero" ? "text-primary" : "text-black"
+                  msg.role === "hero" ? "text-primary" : "text-gray-300"
                 )}>
                   {msg.role === "hero" ? "Your Future Self speaks:" : "Your Inner Doubt whispers:"}
                 </div>
@@ -353,7 +353,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
                   ? "bg-primary text-primary-foreground ml-auto"
                   : msg.role === "hero"
                   ? "bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 text-purple-900"
-                  : "bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 text-gray-800"
+                  : "bg-gray-700 border border-gray-600 text-gray-100"
               )}>
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">
                   {msg.content}
@@ -394,7 +394,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
           value={currentInput}
           onChange={(e) => setCurrentInput(e.target.value)}
           placeholder="Share your thoughts..."
-          className="flex-1 min-h-[60px] resize-none bg-background/50 backdrop-blur-sm border-border/50"
+          className="flex-1 min-h-[60px] resize-none bg-card border border-border text-foreground placeholder:text-muted-foreground"
           disabled={isLoading}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
