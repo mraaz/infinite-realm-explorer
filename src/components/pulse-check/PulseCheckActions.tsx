@@ -5,7 +5,7 @@ import DownloadPdfButton from "./DownloadPdfButton";
 import ShareButton from "./ShareButton";
 import PulseCheckLoginModal from "./PulseCheckLoginModal";
 import { useAuth } from "@/contexts/AuthContext";
-import { isGuestMode } from "@/utils/guestUtils";
+import { isGuestMode } from "@/utils/guestUtils"; // Import isGuestMode
 
 interface PulseCheckActionsProps {
   data: {
@@ -18,14 +18,17 @@ interface PulseCheckActionsProps {
 
 const PulseCheckActions = ({ data }: PulseCheckActionsProps) => {
   const [loginModalOpen, setLoginModalOpen] = useState(false);
-  const { user } = useAuth();
-  const isGuest = isGuestMode();
+  const { user, isLoggedIn } = useAuth(); // Destructure isLoggedIn from useAuth
 
-  const isAuthenticated = user && !isGuest;
+  // Pass isLoggedIn to isGuestMode
+  const isGuest = isGuestMode(isLoggedIn);
+
+  const isAuthenticated = isLoggedIn && !isGuest; // Revert to robust check
 
   const handleMagicLinkClick = () => {
     // For guests, open login modal
     if (!isAuthenticated) {
+      // This condition will now correctly check if the user is truly unauthenticated/a guest
       setLoginModalOpen(true);
     }
   };
@@ -35,7 +38,6 @@ const PulseCheckActions = ({ data }: PulseCheckActionsProps) => {
       <div className="flex flex-col items-center space-y-4 mt-8">
         {/* Two main action buttons */}
         <div className="flex flex-col w-full max-w-sm space-y-3">
-          {/* Download as PDF Button - Always available */}
           {/* New Future Self Button */}
           <Button
             onClick={() => (window.location.href = "/future-questionnaire")} // Simple redirect for now
@@ -72,13 +74,8 @@ const PulseCheckActions = ({ data }: PulseCheckActionsProps) => {
         open={loginModalOpen}
         onOpenChange={setLoginModalOpen}
         pulseCheckData={data}
-        onSuccessfulAuth={() => {
-          // After successful auth, the user will be redirected back
-          // and the ShareButton will be available
-          console.log(
-            "[PulseCheckActions] Auth successful, user will be redirected"
-          );
-        }}
+        // Pass the desired return URL explicitly
+        returnPathAfterAuth="/pulse-check"
       />
     </>
   );
