@@ -34,7 +34,6 @@ const FutureQuestionnaire: React.FC = () => {
     answers,
     handlePrioritiesComplete,
     handlePillarAnswersUpdate,
-    setAnswers,
   } = useQuestionnaireState(user);
 
   console.log("🔧 FutureQuestionnaire state:", {
@@ -70,12 +69,14 @@ const FutureQuestionnaire: React.FC = () => {
   const handleConfirm = async () => {
     console.log("✅ Confirming questionnaire with data:", { priorities, answers });
     
-    // Handle AWS backend format safely
-    if (answers?.history && Array.isArray(answers.history)) {
-      console.log("📊 AWS format - conversation history length:", answers.history.length);
-    } else {
-      console.log("📊 Traditional format - answer keys:", Object.keys(answers));
-    }
+    // Log final data structure for verification
+    console.log("📊 Final answer summary:");
+    Object.entries(answers).forEach(([pillar, pillarAnswers]) => {
+      console.log(`  ${pillar}:`, Object.keys(pillarAnswers).length, "answers");
+      Object.entries(pillarAnswers).forEach(([qId, answer]) => {
+        console.log(`    ${qId}: ${answer.substring(0, 50)}...`);
+      });
+    });
 
     const finalPayload = { priorities, answers };
     if (user && authToken) {
@@ -112,20 +113,7 @@ const FutureQuestionnaire: React.FC = () => {
         console.log("Step 1 complete:", step1Complete);
         return !step1Complete;
       case 2:
-        // Step 2 is complete when all 6 dialogues are finished
-        // Check if answers has the AWS backend format (history array)
-        console.log("🔍 Step 2 check - answers structure:", answers);
-        
-        if (answers && answers.history && Array.isArray(answers.history)) {
-          const dialogueCount = Math.floor(answers.history.filter(
-            (m: any) => m.role === "hero" || m.role === "doubt"
-          ).length / 2);
-          const step2Complete = dialogueCount >= 6; // 2+2+1+1 dialogues
-          console.log("Step 2 complete (6 dialogues finished):", step2Complete, "dialogues:", dialogueCount);
-          return !step2Complete;
-        }
-        
-        // Fallback: Check traditional pillar answers format
+        // Step 2 is complete when answers exist for all 4 categories (main, secondary, 2 maintenance)
         const requiredPillars: Pillar[] = [
           priorities.mainFocus,
           priorities.secondaryFocus,
@@ -139,7 +127,7 @@ const FutureQuestionnaire: React.FC = () => {
           return hasAnswers;
         });
         
-        console.log("Step 2 complete (fallback check):", allCategoriesAnswered);
+        console.log("Step 2 complete (all categories answered):", allCategoriesAnswered);
         return !allCategoriesAnswered;
       default:
         return true;
@@ -166,11 +154,14 @@ const FutureQuestionnaire: React.FC = () => {
           priorities && (
             <AIChatQuestionnaire
               priorities={priorities}
-              onComplete={(finalState) => {
-                console.log('🎯 AI Chat completed with final state:', finalState);
+              onComplete={(completeAnswers) => {
+                console.log('🎯 AI Chat completed with answers:', completeAnswers);
                 
-                // Store the AWS backend format directly in answers
-                setAnswers(finalState.answers);
+                // Store answers directly - they're already in the correct format
+                Object.entries(completeAnswers).forEach(([pillar, pillarAnswers]) => {
+                  console.log(`📝 Updating answers for ${pillar}:`, pillarAnswers);
+                  handlePillarAnswersUpdate(pillar as Pillar, pillarAnswers);
+                });
                 
                 // Move to confirmation step
                 setStep(3);
