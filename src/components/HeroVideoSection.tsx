@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import useOnScreen from "@/hooks/useOnScreen";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -15,41 +16,90 @@ const HeroVideoSection = () => {
   const [showControls, setShowControls] = useState(false);
   const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isVideoReady, setIsVideoReady] = useState(false);
 
-  // Detect iOS
+  // Enhanced iOS detection
   useEffect(() => {
     const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
+                       /Safari/.test(navigator.userAgent) && /Mobile/.test(navigator.userAgent);
     setIsIOS(isIOSDevice);
+    console.log('iOS Device detected:', isIOSDevice);
   }, []);
 
-  // Handle play/pause based on focus
+  // Video event listeners for iOS
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleCanPlay = () => {
+      console.log('Video canplay event fired');
+      setIsVideoReady(true);
+    };
+
+    const handleLoadStart = () => {
+      console.log('Video loadstart event fired');
+    };
+
+    const handleSuspend = () => {
+      console.log('Video suspend event fired (iOS behavior)');
+    };
+
+    const handleWaiting = () => {
+      console.log('Video waiting event fired');
+    };
+
+    video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('loadstart', handleLoadStart);
+    video.addEventListener('suspend', handleSuspend);
+    video.addEventListener('waiting', handleWaiting);
+
+    return () => {
+      video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('loadstart', handleLoadStart);
+      video.removeEventListener('suspend', handleSuspend);
+      video.removeEventListener('waiting', handleWaiting);
+    };
+  }, []);
+
+  // Unified autoplay strategy for all devices
   useEffect(() => {
     const video = videoRef.current;
     if (!video || hasError || needsUserInteraction) return;
 
-    if (isOnScreen && isLoaded) {
+    if (isOnScreen && (isLoaded || isVideoReady)) {
+      // Always try autoplay with muted=true for all devices, including iOS
+      video.muted = true;
+      setIsMuted(true);
+      
       const playPromise = video.play();
       if (playPromise !== undefined) {
-        playPromise.catch((error) => {
-          console.log("Auto-play prevented:", error);
-          if (isIOS || error.name === "NotAllowedError") {
+        playPromise.then(() => {
+          console.log('Autoplay successful');
+        }).catch((error) => {
+          console.log('Autoplay prevented:', error.name, error.message);
+          
+          // For iOS or any NotAllowedError, show user interaction overlay
+          if (error.name === "NotAllowedError" || error.name === "NotSupportedError") {
             setNeedsUserInteraction(true);
           } else {
+            console.error('Video play error:', error);
             setHasError(true);
           }
         });
       }
-    } else {
+    } else if (!isOnScreen) {
       video.pause();
     }
-  }, [isOnScreen, isLoaded, hasError, needsUserInteraction, isIOS]);
+  }, [isOnScreen, isLoaded, isVideoReady, hasError, needsUserInteraction]);
 
   const handleVideoLoad = () => {
+    console.log('Video loaded');
     setIsLoaded(true);
   };
 
-  const handleVideoError = () => {
+  const handleVideoError = (event: any) => {
+    console.error('Video error:', event);
     setHasError(true);
   };
 
@@ -65,11 +115,19 @@ const HeroVideoSection = () => {
     const video = videoRef.current;
     if (!video) return;
 
+    console.log('User initiated play');
     setNeedsUserInteraction(false);
+    
+    // Start muted for iOS compatibility
+    video.muted = true;
+    setIsMuted(true);
+    
     const playPromise = video.play();
     if (playPromise !== undefined) {
-      playPromise.catch((error) => {
-        console.log("Manual play failed:", error);
+      playPromise.then(() => {
+        console.log('User play successful');
+      }).catch((error) => {
+        console.error('User play failed:', error);
         setHasError(true);
       });
     }
@@ -109,10 +167,8 @@ const HeroVideoSection = () => {
           muted={isMuted}
           loop
           playsInline
-          webkit-playsinline="true"
-          autoPlay={!isIOS}
-          controls={needsUserInteraction}
-          preload={isMobile || isIOS ? "none" : "metadata"}
+          webkit-playsinline
+          preload={isIOS ? "none" : "metadata"}
           onLoadedData={handleVideoLoad}
           onError={handleVideoError}
           poster="/placeholder.svg"
@@ -141,17 +197,20 @@ const HeroVideoSection = () => {
           </div>
         </div>
 
-        {/* Tap to Play Overlay for iOS/blocked autoplay */}
+        {/* Enhanced Tap to Play Overlay for iOS/blocked autoplay */}
         {needsUserInteraction && (
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-10">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-10 text-center px-4">
             <Button
               onClick={handleUserPlay}
               size="lg"
-              className="bg-white/90 hover:bg-white text-black hover:text-black min-w-[64px] min-h-[64px] rounded-full shadow-lg"
+              className="bg-white/95 hover:bg-white text-black hover:text-black min-w-[80px] min-h-[80px] rounded-full shadow-xl mb-4 transition-all duration-200 hover:scale-105"
               aria-label="Play video"
             >
-              <Play className="h-8 w-8 ml-1" />
+              <Play className="h-10 w-10 ml-1" />
             </Button>
+            <p className="text-white text-sm opacity-90 max-w-xs">
+              {isIOS ? "Tap to play video" : "Click to play video"}
+            </p>
           </div>
         )}
 
@@ -174,18 +233,21 @@ const HeroVideoSection = () => {
           </div>
         )}
 
-        {/* Loading state */}
-        {!isLoaded && !hasError && (
+        {/* Loading state with iOS-specific messaging */}
+        {!isLoaded && !isVideoReady && !hasError && (
           <div className="absolute inset-0 bg-gray-900 flex items-center justify-center">
             <div className="text-center px-4">
               <div className="animate-pulse bg-gray-700 h-6 sm:h-8 w-48 sm:w-64 rounded mb-3 sm:mb-4 mx-auto"></div>
-              <div className="animate-pulse bg-gray-700 h-3 sm:h-4 w-64 sm:w-96 rounded mx-auto"></div>
+              <div className="animate-pulse bg-gray-700 h-3 sm:h-4 w-64 sm:w-96 rounded mx-auto mb-2"></div>
+              {isIOS && (
+                <p className="text-gray-400 text-xs mt-2">Loading video for iOS...</p>
+              )}
             </div>
           </div>
         )}
 
         {/* Status indicator - hidden on mobile for cleaner look */}
-        {isLoaded && !hasError && !isMobile && (
+        {isLoaded && !hasError && !isMobile && !needsUserInteraction && (
           <div className="absolute bottom-4 right-4 text-white/60 text-xs bg-black/30 backdrop-blur-sm px-2 py-1 rounded">
             {isOnScreen ? "Playing" : "Paused"}
           </div>
