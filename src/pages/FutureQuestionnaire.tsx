@@ -116,7 +116,9 @@ const FutureQuestionnaire: React.FC = () => {
       case 2:
         // Step 2 is complete when all 6 dialogues are finished
         // Check if answers has the AWS backend format (history array)
-        if (answers.history && Array.isArray(answers.history)) {
+        console.log("🔍 Step 2 check - answers structure:", answers);
+        
+        if (answers && answers.history && Array.isArray(answers.history)) {
           const dialogueCount = Math.floor(answers.history.filter(
             (m: any) => m.role === "hero" || m.role === "doubt"
           ).length / 2);

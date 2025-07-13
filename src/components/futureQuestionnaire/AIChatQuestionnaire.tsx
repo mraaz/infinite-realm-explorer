@@ -65,58 +65,135 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
   // --- Initial Data Loading & Resuming Progress ---
   useEffect(() => {
     const loadState = async () => {
-      if (!authToken) return;
-      const savedState = await getQuestionnaireState(authToken);
-      if (
-        savedState &&
-        savedState.priorities &&
-        savedState.answers?.history?.length > 0
-      ) {
-        setConversationState(savedState);
-        setMessages(savedState.answers.history);
-      } else {
-        const initialState: QuestionnaireStatePayload = {
+      console.log("🔄 AIChatQuestionnaire: Starting to load state, authToken:", !!authToken);
+      
+      if (!authToken) {
+        console.log("❌ No auth token, creating minimal fallback state");
+        const fallbackState: QuestionnaireStatePayload = {
           priorities: priorities,
           answers: {
             history: [],
             scores: { Career: 0, Financials: 0, Health: 0, Connections: 0 },
-            questionCount: {
-              Career: 0,
-              Financials: 0,
-              Health: 0,
-              Connections: 0,
-            },
+            questionCount: { Career: 0, Financials: 0, Health: 0, Connections: 0 },
           },
         };
-        // Generate initial dialogue for first pillar
-        const firstDialogue = await generateDialogue(
-          orderedPillars[0],
-          1,
-          2, // 2 questions for main focus
-          'main',
-          {}
-        );
         
-        const heroMessage = {
-          id: 1,
-          role: "hero",
-          content: firstDialogue.heroMessage,
-        } as Message;
+        try {
+          // Generate initial dialogue even without auth token
+          console.log("🎭 Generating initial dialogue for guests:", orderedPillars[0]);
+          const firstDialogue = await generateDialogue(
+            orderedPillars[0],
+            1,
+            2,
+            'main',
+            {}
+          );
+          
+          const heroMessage = {
+            id: 1,
+            role: "hero",
+            content: firstDialogue.heroMessage,
+          } as Message;
+          
+          const doubtMessage = {
+            id: 2,
+            role: "doubt", 
+            content: firstDialogue.doubtMessage,
+          } as Message;
+          
+          const initialMessages = [heroMessage, doubtMessage];
+          const stateWithMessages = {
+            ...fallbackState,
+            answers: { ...fallbackState.answers, history: initialMessages },
+          };
+          setConversationState(stateWithMessages);
+          setMessages(initialMessages);
+          console.log("✅ Guest state created with messages:", initialMessages);
+        } catch (error) {
+          console.error("❌ Error generating initial dialogue for guest:", error);
+          setConversationState(fallbackState);
+        }
         
-        const doubtMessage = {
-          id: 2,
-          role: "doubt", 
-          content: firstDialogue.doubtMessage,
-        } as Message;
-        
-        const initialMessages = [heroMessage, doubtMessage];
-        const stateWithFirstMessages = {
-          ...initialState,
-          answers: { ...initialState.answers, history: initialMessages },
-        };
-        setConversationState(stateWithFirstMessages);
-        setMessages(initialMessages);
+        setIsLoading(false);
+        return;
       }
+      
+      try {
+        console.log("📡 Calling getQuestionnaireState...");
+        const savedState = await getQuestionnaireState(authToken);
+        console.log("📦 Received saved state:", savedState);
+        
+        if (
+          savedState &&
+          savedState.priorities &&
+          savedState.answers?.history?.length > 0
+        ) {
+          console.log("✅ Found existing state, restoring...");
+          setConversationState(savedState);
+          setMessages(savedState.answers.history);
+        } else {
+          console.log("🆕 Creating fresh state...");
+          const initialState: QuestionnaireStatePayload = {
+            priorities: priorities,
+            answers: {
+              history: [],
+              scores: { Career: 0, Financials: 0, Health: 0, Connections: 0 },
+              questionCount: {
+                Career: 0,
+                Financials: 0,
+                Health: 0,
+                Connections: 0,
+              },
+            },
+          };
+          
+          // Generate initial dialogue for first pillar
+          console.log("🎭 Generating initial dialogue for:", orderedPillars[0]);
+          const firstDialogue = await generateDialogue(
+            orderedPillars[0],
+            1,
+            2, // 2 questions for main focus
+            'main',
+            {}
+          );
+          console.log("🎭 Generated dialogue:", firstDialogue);
+          
+          const heroMessage = {
+            id: 1,
+            role: "hero",
+            content: firstDialogue.heroMessage,
+          } as Message;
+          
+          const doubtMessage = {
+            id: 2,
+            role: "doubt", 
+            content: firstDialogue.doubtMessage,
+          } as Message;
+          
+          const initialMessages = [heroMessage, doubtMessage];
+          const stateWithFirstMessages = {
+            ...initialState,
+            answers: { ...initialState.answers, history: initialMessages },
+          };
+          setConversationState(stateWithFirstMessages);
+          setMessages(initialMessages);
+          console.log("✅ Initial state created with messages:", initialMessages);
+        }
+      } catch (error) {
+        console.error("❌ Error loading state:", error);
+        // Create minimal fallback state
+        const fallbackState: QuestionnaireStatePayload = {
+          priorities: priorities,
+          answers: {
+            history: [],
+            scores: { Career: 0, Financials: 0, Health: 0, Connections: 0 },
+            questionCount: { Career: 0, Financials: 0, Health: 0, Connections: 0 },
+          },
+        };
+        setConversationState(fallbackState);
+      }
+      
+      console.log("🏁 AIChatQuestionnaire: Finished loading, setting isLoading to false");
       setIsLoading(false);
     };
     loadState();
@@ -177,15 +254,27 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     setUserInput("");
     setIsProcessing(true);
 
-    // Process answer with AWS backend
-    const aiResponse = await processChatAnswer(
-      {
-        pillarName: currentPillar,
-        previousQuestion: lastQuestion,
-        userAnswer: userMessage.content,
-      },
-      authToken!
-    );
+    try {
+      // Process answer with AWS backend only if we have auth token
+      let aiResponse = {
+        isRelevant: true,
+        score: 1,
+        nextQuestion: null,
+        feedback: "Thank you for sharing your thoughts."
+      };
+      
+      if (authToken) {
+        aiResponse = await processChatAnswer(
+          {
+            pillarName: currentPillar,
+            previousQuestion: lastQuestion,
+            userAnswer: userMessage.content,
+          },
+          authToken
+        );
+      } else {
+        console.log("🔄 Guest mode: Using default AI response");
+      }
 
     const newHistory = [...currentHistory, userMessage];
 
@@ -273,21 +362,22 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     }
 
     setMessages(newHistory);
-    setConversationState((prev) => ({
-      ...prev!,
-      answers: { ...prev!.answers, history: newHistory },
-    }));
+    const updatedState = {
+      ...conversationState!,
+      answers: { ...conversationState!.answers, history: newHistory },
+    };
+    setConversationState(updatedState);
     setIsProcessing(false);
 
-    // Complete when we have 6 dialogues (12 hero/doubt messages)
-    if (dialogueCount >= 6) {
-      // Call onComplete with the complete conversation state
-      const finalState = {
-        ...conversationState!,
-        answers: { ...conversationState!.answers, history: newHistory }
-      };
-      onComplete(finalState);
+    // Complete when we have 6 dialogues - call onComplete after the final dialogue
+    if (dialogueCount >= 5) { // This is the 6th dialogue (0-indexed)
+      console.log("🎉 All 6 dialogues completed! Calling onComplete with final state");
+      onComplete(updatedState);
     }
+  } catch (error) {
+    console.error("❌ Error in handleSubmit:", error);
+    setIsProcessing(false);
+  }
   };
 
   useEffect(() => {
