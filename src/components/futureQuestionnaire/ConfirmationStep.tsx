@@ -1,13 +1,14 @@
 // /src/components/futureQuestionnaire/ConfirmationStep.tsx (Modified)
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Pillar } from "@/components/priority-ranking/types";
 import { questionnaireData } from "./questionnaireData";
 import { PrioritiesSummary } from "./PrioritiesSummary";
-import { ArrowLeft, Loader2, MessageCircle } from "lucide-react";
+import { ArrowLeft, Loader2, MessageCircle, Sparkles } from "lucide-react";
 import { parseConversationToAnswers } from "@/utils/answerParser";
+import { supabase } from "@/integrations/supabase/client";
 
 // --- Type Definitions ---
 type Priorities = {
@@ -25,6 +26,31 @@ interface ConfirmationStepProps {
   onPrevious: () => void;
   isConfirming: boolean;
 }
+
+const VisionSummary: React.FC<{
+  pillarName: Pillar;
+  vision: string;
+  focusType: "main" | "secondary" | "maintenance";
+}> = ({ pillarName, vision, focusType }) => {
+  if (!vision) return null;
+  
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Sparkles className="w-5 h-5 text-yellow-400" />
+        <h4 className="text-lg font-semibold text-purple-400">{pillarName}</h4>
+        <span className="text-xs bg-purple-900/30 text-purple-300 px-2 py-1 rounded">
+          {focusType} focus
+        </span>
+      </div>
+      <div className="pl-6 border-l-2 border-yellow-400/30">
+        <p className="text-white/90 leading-relaxed italic">
+          {vision}
+        </p>
+      </div>
+    </div>
+  );
+};
 
 const ConversationSummary: React.FC<{
   pillarName: Pillar;
@@ -67,6 +93,9 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   onPrevious,
   isConfirming,
 }) => {
+  const [visionSummaries, setVisionSummaries] = useState<Record<string, string>>({});
+  const [isLoadingVision, setIsLoadingVision] = useState(false);
+  
   // Parse AWS conversation history if available
   const parsedAnswers = React.useMemo(() => {
     if (!priorities) return {};
@@ -84,11 +113,40 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
     return answers;
   }, [answers, priorities]);
 
+  // Generate inspiring vision summaries
+  useEffect(() => {
+    const generateVisionSummaries = async () => {
+      if (!priorities || !parsedAnswers || Object.keys(parsedAnswers).length === 0) return;
+      
+      setIsLoadingVision(true);
+      try {
+        console.log("🌟 Generating vision summaries...");
+        const { data, error } = await supabase.functions.invoke('synthesize-future-vision', {
+          body: { priorities, responses: parsedAnswers }
+        });
+        
+        if (error) {
+          console.error("❌ Error generating vision summaries:", error);
+        } else {
+          console.log("✨ Vision summaries generated:", data);
+          setVisionSummaries(data || {});
+        }
+      } catch (error) {
+        console.error("❌ Failed to generate vision summaries:", error);
+      } finally {
+        setIsLoadingVision(false);
+      }
+    };
+
+    generateVisionSummaries();
+  }, [priorities, parsedAnswers]);
+
   useEffect(() => {
     if (priorities && parsedAnswers && Object.keys(parsedAnswers).length > 0) {
       const blueprintData = {
         priorities,
         answers: parsedAnswers,
+        visionSummaries,
         originalAnswers: answers, // Keep original for backend
         savedAt: new Date().toISOString(),
       };
@@ -106,7 +164,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         console.error("Failed to save blueprint data to local storage:", error);
       }
     }
-  }, [priorities, parsedAnswers, answers]);
+  }, [priorities, parsedAnswers, visionSummaries, answers]);
 
   if (!priorities) {
     return <div className="text-center text-gray-400">Loading summary...</div>;
@@ -131,9 +189,48 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         <PrioritiesSummary priorities={priorities} />
       </div>
 
+      {/* Vision Summaries Section */}
+      {(isLoadingVision || Object.keys(visionSummaries).length > 0) && (
+        <div className="space-y-3">
+          <h3 className="text-sm uppercase font-bold text-gray-500 tracking-wider flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-yellow-400" />
+            Your Future Self Transformation
+          </h3>
+          <div className="space-y-6 bg-gradient-to-br from-yellow-900/10 to-purple-900/10 rounded-lg p-6 border border-yellow-400/20">
+            {isLoadingVision ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-yellow-400 mr-2" />
+                <span className="text-yellow-300">Synthesizing your vision...</span>
+              </div>
+            ) : (
+              <>
+                <VisionSummary
+                  pillarName={priorities.mainFocus}
+                  vision={visionSummaries[priorities.mainFocus] || ""}
+                  focusType="main"
+                />
+                <VisionSummary
+                  pillarName={priorities.secondaryFocus}
+                  vision={visionSummaries[priorities.secondaryFocus] || ""}
+                  focusType="secondary"
+                />
+                {priorities.maintenance.map((pillar) => (
+                  <VisionSummary
+                    key={pillar}
+                    pillarName={pillar}
+                    vision={visionSummaries[pillar] || ""}
+                    focusType="maintenance"
+                  />
+                ))}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="space-y-3">
         <h3 className="text-sm uppercase font-bold text-gray-500 tracking-wider">
-          Your Insights
+          Your Conversation Responses
         </h3>
         <div className="space-y-8 bg-black/20 rounded-lg p-6">
           <ConversationSummary

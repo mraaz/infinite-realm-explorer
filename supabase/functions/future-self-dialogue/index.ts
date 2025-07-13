@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -45,28 +44,28 @@ serve(async (req) => {
     let questionContext = "";
 
     if (focusType === 'main') {
-      systemPrompt = `You are creating a dialogue between someone's Future Self (confident, inspiring, visionary) and their Inner Doubt (worried, skeptical, fearful) about their MAIN FOCUS area: ${pillar}. This is their primary area for growth and achievement over the next 5 years.`;
+      systemPrompt = `You are creating a dialogue between someone's Inner Doubt (worried, skeptical, fearful) and their Future Self (confident, inspiring, progressively futuristic, taking firm control) about their MAIN FOCUS area: ${pillar}. This is their primary area for growth and achievement over the next 5 years.`;
       
       if (questionNumber === 1) {
-        questionContext = "Start by exploring their big vision and what success looks like in this area.";
+        questionContext = "Start by exploring their big vision and what success looks like in this area. Future Self should ask about their ultimate 5-year vision.";
       } else if (questionNumber === 2) {
-        questionContext = "Dive deeper into specific goals and what they want to achieve.";
+        questionContext = "Dive deeper into specific goals and what they want to achieve. Future Self should be more commanding and futuristic.";
       } else {
-        questionContext = "Focus on the practical steps and commitment needed to make this vision reality.";
+        questionContext = "Focus on the practical steps and commitment needed to make this vision reality. Future Self should be powerfully directive.";
       }
     } else if (focusType === 'secondary') {
-      systemPrompt = `You are creating a dialogue between someone's Future Self and their Inner Doubt about their SECONDARY FOCUS area: ${pillar}. This is important but not their main priority.`;
+      systemPrompt = `You are creating a dialogue between someone's Inner Doubt and their Future Self about their SECONDARY FOCUS area: ${pillar}. Future Self should be increasingly confident and futuristic.`;
       
       if (questionNumber === 1) {
-        questionContext = "Explore how this area supports their main focus and overall life balance.";
+        questionContext = "Explore how this area supports their main focus and overall life balance. Future Self asks big-picture questions.";
       } else if (questionNumber === 2) {
-        questionContext = "Discuss specific improvements they want to see in this area.";
+        questionContext = "Discuss specific improvements they want to see in this area. Future Self should be more assertive and visionary.";
       } else {
         questionContext = "Address how they'll maintain progress here while focusing primarily elsewhere.";
       }
     } else { // maintenance
-      systemPrompt = `You are creating a dialogue between someone's Future Self and their Inner Doubt about maintaining their ${pillar} area. This is about keeping things stable and healthy, not major growth.`;
-      questionContext = "Focus on what 'good enough' looks like and how to maintain stability in this area without it becoming a problem.";
+      systemPrompt = `You are creating a dialogue between someone's Inner Doubt and their Future Self about maintaining their ${pillar} area. Future Self should be wise and powerfully assured.`;
+      questionContext = "Focus on what 'good enough' looks like and how to maintain stability in this area without it becoming a problem. Future Self should ask with confident authority.";
     }
 
     // Add previous answers context if available
@@ -82,19 +81,20 @@ ${questionContext}
 ${previousContext}
 
 Create a dialogue where:
-1. Future Self asks an insightful, specific question about their vision for ${pillar}
-2. Inner Doubt raises a realistic concern or fear about that area
+1. Inner Doubt raises a realistic concern or fear about that area FIRST
+2. Future Self responds with an inspiring, firm, progressively futuristic question that takes control and asks about their 5-year vision
 
-The Future Self should be inspiring but practical. The Inner Doubt should be concerned but not completely negative - more like a worried friend.
+The Inner Doubt should express worried concerns but not be completely negative - more like a worried friend.
+The Future Self should be increasingly inspiring, confident, and futuristic with each question, asking big-picture 5-year vision questions that help them think beyond current limitations. Future Self should sound progressively more commanding and visionary.
 
 Use British/Australian English spelling and expressions throughout (e.g., "realise" not "realize", "colour" not "color", "organised" not "organized").
 
-Keep both messages concise (2-3 sentences each) and make them feel like a natural conversation. The question should help them think deeply about what they really want in this area.
+Keep both messages concise (2-3 sentences each) and make them feel like a natural conversation. The Future Self's question should help them think deeply about what they really want in this area.
 
 Return ONLY a JSON object with this exact format:
 {
-  "heroMessage": "Future Self's inspiring question here",
-  "doubtMessage": "Inner Doubt's concerned response here"
+  "doubtMessage": "Inner Doubt's concerned thoughts here",
+  "heroMessage": "Future Self's inspiring, firm, futuristic question that takes control here"
 }`;
 
     console.log('📝 Sending prompt to Claude:', {
@@ -155,8 +155,8 @@ Return ONLY a JSON object with this exact format:
       console.error('❌ JSON parse error:', parseError, 'Content:', content);
       // Fallback with context-appropriate defaults
       dialogueData = {
-        heroMessage: `What does success in your ${pillar} area look like 5 years from now? Paint me a picture of your ideal scenario.`,
-        doubtMessage: `But what if you're not capable of achieving that? What if you're setting yourself up for disappointment?`
+        doubtMessage: `But what if you're not capable of achieving what you want in ${pillar}? What if you're setting yourself up for disappointment?`,
+        heroMessage: `Look beyond your current limitations - in 5 years, what does mastery in your ${pillar} area actually look like? Paint me the vision that excites you most.`
       };
     }
 

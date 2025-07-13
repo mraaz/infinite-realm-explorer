@@ -90,19 +90,19 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
             {}
           );
           
-          const heroMessage = {
-            id: 1,
-            role: "hero",
-            content: firstDialogue.heroMessage,
-          } as Message;
-          
           const doubtMessage = {
-            id: 2,
+            id: 1,
             role: "doubt", 
             content: firstDialogue.doubtMessage,
           } as Message;
           
-          const initialMessages = [heroMessage, doubtMessage];
+          const heroMessage = {
+            id: 2,
+            role: "hero",
+            content: firstDialogue.heroMessage,
+          } as Message;
+          
+          const initialMessages = [doubtMessage, heroMessage];
           const stateWithMessages = {
             ...fallbackState,
             answers: { ...fallbackState.answers, history: initialMessages },
@@ -159,19 +159,19 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
           );
           console.log("🎭 Generated dialogue:", firstDialogue);
           
-          const heroMessage = {
-            id: 1,
-            role: "hero",
-            content: firstDialogue.heroMessage,
-          } as Message;
-          
           const doubtMessage = {
-            id: 2,
+            id: 1,
             role: "doubt", 
             content: firstDialogue.doubtMessage,
           } as Message;
           
-          const initialMessages = [heroMessage, doubtMessage];
+          const heroMessage = {
+            id: 2,
+            role: "hero",
+            content: firstDialogue.heroMessage,
+          } as Message;
+          
+          const initialMessages = [doubtMessage, heroMessage];
           const stateWithFirstMessages = {
             ...initialState,
             answers: { ...initialState.answers, history: initialMessages },
@@ -220,24 +220,32 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
       (m) => m.role === "hero" || m.role === "doubt"
     ).length / 2); // Each dialogue creates 2 messages
 
-    // Determine the current pillar and focus type based on dialogue count
+    // Determine the current pillar and focus type based on dialogue count (2:2:1:1 pattern)
     let pillarIndex = 0;
     let focusType: 'main' | 'secondary' | 'maintenance' = 'main';
     let questionNumber = 1;
     let totalQuestions = 2;
     
-    if (dialogueCount >= 2) { // After 2 main focus dialogues
+    if (dialogueCount < 2) {
+      // Main focus: dialogues 0-1
+      pillarIndex = 0;
+      focusType = 'main';
+      questionNumber = dialogueCount + 1;
+      totalQuestions = 2;
+    } else if (dialogueCount < 4) {
+      // Secondary focus: dialogues 2-3
       pillarIndex = 1;
       focusType = 'secondary';
-      questionNumber = dialogueCount - 1; // 1 or 2
-    }
-    if (dialogueCount >= 4) { // After 2 secondary focus dialogues
+      questionNumber = (dialogueCount - 2) + 1;
+      totalQuestions = 2;
+    } else if (dialogueCount === 4) {
+      // First maintenance: dialogue 4
       pillarIndex = 2;
       focusType = 'maintenance';
       questionNumber = 1;
       totalQuestions = 1;
-    }
-    if (dialogueCount >= 5) { // After first maintenance dialogue
+    } else if (dialogueCount === 5) {
+      // Second maintenance: dialogue 5
       pillarIndex = 3;
       focusType = 'maintenance';
       questionNumber = 1;
@@ -294,34 +302,34 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     const shouldGenerateNext = dialogueCount < 5; // Generate next dialogue until we reach 6 total
     
     if (shouldGenerateNext) {
-      // Determine next pillar and question details
+      // Determine next pillar and question details (2:2:1:1 pattern)
       let nextPillarIndex = 0;
       let nextFocusType: 'main' | 'secondary' | 'maintenance' = 'main';
       let nextQuestionNumber = 1;
       let nextTotalQuestions = 2;
       
-      if (dialogueCount >= 1) { // After 1st main focus dialogue
+      const nextDialogueCount = dialogueCount + 1;
+      
+      if (nextDialogueCount < 2) {
+        // Main focus: dialogue 1
         nextPillarIndex = 0;
         nextFocusType = 'main';
         nextQuestionNumber = 2;
-      }
-      if (dialogueCount >= 2) { // After 2nd main focus dialogue
+        nextTotalQuestions = 2;
+      } else if (nextDialogueCount < 4) {
+        // Secondary focus: dialogues 2-3
         nextPillarIndex = 1;
         nextFocusType = 'secondary';
-        nextQuestionNumber = 1;
-      }
-      if (dialogueCount >= 3) { // After 1st secondary focus dialogue
-        nextPillarIndex = 1;
-        nextFocusType = 'secondary';
-        nextQuestionNumber = 2;
-      }
-      if (dialogueCount >= 4) { // After 2nd secondary focus dialogue
+        nextQuestionNumber = (nextDialogueCount - 2) + 1;
+        nextTotalQuestions = 2;
+      } else if (nextDialogueCount === 4) {
+        // First maintenance: dialogue 4
         nextPillarIndex = 2;
         nextFocusType = 'maintenance';
         nextQuestionNumber = 1;
         nextTotalQuestions = 1;
-      }
-      if (dialogueCount >= 5) { // After 1st maintenance dialogue
+      } else if (nextDialogueCount === 5) {
+        // Second maintenance: dialogue 5
         nextPillarIndex = 3;
         nextFocusType = 'maintenance';
         nextQuestionNumber = 1;
@@ -339,19 +347,19 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
         { [currentPillar]: userMessage.content }
       );
       
-      const heroMessage: Message = {
-        id: Date.now() + 1,
-        role: "hero",
-        content: nextDialogue.heroMessage,
-      };
-      
       const doubtMessage: Message = {
-        id: Date.now() + 2,
+        id: Date.now() + 1,
         role: "doubt",
         content: nextDialogue.doubtMessage,
       };
       
-      newHistory.push(heroMessage, doubtMessage);
+      const heroMessage: Message = {
+        id: Date.now() + 2,
+        role: "hero",
+        content: nextDialogue.heroMessage,
+      };
+      
+      newHistory.push(doubtMessage, heroMessage);
     } else {
       // Show feedback message when complete
       const feedbackMessage: Message = {
@@ -392,29 +400,34 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     const dialogueCount = Math.floor(conversationState.answers.history.filter(
       (m) => m.role === "hero" || m.role === "doubt"
     ).length / 2);
-    if (dialogueCount <= 2)
+    
+    if (dialogueCount < 2) {
       return { name: priorities.mainFocus, type: "Main Focus" };
-    if (dialogueCount <= 4)
+    } else if (dialogueCount < 4) {
       return { name: priorities.secondaryFocus, type: "Secondary Focus" };
-    return {
-      name: orderedPillars[Math.min(dialogueCount - 2, 3)],
-      type: "Maintenance",
-    };
+    } else if (dialogueCount === 4) {
+      return { name: priorities.maintenance[0], type: "Maintenance" };
+    } else if (dialogueCount === 5) {
+      return { name: priorities.maintenance[1], type: "Maintenance" };
+    }
+    
+    // Fallback
+    return { name: orderedPillars[0], type: "Main Focus" };
   };
 
   const pillarInfo = getPillarInfo();
   const questionsInPillar = pillarInfo.type === "Maintenance" ? 1 : 2;
   
-  // Calculate current question number based on dialogue count and pillar
+  // Calculate current question number based on dialogue count and pillar (2:2:1:1 pattern)
   const totalDialogues = conversationState ? Math.floor(conversationState.answers.history.filter(
     (m) => m.role === "hero" || m.role === "doubt"
   ).length / 2) : 0;
   
   let currentQuestionNum = 1;
   if (pillarInfo.type === "Main Focus") {
-    currentQuestionNum = Math.min(totalDialogues, 2);
+    currentQuestionNum = Math.min(totalDialogues + 1, 2);
   } else if (pillarInfo.type === "Secondary Focus") {
-    currentQuestionNum = Math.min(totalDialogues - 2, 2);
+    currentQuestionNum = Math.min((totalDialogues - 2) + 1, 2);
   } else { // Maintenance
     currentQuestionNum = 1; // Always 1 for maintenance
   }
