@@ -22,7 +22,7 @@ const ShareImageButton = ({ data }: ShareImageButtonProps) => {
   const imageRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
-  const isGuest = isGuestMode();
+  const isGuest = isGuestMode(!!user);
 
   const generateImage = async () => {
     console.log('[ShareImageButton] Image generation started', { user: !!user, isGuest, data });

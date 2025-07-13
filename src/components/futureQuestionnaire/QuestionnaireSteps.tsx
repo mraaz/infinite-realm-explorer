@@ -21,6 +21,7 @@ const ARCHITECT_STEPS = [
 interface QuestionnaireStepsProps {
   step: number;
   isArchitect: boolean;
+  totalSteps?: number;
 }
 
 export const QuestionnaireSteps: React.FC<QuestionnaireStepsProps> = ({

@@ -9,6 +9,7 @@ import {
   Priorities,
   Pillar,
   Answers,
+  PillarAnswers,
 } from "@/components/priority-ranking/types";
 
 // Define the shape of a single chat message
@@ -20,7 +21,7 @@ type Message = {
 // Define the props the component will receive
 interface AIChatQuestionnaireProps {
   priorities: Priorities;
-  onComplete: (answers: Answers) => void;
+  onComplete: (pillarName: Pillar, pillarAnswers: PillarAnswers) => void;
 }
 
 export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
@@ -90,8 +91,8 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
       // If the AI signals the conversation is complete, call the onComplete prop
       if (aiResponse.isComplete) {
         // You would need to construct the final 'answers' object from the conversation
-        const finalAnswers = {}; // Placeholder
-        onComplete(finalAnswers);
+        const finalAnswers: PillarAnswers = {}; // Placeholder
+        onComplete(priorities.mainFocus, finalAnswers);
       }
     } catch (error) {
       console.error("Error calling AI function:", error);

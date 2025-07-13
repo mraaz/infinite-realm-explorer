@@ -20,3 +20,12 @@ export interface PriorityRankingProps {
   onComplete: (priorities: Priorities | null) => void;
   value?: Priorities | null;
 }
+
+// Define Answers type for questionnaire responses
+export type PillarAnswers = {
+  [questionId: string]: string;
+};
+
+export type Answers = {
+  [pillar in Pillar]?: PillarAnswers;
+};

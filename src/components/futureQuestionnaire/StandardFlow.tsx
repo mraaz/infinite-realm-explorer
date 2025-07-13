@@ -34,7 +34,6 @@ export const StandardFlow: React.FC<StandardFlowProps> = ({
         case 1:
             return (
                 <PriorityRanking 
-                    progress={progress} 
                     onComplete={onPrioritiesChange} 
                     value={priorities} 
                 />

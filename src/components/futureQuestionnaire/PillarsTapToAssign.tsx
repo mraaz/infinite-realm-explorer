@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { Target, PiggyBank, Heart, Users, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Pillar, PillarInfo, Priorities } from "./types";
+import { Pillar, PillarInfo, Priorities } from "@/components/priority-ranking/types";
 
 interface PillarsTapToAssignProps {
   value?: Priorities | null;

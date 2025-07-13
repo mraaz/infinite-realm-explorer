@@ -24,7 +24,7 @@ interface ShareDialogProps {
 
 const ShareDialog = ({ open, onOpenChange, data }: ShareDialogProps) => {
   const { user } = useAuth();
-  const isGuest = isGuestMode();
+  const isGuest = isGuestMode(!!user);
 
   if (!data) return null;
 

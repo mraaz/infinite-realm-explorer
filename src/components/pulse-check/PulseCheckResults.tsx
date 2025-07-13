@@ -215,12 +215,6 @@ const PulseCheckResults = () => {
                   Finances: results.financesScore,
                   Health: results.healthScore,
                   Connections: results.connectionsScore,
-                  insights: {
-                    Career: results.careerInsight,
-                    Finances: results.financesInsight,
-                    Health: results.healthInsight,
-                    Connections: results.connectionsInsight,
-                  },
                 }}
               />
             </div>

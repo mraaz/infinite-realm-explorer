@@ -158,11 +158,10 @@ const FutureQuestionnaire: React.FC = () => {
               </p>
             </div>
             {/* Pass the new totalSteps to the stepper */}
-            <QuestionnaireSteps
-              step={step}
-              totalSteps={totalSteps}
-              isArchitect={isArchitect}
-            />
+          <QuestionnaireSteps
+            step={step}
+            isArchitect={isArchitect}
+          />
             <div className="mt-10 min-h-[400px]">{renderCurrentStep()}</div>
             {step < totalSteps && (
               <>
@@ -173,6 +172,7 @@ const FutureQuestionnaire: React.FC = () => {
                 )}
                 <QuestionnaireNavigation
                   step={step}
+                  isArchitect={false}
                   onPrevious={step > 1 ? handlePrevious : undefined}
                   onNext={handleNext}
                   nextDisabled={isNextDisabled()}

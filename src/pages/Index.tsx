@@ -1,6 +1,7 @@
 // src/pages/index.tsx
 
 import Header from "@/components/Header";
+import HeroVideoSection from "@/components/HeroVideoSection";
 import PillarCardWithPopover from "@/components/PillarCardWithPopover"; // Correctly import the new component
 import QuestionnaireLoginModal from "@/components/QuestionnaireLoginModal";
 import { useState } from "react";
@@ -150,20 +151,8 @@ const Index = () => {
       <Header />
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
-        {/* Hero Section */}
-        <section className="text-center mb-16 md:mb-24">
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight mb-6">
-            Discover Your{" "}
-            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              5-Year Future
-            </span>
-          </h2>
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-            Get a personalised snapshot of where your life is heading. Our AI
-            analyses your current situation across four key pillars to project
-            your path forward.
-          </p>
-        </section>
+        {/* Hero Video Section */}
+        <HeroVideoSection />
 
         {/* Pillar Cards Section */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16 md:mb-24">
