@@ -15,7 +15,7 @@ type Priorities = {
   secondaryFocus: Pillar;
   maintenance: Pillar[];
 };
-type Answers = { [key in Pillar]?: PillarAnswers };
+type Answers = { [key in Pillar]?: PillarAnswers } | any; // Allow AWS backend format
 type QuestionnaireState = {
   priorities: Priorities | null;
   answers: Answers;
@@ -81,5 +81,6 @@ export const useQuestionnaireState = (user: User | null) => {
     answers,
     handlePrioritiesComplete,
     handlePillarAnswersUpdate,
+    setAnswers, // Export setAnswers for direct updates
   };
 };

@@ -34,6 +34,7 @@ const FutureQuestionnaire: React.FC = () => {
     answers,
     handlePrioritiesComplete,
     handlePillarAnswersUpdate,
+    setAnswers,
   } = useQuestionnaireState(user);
 
   console.log("🔧 FutureQuestionnaire state:", {
@@ -113,7 +114,18 @@ const FutureQuestionnaire: React.FC = () => {
         console.log("Step 1 complete:", step1Complete);
         return !step1Complete;
       case 2:
-        // Step 2 is complete when answers exist for all 4 categories (main, secondary, 2 maintenance)
+        // Step 2 is complete when all 6 dialogues are finished
+        // Check if answers has the AWS backend format (history array)
+        if (answers.history && Array.isArray(answers.history)) {
+          const dialogueCount = Math.floor(answers.history.filter(
+            (m: any) => m.role === "hero" || m.role === "doubt"
+          ).length / 2);
+          const step2Complete = dialogueCount >= 6; // 2+2+1+1 dialogues
+          console.log("Step 2 complete (6 dialogues finished):", step2Complete, "dialogues:", dialogueCount);
+          return !step2Complete;
+        }
+        
+        // Fallback: Check traditional pillar answers format
         const requiredPillars: Pillar[] = [
           priorities.mainFocus,
           priorities.secondaryFocus,
@@ -127,7 +139,7 @@ const FutureQuestionnaire: React.FC = () => {
           return hasAnswers;
         });
         
-        console.log("Step 2 complete (all categories answered):", allCategoriesAnswered);
+        console.log("Step 2 complete (fallback check):", allCategoriesAnswered);
         return !allCategoriesAnswered;
       default:
         return true;
@@ -154,14 +166,11 @@ const FutureQuestionnaire: React.FC = () => {
           priorities && (
             <AIChatQuestionnaire
               priorities={priorities}
-              onComplete={(completeAnswers) => {
-                console.log('🎯 AI Chat completed with answers:', completeAnswers);
+              onComplete={(finalState) => {
+                console.log('🎯 AI Chat completed with final state:', finalState);
                 
-                // Store answers directly - they're already in the correct format
-                Object.entries(completeAnswers).forEach(([pillar, pillarAnswers]) => {
-                  console.log(`📝 Updating answers for ${pillar}:`, pillarAnswers);
-                  handlePillarAnswersUpdate(pillar as Pillar, pillarAnswers);
-                });
+                // Store the AWS backend format directly in answers
+                setAnswers(finalState.answers);
                 
                 // Move to confirmation step
                 setStep(3);

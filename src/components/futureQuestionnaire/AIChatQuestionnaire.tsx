@@ -201,15 +201,51 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     });
 
     // Check if we need to generate next dialogue
-    const shouldGenerateNext = dialogueCount < 6; // Total 6 dialogues: 2+2+1+1
+    const shouldGenerateNext = dialogueCount < 5; // Generate next dialogue until we reach 6 total
     
     if (shouldGenerateNext) {
+      // Determine next pillar and question details
+      let nextPillarIndex = 0;
+      let nextFocusType: 'main' | 'secondary' | 'maintenance' = 'main';
+      let nextQuestionNumber = 1;
+      let nextTotalQuestions = 2;
+      
+      if (dialogueCount >= 1) { // After 1st main focus dialogue
+        nextPillarIndex = 0;
+        nextFocusType = 'main';
+        nextQuestionNumber = 2;
+      }
+      if (dialogueCount >= 2) { // After 2nd main focus dialogue
+        nextPillarIndex = 1;
+        nextFocusType = 'secondary';
+        nextQuestionNumber = 1;
+      }
+      if (dialogueCount >= 3) { // After 1st secondary focus dialogue
+        nextPillarIndex = 1;
+        nextFocusType = 'secondary';
+        nextQuestionNumber = 2;
+      }
+      if (dialogueCount >= 4) { // After 2nd secondary focus dialogue
+        nextPillarIndex = 2;
+        nextFocusType = 'maintenance';
+        nextQuestionNumber = 1;
+        nextTotalQuestions = 1;
+      }
+      if (dialogueCount >= 5) { // After 1st maintenance dialogue
+        nextPillarIndex = 3;
+        nextFocusType = 'maintenance';
+        nextQuestionNumber = 1;
+        nextTotalQuestions = 1;
+      }
+      
+      const nextPillar = orderedPillars[nextPillarIndex];
+      
       // Generate next dialogue
       const nextDialogue = await generateDialogue(
-        currentPillar,
-        questionNumber + 1 <= totalQuestions ? questionNumber + 1 : 1,
-        totalQuestions,
-        focusType,
+        nextPillar,
+        nextQuestionNumber,
+        nextTotalQuestions,
+        nextFocusType,
         { [currentPillar]: userMessage.content }
       );
       
@@ -231,7 +267,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
       const feedbackMessage: Message = {
         id: Date.now() + 1,
         role: "feedback",
-        content: aiResponse.feedback || "Great work! You've completed all the reflection questions.",
+        content: aiResponse.feedback || "Brilliant work! You've completed all 6 reflection dialogues. Let's review your insights.",
       };
       newHistory.push(feedbackMessage);
     }
@@ -245,7 +281,12 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
 
     // Complete when we have 6 dialogues (12 hero/doubt messages)
     if (dialogueCount >= 6) {
-      onComplete(conversationState!);
+      // Call onComplete with the complete conversation state
+      const finalState = {
+        ...conversationState!,
+        answers: { ...conversationState!.answers, history: newHistory }
+      };
+      onComplete(finalState);
     }
   };
 
@@ -272,17 +313,21 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
 
   const pillarInfo = getPillarInfo();
   const questionsInPillar = pillarInfo.type === "Maintenance" ? 1 : 2;
-  const currentQuestionNum =
-    conversationState?.answers.questionCount[pillarInfo.name] || 0;
-  const overallCompleted = conversationState
-    ? Object.values(conversationState.answers.questionCount).reduce(
-        (a: number, b: unknown) => a + (typeof b === 'number' ? b : 0),
-        0
-      )
-    : 0;
+  
+  // Calculate current question number based on dialogue count and pillar
   const totalDialogues = conversationState ? Math.floor(conversationState.answers.history.filter(
     (m) => m.role === "hero" || m.role === "doubt"
   ).length / 2) : 0;
+  
+  let currentQuestionNum = 1;
+  if (pillarInfo.type === "Main Focus") {
+    currentQuestionNum = Math.min(totalDialogues, 2);
+  } else if (pillarInfo.type === "Secondary Focus") {
+    currentQuestionNum = Math.min(totalDialogues - 2, 2);
+  } else { // Maintenance
+    currentQuestionNum = 1; // Always 1 for maintenance
+  }
+  
   const progressPercentage = Math.round((totalDialogues / 6) * 100);
 
   // --- Render Logic ---
@@ -308,8 +353,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
           </div>
           <div className="flex flex-col sm:items-end gap-1">
             <span className="text-gray-300 font-medium">
-              Question {Math.min(currentQuestionNum + 1, questionsInPillar)} of{" "}
-              {questionsInPillar}
+              Question {currentQuestionNum} of {questionsInPillar}
             </span>
             <span className="text-xs text-gray-400">
               Overall: {totalDialogues} of 6 dialogues ({progressPercentage}%)
