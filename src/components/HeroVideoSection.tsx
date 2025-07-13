@@ -21,6 +21,7 @@ const HeroVideoSection = () => {
   const [userConsentToLoad, setUserConsentToLoad] = useState(false);
   const [connectionSpeed, setConnectionSpeed] = useState<'fast' | 'slow' | 'unknown'>('unknown');
   const [showPoster, setShowPoster] = useState(true);
+  const [currentVideoQuality, setCurrentVideoQuality] = useState<'HD' | 'SD' | 'Mobile'>('Mobile');
 
   // Enhanced iOS detection
   useEffect(() => {
@@ -46,7 +47,7 @@ const HeroVideoSection = () => {
     }
   }, []);
 
-  // Connection speed detection
+  // Enhanced connection speed detection
   useEffect(() => {
     const detectConnectionSpeed = () => {
       // Use Navigator connection API if available
@@ -54,7 +55,11 @@ const HeroVideoSection = () => {
         const conn = (navigator as any).connection;
         if (conn) {
           const effectiveType = conn.effectiveType;
-          if (effectiveType === '4g' || conn.downlink > 2) {
+          const downlink = conn.downlink;
+          
+          if (effectiveType === '4g' && downlink > 10) {
+            setConnectionSpeed('fast');
+          } else if (effectiveType === '4g' && downlink > 2) {
             setConnectionSpeed('fast');
           } else {
             setConnectionSpeed('slow');
@@ -63,7 +68,7 @@ const HeroVideoSection = () => {
         }
       }
       
-      // Fallback: detect based on device type
+      // Fallback: detect based on device type and screen size
       if (isMobile || isIOS) {
         setConnectionSpeed('slow');
       } else {
@@ -74,21 +79,58 @@ const HeroVideoSection = () => {
     detectConnectionSpeed();
   }, [isMobile, isIOS]);
 
-  // Smart video loading strategy
+  // Smart video quality selection
+  const getOptimalVideoUrl = () => {
+    const baseUrl = "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/";
+    
+    // Force mobile quality for slow connections
+    if (connectionSpeed === 'slow') {
+      setCurrentVideoQuality('Mobile');
+      return `${baseUrl}HomePageVideoMobile.mp4`;
+    }
+    
+    // Device-based quality selection
+    const screenWidth = window.innerWidth;
+    
+    if (screenWidth < 768 || isMobile || isIOS) {
+      // Mobile phones
+      setCurrentVideoQuality('Mobile');
+      return `${baseUrl}HomePageVideoMobile.mp4`;
+    } else if (screenWidth >= 768 && screenWidth <= 1024) {
+      // Tablets
+      setCurrentVideoQuality('SD');
+      return `${baseUrl}HomePageVideoSD.mp4`;
+    } else {
+      // Desktop - use HD for fast connections, SD for unknown
+      if (connectionSpeed === 'fast') {
+        setCurrentVideoQuality('HD');
+        return `${baseUrl}HomePageVideoHD.mp4`;
+      } else {
+        setCurrentVideoQuality('SD');
+        return `${baseUrl}HomePageVideoSD.mp4`;
+      }
+    }
+  };
+
+  // Smart video loading strategy with quality fallback
   const loadVideo = async () => {
     const video = videoRef.current;
     if (!video || isVideoLoading) return;
 
-    console.log('Starting video load process...', { isIOS, connectionSpeed, userConsentToLoad });
+    console.log('Starting video load process...', { 
+      isIOS, 
+      connectionSpeed, 
+      userConsentToLoad, 
+      screenWidth: window.innerWidth,
+      selectedQuality: currentVideoQuality 
+    });
+    
     setIsVideoLoading(true);
     setVideoLoadError('');
 
     try {
-      // For iOS or slow connections, start with lower quality
-      const videoSrc = connectionSpeed === 'slow' || isIOS 
-        ? "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideo.mp4"
-        : "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideo.mp4";
-
+      const videoSrc = getOptimalVideoUrl();
+      
       // Set video source
       const source = video.querySelector('source[type="video/mp4"]') as HTMLSourceElement;
       if (source) {
@@ -103,6 +145,42 @@ const HeroVideoSection = () => {
       
     } catch (error) {
       console.error('Video load failed:', error);
+      await handleVideoLoadFailure();
+    }
+  };
+
+  // Handle video load failure with quality downgrade
+  const handleVideoLoadFailure = async () => {
+    const baseUrl = "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/";
+    const video = videoRef.current;
+    if (!video) return;
+
+    try {
+      let fallbackUrl = '';
+      
+      if (currentVideoQuality === 'HD') {
+        setCurrentVideoQuality('SD');
+        fallbackUrl = `${baseUrl}HomePageVideoSD.mp4`;
+        console.log('HD failed, falling back to SD quality');
+      } else if (currentVideoQuality === 'SD') {
+        setCurrentVideoQuality('Mobile');
+        fallbackUrl = `${baseUrl}HomePageVideoMobile.mp4`;
+        console.log('SD failed, falling back to Mobile quality');
+      } else {
+        // Mobile quality failed - show error
+        setVideoLoadError('Unable to load video');
+        setHasError(true);
+        setIsVideoLoading(false);
+        return;
+      }
+
+      const source = video.querySelector('source[type="video/mp4"]') as HTMLSourceElement;
+      if (source) {
+        source.src = fallbackUrl;
+        video.load();
+      }
+    } catch (error) {
+      console.error('Fallback video load failed:', error);
       setVideoLoadError('Failed to load video');
       setHasError(true);
       setIsVideoLoading(false);
@@ -115,31 +193,37 @@ const HeroVideoSection = () => {
     if (!video) return;
 
     const handleCanPlay = () => {
-      console.log('Video can play');
+      console.log(`Video can play - Quality: ${currentVideoQuality}`);
       setIsLoaded(true);
       setIsVideoLoading(false);
     };
 
     const handleLoadStart = () => {
-      console.log('Video load started');
+      console.log(`Video load started - Quality: ${currentVideoQuality}`);
       setIsVideoLoading(true);
     };
 
     const handleLoadedData = () => {
-      console.log('Video data loaded');
+      console.log(`Video data loaded - Quality: ${currentVideoQuality}`);
       setIsLoaded(true);
       setIsVideoLoading(false);
     };
 
-    const handleError = (event: Event) => {
+    const handleError = async (event: Event) => {
       const error = video.error;
       const errorMsg = error ? 
         `Error ${error.code}: ${error.message}` : 
         'Unknown video error';
-      console.error('Video error:', errorMsg);
-      setVideoLoadError(errorMsg);
-      setHasError(true);
-      setIsVideoLoading(false);
+      console.error(`Video error (${currentVideoQuality}):`, errorMsg);
+      
+      // Try fallback quality before showing error
+      if (currentVideoQuality !== 'Mobile') {
+        await handleVideoLoadFailure();
+      } else {
+        setVideoLoadError(errorMsg);
+        setHasError(true);
+        setIsVideoLoading(false);
+      }
     };
 
     const handleProgress = () => {
@@ -165,7 +249,7 @@ const HeroVideoSection = () => {
       video.removeEventListener('error', handleError);
       video.removeEventListener('progress', handleProgress);
     };
-  }, []);
+  }, [currentVideoQuality]);
 
   // Auto-load video for non-iOS devices when in view
   useEffect(() => {
@@ -186,7 +270,7 @@ const HeroVideoSection = () => {
       const playPromise = video.play();
       if (playPromise !== undefined) {
         playPromise.then(() => {
-          console.log('Autoplay successful');
+          console.log(`Autoplay successful - Quality: ${currentVideoQuality}`);
         }).catch((error) => {
           console.log('Autoplay prevented:', error.name);
           if (error.name === "NotAllowedError") {
@@ -197,7 +281,7 @@ const HeroVideoSection = () => {
     } else {
       video.pause();
     }
-  }, [isOnScreen, isLoaded, hasError, needsUserInteraction]);
+  }, [isOnScreen, isLoaded, hasError, needsUserInteraction, currentVideoQuality]);
 
   const handleUserLoadVideo = () => {
     setUserConsentToLoad(true);
@@ -215,7 +299,7 @@ const HeroVideoSection = () => {
     const playPromise = video.play();
     if (playPromise !== undefined) {
       playPromise.then(() => {
-        console.log('User play successful');
+        console.log(`User play successful - Quality: ${currentVideoQuality}`);
       }).catch((error) => {
         console.error('User play failed:', error);
         setHasError(true);
@@ -331,9 +415,9 @@ const HeroVideoSection = () => {
               Tap to load video
             </p>
             <p className="text-white/60 text-sm max-w-xs">
-              {connectionSpeed === 'slow' 
-                ? "Optimized for your connection speed" 
-                : "Video will start muted for the best experience"
+              {currentVideoQuality === 'Mobile' 
+                ? "Optimized mobile version (7MB)" 
+                : `Loading ${currentVideoQuality} quality`
               }
             </p>
           </div>
@@ -362,7 +446,12 @@ const HeroVideoSection = () => {
             <div className="text-center text-white">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4 mx-auto"></div>
               <p className="text-sm">
-                {isIOS ? "Loading optimized video..." : "Loading video..."}
+                Loading {currentVideoQuality} quality video...
+              </p>
+              <p className="text-xs text-gray-300 mt-1">
+                {currentVideoQuality === 'Mobile' && '~7MB'} 
+                {currentVideoQuality === 'SD' && '~28MB'}
+                {currentVideoQuality === 'HD' && '~41MB'}
               </p>
             </div>
           </div>
@@ -387,10 +476,12 @@ const HeroVideoSection = () => {
           </div>
         )}
 
-        {/* Connection Speed Indicator */}
+        {/* Quality Indicator (Development) */}
         {process.env.NODE_ENV === 'development' && (
           <div className="absolute top-2 right-2 bg-black/80 text-white text-xs p-2 rounded">
-            {isIOS ? 'iOS' : 'Non-iOS'} | {connectionSpeed} | {userConsentToLoad ? 'Consented' : 'No consent'}
+            <div>{isIOS ? 'iOS' : 'Non-iOS'} | {connectionSpeed} | {window.innerWidth}px</div>
+            <div>Quality: {currentVideoQuality}</div>
+            <div>{userConsentToLoad ? 'Consented' : 'No consent'}</div>
           </div>
         )}
       </div>
