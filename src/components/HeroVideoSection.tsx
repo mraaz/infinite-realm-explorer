@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import useOnScreen from "@/hooks/useOnScreen";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -245,10 +244,19 @@ const HeroVideoSection = () => {
           muted={isMuted}
           loop
           playsInline
-          webkitPlaysInline
-          preload={isIOS ? "metadata" : "metadata"}
-          onLoadedData={handleVideoLoad}
-          onError={handleVideoError}
+          preload="metadata"
+          onLoadedData={() => {
+            console.log('Video loaded event fired');
+            setIsLoaded(true);
+          }}
+          onError={(event: any) => {
+            const errorDetail = event.target?.error ? 
+              `Error ${event.target.error.code}: ${event.target.error.message}` :
+              'Unknown video error';
+            console.error('Video error event:', errorDetail);
+            setVideoLoadError(errorDetail);
+            setHasError(true);
+          }}
           poster="/placeholder.svg"
           controlsList="nodownload"
           disablePictureInPicture={isIOS}
