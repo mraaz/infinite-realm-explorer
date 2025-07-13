@@ -1,19 +1,21 @@
-// FutureQuestionnaire.tsx (Refactored for 3-Step AI Chat Flow)
+// FutureQuestionnaire.tsx (With Step Persistence)
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import { PriorityRanking } from "@/components/PriorityRanking";
 import { ConfirmationStep } from "@/components/futureQuestionnaire/ConfirmationStep";
 import { QuestionnaireSteps } from "@/components/futureQuestionnaire/QuestionnaireSteps";
 import { QuestionnaireNavigation } from "@/components/futureQuestionnaire/QuestionnaireNavigation";
-// NEW: Import the placeholder for the AI Chat component
 import { AIChatQuestionnaire } from "@/components/futureQuestionnaire/AIChatQuestionnaire";
 import { Pillar, Priorities } from "@/components/priority-ranking/types";
 
 // Import hooks and services
-import { useQuestionnaireState } from "@/hooks/useQuestionnaireState.tsx";
-import { saveQuestionnaireProgress } from "@/services/apiService.tsx";
+import { useQuestionnaireState } from "@/hooks/useQuestionnaireState";
+import {
+  saveQuestionnaireProgress,
+  getQuestionnaireState,
+} from "@/services/apiService";
 import { useAuth } from "@/contexts/AuthContext";
 
 const FutureQuestionnaire: React.FC = () => {
@@ -27,6 +29,7 @@ const FutureQuestionnaire: React.FC = () => {
   const [step, setStep] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isChatComplete, setIsChatComplete] = useState(false);
 
   const {
     isLoading,
@@ -36,25 +39,53 @@ const FutureQuestionnaire: React.FC = () => {
     handlePillarAnswersUpdate,
   } = useQuestionnaireState(user);
 
-  console.log("🔧 FutureQuestionnaire state:", {
-    step,
-    priorities,
-    answersCount: Object.keys(answers).length,
-    isArchitect
-  });
+  // --- MODIFICATION 1 of 2: Add a useEffect to load the saved step from the DB for logged-in users ---
+  useEffect(() => {
+    const fetchInitialStep = async () => {
+      if (authToken) {
+        const savedState = await getQuestionnaireState(authToken);
+        // Ensure we have a valid step number to restore to
+        if (
+          savedState &&
+          savedState.step &&
+          savedState.step > 1 &&
+          savedState.step <= totalSteps
+        ) {
+          console.log(`Restoring user to step: ${savedState.step}`);
+          setStep(savedState.step);
+        }
+      }
+    };
 
-  const handlePrevious = () => setStep((prev) => Math.max(prev - 1, 1));
+    fetchInitialStep();
+  }, [authToken]); // This runs once when the user's auth token is available.
+
+  const handlePrevious = async () => {
+    const targetStep = Math.max(step - 1, 1);
+    if (user && authToken) {
+      await saveQuestionnaireProgress(
+        { priorities, answers, step: targetStep },
+        authToken
+      );
+    }
+    setStep(targetStep);
+  };
 
   const handleNext = async () => {
     setSaveError(null);
-    console.log("⏭️ Moving to next step from:", step);
-    
+    const targetStep = step + 1;
+    console.log("⏭️ Moving to next step:", targetStep);
+
     if (user && authToken) {
       setIsSaving(true);
       try {
-        await saveQuestionnaireProgress({ priorities, answers }, authToken);
+        // --- MODIFICATION 2 of 2: Include the step in the payload ---
+        await saveQuestionnaireProgress(
+          { priorities, answers, step: targetStep },
+          authToken
+        );
         console.log("💾 Progress saved successfully");
-        setStep((prev) => prev + 1);
+        setStep(targetStep);
       } catch (error: any) {
         console.error("❌ Save error:", error);
         setSaveError("Failed to save progress. Please try again.");
@@ -62,23 +93,16 @@ const FutureQuestionnaire: React.FC = () => {
         setIsSaving(false);
       }
     } else {
-      setStep((prev) => prev + 1);
+      setStep(targetStep);
     }
   };
 
   const handleConfirm = async () => {
-    console.log("✅ Confirming questionnaire with data:", { priorities, answers });
-    
-    // Log final data structure for verification
-    console.log("📊 Final answer summary:");
-    Object.entries(answers).forEach(([pillar, pillarAnswers]) => {
-      console.log(`  ${pillar}:`, Object.keys(pillarAnswers).length, "answers");
-      Object.entries(pillarAnswers).forEach(([qId, answer]) => {
-        console.log(`    ${qId}: ${answer.substring(0, 50)}...`);
-      });
+    console.log("✅ Confirming questionnaire with data:", {
+      priorities,
+      answers,
     });
-
-    const finalPayload = { priorities, answers };
+    const finalPayload = { priorities, answers, step: 3 }; // Save final step as 3
     if (user && authToken) {
       await saveQuestionnaireProgress(finalPayload, authToken);
     }
@@ -97,38 +121,15 @@ const FutureQuestionnaire: React.FC = () => {
     if (isSaving) return true;
     if (!priorities) return true;
 
-    console.log("🔍 Checking if next is disabled for step:", step, {
-      priorities,
-      answersCount: Object.keys(answers).length
-    });
-
     switch (step) {
       case 1:
-        // Step 1 is complete when all priorities are set
-        const step1Complete = (
+        return !(
           priorities.mainFocus &&
           priorities.secondaryFocus &&
           priorities.maintenance.length === 2
         );
-        console.log("Step 1 complete:", step1Complete);
-        return !step1Complete;
       case 2:
-        // Step 2 is complete when answers exist for all 4 categories (main, secondary, 2 maintenance)
-        const requiredPillars: Pillar[] = [
-          priorities.mainFocus,
-          priorities.secondaryFocus,
-          ...priorities.maintenance,
-        ];
-        
-        const allCategoriesAnswered = requiredPillars.every(pillar => {
-          const pillarAnswers = answers[pillar];
-          const hasAnswers = pillarAnswers && Object.keys(pillarAnswers).length > 0;
-          console.log(`${pillar} has answers:`, hasAnswers, pillarAnswers);
-          return hasAnswers;
-        });
-        
-        console.log("Step 2 complete (all categories answered):", allCategoriesAnswered);
-        return !allCategoriesAnswered;
+        return !isChatComplete;
       default:
         return true;
     }
@@ -138,8 +139,6 @@ const FutureQuestionnaire: React.FC = () => {
     if (isLoading) {
       return <div className="text-center text-gray-500">Loading...</div>;
     }
-
-    console.log("🎨 Rendering step:", step, { priorities, totalAnswers: Object.keys(answers).length });
 
     switch (step) {
       case 1:
@@ -155,16 +154,12 @@ const FutureQuestionnaire: React.FC = () => {
             <AIChatQuestionnaire
               priorities={priorities}
               onComplete={(completeAnswers) => {
-                console.log('🎯 AI Chat completed with answers:', completeAnswers);
-                
-                // Store answers directly - they're already in the correct format
-                Object.entries(completeAnswers).forEach(([pillar, pillarAnswers]) => {
-                  console.log(`📝 Updating answers for ${pillar}:`, pillarAnswers);
-                  handlePillarAnswersUpdate(pillar as Pillar, pillarAnswers);
-                });
-                
-                // Move to confirmation step
-                setStep(3);
+                Object.entries(completeAnswers).forEach(
+                  ([pillar, pillarAnswers]) => {
+                    handlePillarAnswersUpdate(pillar as Pillar, pillarAnswers);
+                  }
+                );
+                setIsChatComplete(true);
               }}
             />
           )
@@ -176,7 +171,7 @@ const FutureQuestionnaire: React.FC = () => {
             answers={answers}
             onConfirm={handleConfirm}
             onPrevious={handlePrevious}
-            isConfirming={false}
+            isConfirming={isSaving}
           />
         );
       default:
@@ -200,10 +195,7 @@ const FutureQuestionnaire: React.FC = () => {
                 for the next five years.
               </p>
             </div>
-            <QuestionnaireSteps
-              step={step}
-              isArchitect={isArchitect}
-            />
+            <QuestionnaireSteps step={step} isArchitect={isArchitect} />
             <div className="mt-10 min-h-[400px]">{renderCurrentStep()}</div>
             {step < totalSteps && (
               <>

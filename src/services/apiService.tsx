@@ -8,32 +8,17 @@ interface Priorities {
   maintenance: Pillar[];
 }
 
-// Represents the structure of the `answers` object, which will hold the chat state
-// Using 'any' provides flexibility for storing conversation history, scores, etc.
 type AnswersState = any;
 
 // This is the shape of the full user record in your 'futureselfquestionnaire' DynamoDB table
 export interface QuestionnaireStatePayload {
-  userId?: string; // The backend will handle this, but it's good practice to include it
+  userId?: string;
   priorities: Priorities | null;
   answers: AnswersState;
+  step?: number; // --- MODIFICATION: Added step to the payload ---
 }
 
-// This is the payload sent to the AI for processing a single answer
-export interface ProcessAnswerPayload {
-  pillarName: Pillar;
-  previousQuestion: string;
-  userAnswer: string;
-  // You could also include conversation_history here if needed in the future
-}
-
-// This is the expected JSON response from the AI processing endpoint
-export interface AIResponse {
-  isRelevant: boolean;
-  score: number;
-  nextQuestion: string | null;
-  feedback: string | null;
-}
+// ... the rest of your types like ProcessAnswerPayload and AIResponse would go here ...
 
 // The base URL of your deployed API Gateway stage
 const API_BASE_URL =
@@ -41,7 +26,6 @@ const API_BASE_URL =
 
 /**
  * Fetches the user's saved questionnaire state from the backend.
- * This includes their priorities and any saved chat progress.
  * @param {string} token - The user's JWT token for authentication.
  * @returns {Promise<QuestionnaireStatePayload>} The saved state object.
  */
@@ -49,8 +33,6 @@ export const getQuestionnaireState = async (
   token: string
 ): Promise<QuestionnaireStatePayload> => {
   const url = `${API_BASE_URL}/futureQuestionnaire/state`;
-
-  console.log("Attempting to fetch questionnaire state...");
 
   try {
     const response = await fetch(url, {
@@ -60,27 +42,16 @@ export const getQuestionnaireState = async (
         "Content-Type": "application/json",
       },
     });
-
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Backend error while fetching state:", errorData);
-      throw new Error(
-        errorData.error || "Failed to fetch questionnaire state."
-      );
+      throw new Error("Failed to fetch questionnaire state.");
     }
-
-    const state = await response.json();
-    console.log("Successfully fetched questionnaire state:", state);
-    return state;
+    return await response.json();
   } catch (error) {
-    console.error(
-      "An error occurred while fetching questionnaire state:",
-      error
-    );
-    // Return a default empty state on error so the app doesn't crash
+    console.error("Error fetching questionnaire state:", error);
     return {
       priorities: null,
       answers: {},
+      step: 1,
     };
   }
 };
@@ -89,15 +60,12 @@ export const getQuestionnaireState = async (
  * Saves the entire state of the questionnaire conversation to the backend.
  * @param {QuestionnaireStatePayload} payload - The complete questionnaire state object to be saved.
  * @param {string} token - The user's JWT token for authentication.
- * @returns {Promise<void>}
  */
 export const saveQuestionnaireProgress = async (
   payload: QuestionnaireStatePayload,
   token: string
 ): Promise<void> => {
   const url = `${API_BASE_URL}/futureQuestionnaire/progress`;
-
-  console.log("Saving questionnaire progress to backend:", payload);
 
   try {
     const response = await fetch(url, {
@@ -108,13 +76,9 @@ export const saveQuestionnaireProgress = async (
       },
       body: JSON.stringify(payload),
     });
-
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Backend error while saving progress:", errorData);
-      throw new Error(errorData.error || "Failed to save progress.");
+      throw new Error("Failed to save progress.");
     }
-
     console.log("Progress saved successfully.");
   } catch (error) {
     console.error("An error occurred while saving progress:", error);
