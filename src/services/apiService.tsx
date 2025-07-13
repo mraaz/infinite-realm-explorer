@@ -35,6 +35,12 @@ export interface AIResponse {
   feedback: string | null;
 }
 
+// New interface for dialogue response from Supabase edge function
+export interface DialogueResponse {
+  heroMessage: string;
+  doubtMessage: string;
+}
+
 // The base URL of your deployed API Gateway stage
 const API_BASE_URL =
   "https://ffwkwcix01.execute-api.us-east-1.amazonaws.com/prod";
@@ -153,5 +159,45 @@ export const processChatAnswer = async (
   } catch (error) {
     console.error("An error occurred while processing answer:", error);
     throw error;
+  }
+};
+
+/**
+ * Generates Future Self vs Inner Doubt dialogue using Supabase edge function
+ */
+export const generateDialogue = async (
+  pillar: Pillar,
+  questionNumber: number,
+  totalQuestions: number,
+  focusType: 'main' | 'secondary' | 'maintenance',
+  previousAnswers: any = {}
+): Promise<DialogueResponse> => {
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    
+    const { data, error } = await supabase.functions.invoke('future-self-dialogue', {
+      body: {
+        pillar,
+        questionNumber,
+        totalQuestions,
+        focusType,
+        previousAnswers,
+        isFirstQuestion: questionNumber === 1
+      }
+    });
+
+    if (error) {
+      console.error('Error calling future-self-dialogue function:', error);
+      throw new Error(error.message || 'Failed to generate dialogue');
+    }
+
+    return data as DialogueResponse;
+  } catch (error) {
+    console.error('Error in generateDialogue:', error);
+    // Fallback dialogue
+    return {
+      heroMessage: `What does success in your ${pillar} area look like 5 years from now? Paint me a picture of your ideal scenario.`,
+      doubtMessage: `But what if you're not capable of achieving that? What if you're setting yourself up for disappointment?`
+    };
   }
 };

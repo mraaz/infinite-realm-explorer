@@ -9,6 +9,7 @@ import {
   getQuestionnaireState,
   saveQuestionnaireProgress,
   processChatAnswer,
+  generateDialogue,
   QuestionnaireStatePayload,
 } from "@/services/apiService";
 
@@ -21,7 +22,7 @@ type Priorities = {
 
 interface Message {
   id: number;
-  role: "ai" | "user" | "feedback";
+  role: "ai" | "user" | "feedback" | "hero" | "doubt";
   content: string;
 }
 
@@ -87,18 +88,34 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
             },
           },
         };
-        const firstQuestion = initialQuestions[orderedPillars[0]];
-        const firstMessage = {
+        // Generate initial dialogue for first pillar
+        const firstDialogue = await generateDialogue(
+          orderedPillars[0],
+          1,
+          2, // 2 questions for main focus
+          'main',
+          {}
+        );
+        
+        const heroMessage = {
           id: 1,
-          role: "ai",
-          content: firstQuestion,
+          role: "hero",
+          content: firstDialogue.heroMessage,
         } as Message;
-        const stateWithFirstMessage = {
+        
+        const doubtMessage = {
+          id: 2,
+          role: "doubt", 
+          content: firstDialogue.doubtMessage,
+        } as Message;
+        
+        const initialMessages = [heroMessage, doubtMessage];
+        const stateWithFirstMessages = {
           ...initialState,
-          answers: { ...initialState.answers, history: [firstMessage] },
+          answers: { ...initialState.answers, history: initialMessages },
         };
-        setConversationState(stateWithFirstMessage);
-        setMessages([firstMessage]);
+        setConversationState(stateWithFirstMessages);
+        setMessages(initialMessages);
       }
       setIsLoading(false);
     };
@@ -120,16 +137,35 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
 
     const currentHistory = conversationState.answers.history;
     const lastQuestion =
-      currentHistory.findLast((m) => m.role === "ai")?.content || "";
-    const aiQuestionCount = currentHistory.filter(
-      (m) => m.role === "ai"
-    ).length;
+      currentHistory.findLast((m) => m.role === "hero")?.content || "";
+    const dialogueCount = Math.floor(currentHistory.filter(
+      (m) => m.role === "hero" || m.role === "doubt"
+    ).length / 2); // Each dialogue creates 2 messages
 
-    // Determine the current pillar based on how many AI questions have been asked
+    // Determine the current pillar and focus type based on dialogue count
     let pillarIndex = 0;
-    if (aiQuestionCount > 2) pillarIndex = 1; // 2 questions for main focus
-    if (aiQuestionCount > 4) pillarIndex = 2; // 2 questions for secondary
-    if (aiQuestionCount > 5) pillarIndex = 3; // 1 question for first maintenance
+    let focusType: 'main' | 'secondary' | 'maintenance' = 'main';
+    let questionNumber = 1;
+    let totalQuestions = 2;
+    
+    if (dialogueCount >= 2) { // After 2 main focus dialogues
+      pillarIndex = 1;
+      focusType = 'secondary';
+      questionNumber = dialogueCount - 1; // 1 or 2
+    }
+    if (dialogueCount >= 4) { // After 2 secondary focus dialogues
+      pillarIndex = 2;
+      focusType = 'maintenance';
+      questionNumber = 1;
+      totalQuestions = 1;
+    }
+    if (dialogueCount >= 5) { // After first maintenance dialogue
+      pillarIndex = 3;
+      focusType = 'maintenance';
+      questionNumber = 1;
+      totalQuestions = 1;
+    }
+    
     const currentPillar = orderedPillars[pillarIndex];
 
     const userMessage: Message = {
@@ -141,6 +177,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     setUserInput("");
     setIsProcessing(true);
 
+    // Process answer with AWS backend
     const aiResponse = await processChatAnswer(
       {
         pillarName: currentPillar,
@@ -152,41 +189,62 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
 
     const newHistory = [...currentHistory, userMessage];
 
-    if (aiResponse.isRelevant && aiResponse.nextQuestion) {
-      const aiMessage: Message = {
-        id: Date.now() + 1,
-        role: "ai",
-        content: aiResponse.nextQuestion,
-      };
-      newHistory.push(aiMessage);
+    // Update scores and question count based on AWS response
+    setConversationState((prev) => {
+      const newState = { ...prev! };
+      newState.answers.history = newHistory;
+      newState.answers.scores[currentPillar] =
+        (newState.answers.scores[currentPillar] || 0) + aiResponse.score;
+      newState.answers.questionCount[currentPillar] =
+        (newState.answers.questionCount[currentPillar] || 0) + 1;
+      return newState;
+    });
 
-      setConversationState((prev) => {
-        const newState = { ...prev! };
-        newState.answers.history = newHistory;
-        newState.answers.scores[currentPillar] =
-          (newState.answers.scores[currentPillar] || 0) + aiResponse.score;
-        newState.answers.questionCount[currentPillar] =
-          (newState.answers.questionCount[currentPillar] || 0) + 1;
-        return newState;
-      });
+    // Check if we need to generate next dialogue
+    const shouldGenerateNext = dialogueCount < 6; // Total 6 dialogues: 2+2+1+1
+    
+    if (shouldGenerateNext) {
+      // Generate next dialogue
+      const nextDialogue = await generateDialogue(
+        currentPillar,
+        questionNumber + 1 <= totalQuestions ? questionNumber + 1 : 1,
+        totalQuestions,
+        focusType,
+        { [currentPillar]: userMessage.content }
+      );
+      
+      const heroMessage: Message = {
+        id: Date.now() + 1,
+        role: "hero",
+        content: nextDialogue.heroMessage,
+      };
+      
+      const doubtMessage: Message = {
+        id: Date.now() + 2,
+        role: "doubt",
+        content: nextDialogue.doubtMessage,
+      };
+      
+      newHistory.push(heroMessage, doubtMessage);
     } else {
+      // Show feedback message when complete
       const feedbackMessage: Message = {
         id: Date.now() + 1,
         role: "feedback",
-        content: aiResponse.feedback!,
+        content: aiResponse.feedback || "Great work! You've completed all the reflection questions.",
       };
       newHistory.push(feedbackMessage);
-      setConversationState((prev) => ({
-        ...prev!,
-        answers: { ...prev!.answers, history: newHistory },
-      }));
     }
+
     setMessages(newHistory);
+    setConversationState((prev) => ({
+      ...prev!,
+      answers: { ...prev!.answers, history: newHistory },
+    }));
     setIsProcessing(false);
 
-    const totalAIQuestions = newHistory.filter((m) => m.role === "ai").length;
-    if (totalAIQuestions >= 6) {
-      // 2+2+1+1 = 6 questions total
+    // Complete when we have 6 dialogues (12 hero/doubt messages)
+    if (dialogueCount >= 6) {
       onComplete(conversationState!);
     }
   };
@@ -199,15 +257,15 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
   const getPillarInfo = () => {
     if (!conversationState)
       return { name: orderedPillars[0], type: "Main Focus" };
-    const aiQuestionCount = conversationState.answers.history.filter(
-      (m) => m.role === "ai"
-    ).length;
-    if (aiQuestionCount <= 2)
+    const dialogueCount = Math.floor(conversationState.answers.history.filter(
+      (m) => m.role === "hero" || m.role === "doubt"
+    ).length / 2);
+    if (dialogueCount <= 2)
       return { name: priorities.mainFocus, type: "Main Focus" };
-    if (aiQuestionCount <= 4)
+    if (dialogueCount <= 4)
       return { name: priorities.secondaryFocus, type: "Secondary Focus" };
     return {
-      name: orderedPillars[Math.min(aiQuestionCount - 3, 3)],
+      name: orderedPillars[Math.min(dialogueCount - 2, 3)],
       type: "Maintenance",
     };
   };
@@ -218,11 +276,14 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     conversationState?.answers.questionCount[pillarInfo.name] || 0;
   const overallCompleted = conversationState
     ? Object.values(conversationState.answers.questionCount).reduce(
-        (a, b) => a + b,
+        (a: number, b: unknown) => a + (typeof b === 'number' ? b : 0),
         0
       )
     : 0;
-  const progressPercentage = Math.round((overallCompleted / 6) * 100);
+  const totalDialogues = conversationState ? Math.floor(conversationState.answers.history.filter(
+    (m) => m.role === "hero" || m.role === "doubt"
+  ).length / 2) : 0;
+  const progressPercentage = Math.round((totalDialogues / 6) * 100);
 
   // --- Render Logic ---
   if (isLoading) {
@@ -251,7 +312,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
               {questionsInPillar}
             </span>
             <span className="text-xs text-gray-400">
-              Overall: {overallCompleted} of 6 ({progressPercentage}%)
+              Overall: {totalDialogues} of 6 dialogues ({progressPercentage}%)
             </span>
           </div>
         </div>
@@ -276,12 +337,16 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
               <div
                 className={cn(
                   "w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold shadow-lg",
-                  msg.role === "ai"
+                  msg.role === "hero"
+                    ? "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white"
+                    : msg.role === "doubt"
+                    ? "bg-gradient-to-br from-amber-500 to-amber-600 text-white"
+                    : msg.role === "ai"
                     ? "bg-gradient-to-br from-purple-500 to-purple-600 text-white"
                     : "bg-gradient-to-br from-gray-600 to-gray-700 text-white"
                 )}
               >
-                {msg.role === "ai" ? "✨" : "😰"}
+                {msg.role === "hero" ? "🌟" : msg.role === "doubt" ? "😟" : msg.role === "ai" ? "✨" : "😰"}
               </div>
             )}
             <div
@@ -289,11 +354,20 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
                 "px-4 py-3 rounded-2xl shadow-sm max-w-[80%]",
                 msg.role === "user"
                   ? "bg-primary text-primary-foreground ml-auto"
+                  : msg.role === "hero"
+                  ? "bg-emerald-50 border border-emerald-200 text-emerald-800"
+                  : msg.role === "doubt"
+                  ? "bg-amber-50 border border-amber-200 text-amber-800"
                   : msg.role === "ai"
                   ? "bg-gray-100 text-gray-800"
                   : "bg-red-100 border border-red-200 text-red-800"
               )}
             >
+              {(msg.role === "hero" || msg.role === "doubt") && (
+                <div className="text-xs font-semibold mb-1 uppercase tracking-wide">
+                  {msg.role === "hero" ? "Your Future Self speaks:" : "Your Inner Doubt whispers:"}
+                </div>
+              )}
               <p className="text-sm leading-relaxed whitespace-pre-wrap">
                 {msg.content}
               </p>

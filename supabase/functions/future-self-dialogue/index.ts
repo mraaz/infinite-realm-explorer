@@ -87,6 +87,8 @@ Create a dialogue where:
 
 The Future Self should be inspiring but practical. The Inner Doubt should be concerned but not completely negative - more like a worried friend.
 
+Use British/Australian English spelling and expressions throughout (e.g., "realise" not "realize", "colour" not "color", "organised" not "organized").
+
 Keep both messages concise (2-3 sentences each) and make them feel like a natural conversation. The question should help them think deeply about what they really want in this area.
 
 Return ONLY a JSON object with this exact format:
