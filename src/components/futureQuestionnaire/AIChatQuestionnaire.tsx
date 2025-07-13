@@ -55,6 +55,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
   const [userInput, setUserInput] = useState("");
   const [conversationState, setConversationState] =
     useState<QuestionnaireStatePayload | null>(null);
+  const [showCompletion, setShowCompletion] = useState(false);
 
   const orderedPillars = [
     priorities.mainFocus,
@@ -369,10 +370,10 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     setConversationState(updatedState);
     setIsProcessing(false);
 
-    // Complete when we have 6 dialogues - call onComplete after the final dialogue
+    // Check if we're complete (6 dialogues total)
     if (dialogueCount >= 5) { // This is the 6th dialogue (0-indexed)
-      console.log("🎉 All 6 dialogues completed! Calling onComplete with final state");
-      onComplete(updatedState);
+      console.log("🎉 All 6 dialogues completed! Setting completion state");
+      setShowCompletion(true);
     }
   } catch (error) {
     console.error("❌ Error in handleSubmit:", error);
@@ -420,11 +421,52 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
   
   const progressPercentage = Math.round((totalDialogues / 6) * 100);
 
+  // Handle completion transition
+  const handleContinueToReview = () => {
+    if (conversationState) {
+      console.log("✅ User chose to continue to review, calling onComplete");
+      onComplete(conversationState);
+    }
+  };
+
   // --- Render Logic ---
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-purple-400" />
+      </div>
+    );
+  }
+
+  // Show completion state with user-controlled transition
+  if (showCompletion) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full max-w-2xl mx-auto p-8 text-center space-y-6">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-4xl animate-pulse">
+          🎉
+        </div>
+        <div className="space-y-4">
+          <h3 className="text-2xl font-bold text-white">
+            Incredible Work!
+          </h3>
+          <p className="text-gray-300 text-lg leading-relaxed">
+            You've completed all 6 reflection dialogues. Your insights are now ready to be transformed into your personalized Future Self Blueprint.
+          </p>
+          <div className="bg-emerald-900/20 border border-emerald-500/30 rounded-lg p-4 mt-6">
+            <p className="text-emerald-300 text-sm">
+              ✓ 6 dialogues completed<br/>
+              ✓ Insights captured across all life pillars<br/>
+              ✓ Ready for blueprint generation
+            </p>
+          </div>
+        </div>
+        <Button
+          onClick={handleContinueToReview}
+          size="lg"
+          className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white px-8 py-3 text-lg"
+        >
+          Continue to Review Your Blueprint
+        </Button>
       </div>
     );
   }

@@ -70,14 +70,12 @@ const FutureQuestionnaire: React.FC = () => {
   const handleConfirm = async () => {
     console.log("✅ Confirming questionnaire with data:", { priorities, answers });
     
-    // Log final data structure for verification
-    console.log("📊 Final answer summary:");
-    Object.entries(answers).forEach(([pillar, pillarAnswers]) => {
-      console.log(`  ${pillar}:`, Object.keys(pillarAnswers).length, "answers");
-      Object.entries(pillarAnswers).forEach(([qId, answer]) => {
-        console.log(`    ${qId}: ${answer.substring(0, 50)}...`);
-      });
-    });
+    // Handle AWS backend format safely
+    if (answers?.history && Array.isArray(answers.history)) {
+      console.log("📊 AWS format - conversation history length:", answers.history.length);
+    } else {
+      console.log("📊 Traditional format - answer keys:", Object.keys(answers));
+    }
 
     const finalPayload = { priorities, answers };
     if (user && authToken) {

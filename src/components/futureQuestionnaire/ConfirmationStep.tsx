@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Pillar } from "@/components/priority-ranking/types";
 import { questionnaireData } from "./questionnaireData";
 import { PrioritiesSummary } from "./PrioritiesSummary";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, MessageCircle } from "lucide-react";
+import { parseConversationToAnswers } from "@/utils/answerParser";
 
 // --- Type Definitions ---
 type Priorities = {
@@ -15,7 +16,7 @@ type Priorities = {
   maintenance: Pillar[];
 };
 type PillarAnswers = Record<string, string>;
-type Answers = { [key in Pillar]?: PillarAnswers };
+type Answers = { [key in Pillar]?: PillarAnswers } | any; // Allow AWS backend format
 
 interface ConfirmationStepProps {
   priorities: Priorities | null;
@@ -25,22 +26,32 @@ interface ConfirmationStepProps {
   isConfirming: boolean;
 }
 
-const AnswerSummary: React.FC<{
+const ConversationSummary: React.FC<{
   pillarName: Pillar;
-  pillarAnswers?: PillarAnswers;
+  responses: string[];
   focusType: "main" | "secondary" | "maintenance";
-}> = ({ pillarName, pillarAnswers, focusType }) => {
-  const questionSet = questionnaireData[pillarName]?.[focusType];
-  if (!questionSet || !pillarAnswers) return null;
+}> = ({ pillarName, responses, focusType }) => {
+  if (!responses || responses.length === 0) return null;
+  
+  const expectedQuestions = focusType === "maintenance" ? 1 : 2;
+  
   return (
     <div className="space-y-4">
-      <h4 className="text-lg font-semibold text-purple-400">{pillarName}</h4>
-      <div className="space-y-4 pl-4 border-l-2 border-gray-700">
-        {questionSet.questions.map((q) => (
-          <div key={q.id}>
-            <Label className="text-sm text-gray-400">{q.label}</Label>
-            <p className="text-white whitespace-pre-wrap mt-1">
-              {pillarAnswers[q.id] || "No answer provided."}
+      <div className="flex items-center gap-2">
+        <h4 className="text-lg font-semibold text-purple-400">{pillarName}</h4>
+        <span className="text-xs bg-purple-900/30 text-purple-300 px-2 py-1 rounded">
+          {focusType} focus
+        </span>
+      </div>
+      <div className="space-y-3 pl-4 border-l-2 border-purple-500/30">
+        {responses.map((response, index) => (
+          <div key={index} className="space-y-1">
+            <Label className="text-sm text-gray-400 flex items-center gap-1">
+              <MessageCircle className="w-3 h-3" />
+              Response {index + 1} of {expectedQuestions}
+            </Label>
+            <p className="text-white/90 leading-relaxed">
+              {response}
             </p>
           </div>
         ))}
@@ -56,11 +67,29 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   onPrevious,
   isConfirming,
 }) => {
+  // Parse AWS conversation history if available
+  const parsedAnswers = React.useMemo(() => {
+    if (!priorities) return {};
+    
+    console.log("🔍 ConfirmationStep: Parsing answers", { answers, priorities });
+    
+    // Check if we have AWS backend format (conversation history)
+    if (answers?.history && Array.isArray(answers.history)) {
+      console.log("📄 Using AWS conversation format");
+      return parseConversationToAnswers(answers.history, priorities);
+    }
+    
+    // Fallback to traditional format
+    console.log("📄 Using traditional pillar answers format");
+    return answers;
+  }, [answers, priorities]);
+
   useEffect(() => {
-    if (priorities && answers && Object.keys(answers).length > 0) {
+    if (priorities && parsedAnswers && Object.keys(parsedAnswers).length > 0) {
       const blueprintData = {
         priorities,
-        answers,
+        answers: parsedAnswers,
+        originalAnswers: answers, // Keep original for backend
         savedAt: new Date().toISOString(),
       };
 
@@ -77,7 +106,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         console.error("Failed to save blueprint data to local storage:", error);
       }
     }
-  }, [priorities, answers]);
+  }, [priorities, parsedAnswers, answers]);
 
   if (!priorities) {
     return <div className="text-center text-gray-400">Loading summary...</div>;
@@ -104,49 +133,56 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 
       <div className="space-y-3">
         <h3 className="text-sm uppercase font-bold text-gray-500 tracking-wider">
-          Your Answers
+          Your Insights
         </h3>
         <div className="space-y-8 bg-black/20 rounded-lg p-6">
-          <AnswerSummary
+          <ConversationSummary
             pillarName={priorities.mainFocus}
-            pillarAnswers={answers[priorities.mainFocus]}
+            responses={parsedAnswers[priorities.mainFocus]?.responses || []}
             focusType="main"
           />
-          <AnswerSummary
+          <ConversationSummary
             pillarName={priorities.secondaryFocus}
-            pillarAnswers={answers[priorities.secondaryFocus]}
+            responses={parsedAnswers[priorities.secondaryFocus]?.responses || []}
             focusType="secondary"
           />
           {priorities.maintenance.map((pillar) => (
-            <AnswerSummary
+            <ConversationSummary
               key={pillar}
               pillarName={pillar}
-              pillarAnswers={answers[pillar]}
+              responses={parsedAnswers[pillar]?.responses || []}
               focusType="maintenance"
             />
           ))}
         </div>
       </div>
 
-      {/* --- START: MODIFICATION --- */}
-      <div className="flex flex-col md:flex-row md:justify-between items-center gap-4 pt-4">
+      <div className="flex flex-col md:flex-row md:justify-between items-center gap-4 pt-6 border-t border-gray-700">
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={onPrevious}
+          className="flex items-center gap-2 text-gray-400 hover:text-white"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Chat
+        </Button>
         <Button
           size="lg"
           onClick={onConfirm}
           disabled={isConfirming}
-          className="w-full md:w-auto"
+          className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
         >
           {isConfirming ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Analyzing...
+              Analyzing Your Blueprint...
             </>
           ) : (
-            "Show Me My Future Self"
+            "Generate My Future Self Blueprint"
           )}
         </Button>
       </div>
-      {/* --- END: MODIFICATION --- */}
     </div>
   );
 };
