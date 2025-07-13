@@ -1,4 +1,4 @@
-// FutureQuestionnaire.tsx (With Step Persistence)
+// FutureQuestionnaire.tsx (With Step Persistence Fix)
 
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -39,15 +39,17 @@ const FutureQuestionnaire: React.FC = () => {
     handlePillarAnswersUpdate,
   } = useQuestionnaireState(user);
 
-  // --- MODIFICATION 1 of 2: Add a useEffect to load the saved step from the DB for logged-in users ---
+  const totalSteps = 3;
+
+  // --- MODIFICATION 1 of 3: Add a useEffect to load the saved step from the DB for logged-in users ---
   useEffect(() => {
     const fetchInitialStep = async () => {
-      if (authToken) {
+      // Only run for logged-in users after the initial local state has been loaded
+      if (authToken && !isLoading) {
         const savedState = await getQuestionnaireState(authToken);
         // Ensure we have a valid step number to restore to
         if (
-          savedState &&
-          savedState.step &&
+          savedState?.step &&
           savedState.step > 1 &&
           savedState.step <= totalSteps
         ) {
@@ -58,10 +60,11 @@ const FutureQuestionnaire: React.FC = () => {
     };
 
     fetchInitialStep();
-  }, [authToken]); // This runs once when the user's auth token is available.
+  }, [authToken, isLoading]); // This runs once the auth token and initial local data are ready.
 
   const handlePrevious = async () => {
     const targetStep = Math.max(step - 1, 1);
+    // --- MODIFICATION 2 of 3: Save progress when going backward ---
     if (user && authToken) {
       await saveQuestionnaireProgress(
         { priorities, answers, step: targetStep },
@@ -79,7 +82,7 @@ const FutureQuestionnaire: React.FC = () => {
     if (user && authToken) {
       setIsSaving(true);
       try {
-        // --- MODIFICATION 2 of 2: Include the step in the payload ---
+        // --- MODIFICATION 3 of 3: Include the next step number in the payload ---
         await saveQuestionnaireProgress(
           { priorities, answers, step: targetStep },
           authToken
@@ -114,8 +117,6 @@ const FutureQuestionnaire: React.FC = () => {
       },
     });
   };
-
-  const totalSteps = 3;
 
   const isNextDisabled = (): boolean => {
     if (isSaving) return true;
