@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import useOnScreen from "@/hooks/useOnScreen";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Volume2, VolumeX } from "lucide-react";
+import { Volume2, VolumeX, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const HeroVideoSection = () => {
@@ -13,21 +13,37 @@ const HeroVideoSection = () => {
   const [hasError, setHasError] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [showControls, setShowControls] = useState(false);
+  const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
+  // Detect iOS
+  useEffect(() => {
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    setIsIOS(isIOSDevice);
+  }, []);
 
   // Handle play/pause based on focus
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || hasError) return;
+    if (!video || hasError || needsUserInteraction) return;
 
     if (isOnScreen && isLoaded) {
-      video.play().catch(() => {
-        // Fallback if auto-play fails
-        setHasError(true);
-      });
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.log("Auto-play prevented:", error);
+          if (isIOS || error.name === "NotAllowedError") {
+            setNeedsUserInteraction(true);
+          } else {
+            setHasError(true);
+          }
+        });
+      }
     } else {
       video.pause();
     }
-  }, [isOnScreen, isLoaded, hasError]);
+  }, [isOnScreen, isLoaded, hasError, needsUserInteraction, isIOS]);
 
   const handleVideoLoad = () => {
     setIsLoaded(true);
@@ -43,6 +59,20 @@ const HeroVideoSection = () => {
     
     video.muted = !video.muted;
     setIsMuted(video.muted);
+  };
+
+  const handleUserPlay = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    setNeedsUserInteraction(false);
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.catch((error) => {
+        console.log("Manual play failed:", error);
+        setHasError(true);
+      });
+    }
   };
 
   // Fallback to text-only hero if video fails
@@ -79,7 +109,10 @@ const HeroVideoSection = () => {
           muted={isMuted}
           loop
           playsInline
-          preload={isMobile ? "none" : "metadata"}
+          webkit-playsinline="true"
+          autoPlay={!isIOS}
+          controls={needsUserInteraction}
+          preload={isMobile || isIOS ? "none" : "metadata"}
           onLoadedData={handleVideoLoad}
           onError={handleVideoError}
           poster="/placeholder.svg"
@@ -108,8 +141,22 @@ const HeroVideoSection = () => {
           </div>
         </div>
 
+        {/* Tap to Play Overlay for iOS/blocked autoplay */}
+        {needsUserInteraction && (
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-10">
+            <Button
+              onClick={handleUserPlay}
+              size="lg"
+              className="bg-white/90 hover:bg-white text-black hover:text-black min-w-[64px] min-h-[64px] rounded-full shadow-lg"
+              aria-label="Play video"
+            >
+              <Play className="h-8 w-8 ml-1" />
+            </Button>
+          </div>
+        )}
+
         {/* Audio Controls */}
-        {isLoaded && !hasError && (
+        {isLoaded && !hasError && !needsUserInteraction && (
           <div className={`absolute bottom-3 sm:bottom-4 left-3 sm:left-4 transition-opacity duration-300 ${showControls || isMobile ? 'opacity-100' : 'opacity-60'}`}>
             <Button
               variant="secondary"
