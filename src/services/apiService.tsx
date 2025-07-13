@@ -1,43 +1,103 @@
 import { Pillar } from "@/components/priority-ranking/types";
 
-// --- Type Definitions for the data structure ---
+// --- Type Definitions ---
 
-// Defines the structure for the user's selected priorities
 interface Priorities {
   mainFocus: Pillar;
   secondaryFocus: Pillar;
   maintenance: Pillar[];
 }
 
-// Defines the structure for the answers to questions for a single pillar
-type PillarAnswers = Record<string, string>;
+// Represents the structure of the `answers` object, which will hold the chat state
+// Using 'any' provides flexibility for storing conversation history, scores, etc.
+type AnswersState = any;
 
-// Defines the overall structure for all answers, keyed by pillar name
-type Answers = { [key in Pillar]?: PillarAnswers };
-
-// This is the shape of the data that will be sent to the backend
-export interface QuestionnairePayload {
+// This is the shape of the full user record in your 'futureselfquestionnaire' DynamoDB table
+export interface QuestionnaireStatePayload {
+  userId?: string; // The backend will handle this, but it's good practice to include it
   priorities: Priorities | null;
-  answers: Answers;
+  answers: AnswersState;
 }
 
-// The base URL of your deployed API Gateway stage.
+// This is the payload sent to the AI for processing a single answer
+export interface ProcessAnswerPayload {
+  pillarName: Pillar;
+  previousQuestion: string;
+  userAnswer: string;
+  // You could also include conversation_history here if needed in the future
+}
+
+// This is the expected JSON response from the AI processing endpoint
+export interface AIResponse {
+  isRelevant: boolean;
+  score: number;
+  nextQuestion: string | null;
+  feedback: string | null;
+}
+
+// The base URL of your deployed API Gateway stage
 const API_BASE_URL =
   "https://ffwkwcix01.execute-api.us-east-1.amazonaws.com/prod";
 
 /**
- * Saves the user's questionnaire progress to the backend.
- * @param {QuestionnairePayload} payload - The current priorities and answers.
+ * Fetches the user's saved questionnaire state from the backend.
+ * This includes their priorities and any saved chat progress.
+ * @param {string} token - The user's JWT token for authentication.
+ * @returns {Promise<QuestionnaireStatePayload>} The saved state object.
+ */
+export const getQuestionnaireState = async (
+  token: string
+): Promise<QuestionnaireStatePayload> => {
+  const url = `${API_BASE_URL}/futureQuestionnaire/state`;
+
+  console.log("Attempting to fetch questionnaire state...");
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Backend error while fetching state:", errorData);
+      throw new Error(
+        errorData.error || "Failed to fetch questionnaire state."
+      );
+    }
+
+    const state = await response.json();
+    console.log("Successfully fetched questionnaire state:", state);
+    return state;
+  } catch (error) {
+    console.error(
+      "An error occurred while fetching questionnaire state:",
+      error
+    );
+    // Return a default empty state on error so the app doesn't crash
+    return {
+      priorities: null,
+      answers: {},
+    };
+  }
+};
+
+/**
+ * Saves the entire state of the questionnaire conversation to the backend.
+ * @param {QuestionnaireStatePayload} payload - The complete questionnaire state object to be saved.
  * @param {string} token - The user's JWT token for authentication.
  * @returns {Promise<void>}
  */
 export const saveQuestionnaireProgress = async (
-  payload: QuestionnairePayload,
+  payload: QuestionnaireStatePayload,
   token: string
 ): Promise<void> => {
-  const url = `${API_BASE_URL}/futureQuestionnaire/priorities`;
+  const url = `${API_BASE_URL}/futureQuestionnaire/progress`;
 
-  console.log("Sending data to backend:", JSON.stringify(payload, null, 2));
+  console.log("Saving questionnaire progress to backend:", payload);
 
   try {
     const response = await fetch(url, {
@@ -51,14 +111,47 @@ export const saveQuestionnaireProgress = async (
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error("Backend error:", errorData);
+      console.error("Backend error while saving progress:", errorData);
       throw new Error(errorData.error || "Failed to save progress.");
     }
 
-    const result = await response.json();
-    console.log("Backend response:", result);
+    console.log("Progress saved successfully.");
   } catch (error) {
     console.error("An error occurred while saving progress:", error);
+    throw error;
+  }
+};
+
+/**
+ * Sends a user's answer to the backend for AI processing.
+ * @param {ProcessAnswerPayload} payload - The context of the current conversation turn.
+ * @param {string} token - The user's JWT token for authentication.
+ * @returns {Promise<AIResponse>} The structured response from the AI.
+ */
+export const processChatAnswer = async (
+  payload: ProcessAnswerPayload,
+  token: string
+): Promise<AIResponse> => {
+  const url = `${API_BASE_URL}/futureQuestionnaire/process-answer`;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to process answer.");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("An error occurred while processing answer:", error);
     throw error;
   }
 };

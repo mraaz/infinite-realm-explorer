@@ -1,13 +1,18 @@
-// /src/components/AIChatQuestionnaire.tsx (Modified)
-
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Sparkles } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
 import { Pillar } from "@/components/priority-ranking/types";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  getQuestionnaireState,
+  saveQuestionnaireProgress,
+  processChatAnswer,
+  QuestionnaireStatePayload,
+} from "@/services/apiService";
 
+// --- Type Definitions ---
 type Priorities = {
   mainFocus: Pillar;
   secondaryFocus: Pillar;
@@ -15,390 +20,304 @@ type Priorities = {
 };
 
 interface Message {
-  role: "hero" | "doubt" | "user";
+  id: number;
+  role: "ai" | "user" | "feedback";
   content: string;
 }
 
 interface AIChatQuestionnaireProps {
   priorities: Priorities;
-  onComplete: (answers: Record<Pillar, Record<string, string>>) => void;
+  onComplete: (finalState: QuestionnaireStatePayload) => void;
 }
+
+const initialQuestions: Record<Pillar, string> = {
+  Career:
+    "When you picture yourself thriving in your dream career 5 years from now, what work are you doing that makes you lose track of time?",
+  Financials:
+    "Describe your ideal financial situation in 5 years. What does financial freedom look and feel like to you?",
+  Health:
+    "Imagine it's 5 years from now and you are in peak health. What does your daily routine look like, and how do you feel?",
+  Connections:
+    "Envision your relationships in 5 years. How are you connecting with the most important people in your life?",
+};
 
 export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
   priorities,
   onComplete,
 }) => {
-  // Initialize ordered categories based on user's priorities
-  const orderedCategories: Pillar[] = [
+  const { authToken } = useAuth();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [userInput, setUserInput] = useState("");
+  const [conversationState, setConversationState] =
+    useState<QuestionnaireStatePayload | null>(null);
+
+  const orderedPillars = [
     priorities.mainFocus,
     priorities.secondaryFocus,
     ...priorities.maintenance,
   ];
 
-  console.log(
-    "🎯 AIChatQuestionnaire initialized with priorities:",
-    priorities
-  );
-  console.log("📋 Ordered categories:", orderedCategories);
-
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [currentInput, setCurrentInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<
-    Partial<Record<Pillar, Record<string, string>>>
-  >({});
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
+  // --- Initial Data Loading & Resuming Progress ---
   useEffect(() => {
-    generateNextQuestion();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Get question count based on category type - FIXED LOGIC
-  const getQuestionCount = (categoryIndex: number): number => {
-    if (categoryIndex === 0 || categoryIndex === 1) {
-      // Main focus and secondary focus get 3 questions each
-      return 3;
-    } else {
-      // Maintenance categories get 1 question each
-      return 1;
-    }
-  };
-
-  // Get current category info for logging
-  const getCurrentCategoryInfo = () => {
-    const category = orderedCategories[currentCategoryIndex];
-    const isMainFocus = currentCategoryIndex === 0;
-    const isSecondaryFocus = currentCategoryIndex === 1;
-    const isMaintenance = currentCategoryIndex >= 2;
-    const questionCount = getQuestionCount(currentCategoryIndex);
-
-    return {
-      category,
-      isMainFocus,
-      isSecondaryFocus,
-      isMaintenance,
-      questionCount,
-      categoryIndex: currentCategoryIndex,
-      questionIndex: currentQuestionIndex,
-    };
-  };
-
-  // Calculate overall progress for the progress bar
-  const calculateOverallProgress = () => {
-    let totalCompleted = 0;
-    let totalQuestions = 0;
-
-    for (let i = 0; i < currentCategoryIndex; i++) {
-      totalCompleted += getQuestionCount(i);
-      totalQuestions += getQuestionCount(i);
-    }
-
-    totalCompleted += currentQuestionIndex;
-    totalQuestions += getQuestionCount(currentCategoryIndex);
-
-    for (let i = currentCategoryIndex + 1; i < orderedCategories.length; i++) {
-      totalQuestions += getQuestionCount(i);
-    }
-
-    return { completed: totalCompleted, total: totalQuestions };
-  };
-
-  const getCurrentStep = (): number => {
-    if (currentCategoryIndex === 0) return 2;
-    if (currentCategoryIndex === 1) return 3;
-    if (currentCategoryIndex >= 2) return 4;
-    return 2;
-  };
-
-  const getCurrentStepName = (): string => {
-    if (currentCategoryIndex === 0) return "Main Focus";
-    if (currentCategoryIndex === 1) return "Secondary Focus";
-    if (currentCategoryIndex >= 2) return "Maintenance";
-    return "Main Focus";
-  };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const generateNextQuestion = async () => {
-    const categoryInfo = getCurrentCategoryInfo();
-    console.log("❓ Generating question for:", categoryInfo);
-
-    setIsLoading(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke(
-        "future-self-dialogue",
-        {
-          body: {
-            pillar: categoryInfo.category,
-            questionNumber: categoryInfo.questionIndex + 1,
-            totalQuestions: categoryInfo.questionCount,
-            focusType: categoryInfo.isMainFocus
-              ? "main"
-              : categoryInfo.isSecondaryFocus
-              ? "secondary"
-              : "maintenance",
-            previousAnswers: answers[categoryInfo.category] || {},
-            isFirstQuestion: categoryInfo.questionIndex === 0,
-          },
-        }
-      );
-
-      console.log("🔄 Edge function response:", { data, error });
-
-      if (error) {
-        console.error("❌ Error from edge function:", error);
-        throw error;
-      }
-
-      if (data?.heroMessage && data?.doubtMessage) {
-        setMessages((prev) => [
-          ...prev,
-          { role: "hero", content: data.heroMessage },
-          { role: "doubt", content: data.doubtMessage },
-        ]);
-        console.log("✅ Messages added successfully");
+    const loadState = async () => {
+      if (!authToken) return;
+      const savedState = await getQuestionnaireState(authToken);
+      if (
+        savedState &&
+        savedState.priorities &&
+        savedState.answers?.history?.length > 0
+      ) {
+        setConversationState(savedState);
+        setMessages(savedState.answers.history);
       } else {
-        console.error("❌ Invalid response format:", data);
-        throw new Error("Invalid response format from dialogue service");
+        const initialState: QuestionnaireStatePayload = {
+          priorities: priorities,
+          answers: {
+            history: [],
+            scores: { Career: 0, Financials: 0, Health: 0, Connections: 0 },
+            questionCount: {
+              Career: 0,
+              Financials: 0,
+              Health: 0,
+              Connections: 0,
+            },
+          },
+        };
+        const firstQuestion = initialQuestions[orderedPillars[0]];
+        const firstMessage = {
+          id: 1,
+          role: "ai",
+          content: firstQuestion,
+        } as Message;
+        const stateWithFirstMessage = {
+          ...initialState,
+          answers: { ...initialState.answers, history: [firstMessage] },
+        };
+        setConversationState(stateWithFirstMessage);
+        setMessages([firstMessage]);
       }
-    } catch (error) {
-      console.error("❌ Error generating question:", error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "hero",
-          content: "Let's talk about your vision for this area of your life.",
-        },
-        {
-          role: "doubt",
-          content: "But are you really ready to commit to change?",
-        },
-      ]);
-    } finally {
       setIsLoading(false);
-    }
-  };
+    };
+    loadState();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authToken]);
 
+  // --- Auto-saving progress ---
+  useEffect(() => {
+    if (conversationState && !isLoading && authToken) {
+      saveQuestionnaireProgress(conversationState, authToken);
+    }
+  }, [conversationState, isLoading, authToken]);
+
+  // --- Handling User Submission ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentInput.trim() || isLoading) return;
+    if (!userInput.trim() || isProcessing || !conversationState) return;
 
-    const userMessage = currentInput.trim();
-    const categoryInfo = getCurrentCategoryInfo();
+    const currentHistory = conversationState.answers.history;
+    const lastQuestion =
+      currentHistory.findLast((m) => m.role === "ai")?.content || "";
+    const aiQuestionCount = currentHistory.filter(
+      (m) => m.role === "ai"
+    ).length;
 
-    console.log("📝 User submitted answer:", {
-      answer: userMessage,
-      categoryInfo,
-      currentAnswers: answers[categoryInfo.category] || {},
-    });
+    // Determine the current pillar based on how many AI questions have been asked
+    let pillarIndex = 0;
+    if (aiQuestionCount > 2) pillarIndex = 1; // 2 questions for main focus
+    if (aiQuestionCount > 4) pillarIndex = 2; // 2 questions for secondary
+    if (aiQuestionCount > 5) pillarIndex = 3; // 1 question for first maintenance
+    const currentPillar = orderedPillars[pillarIndex];
 
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
-    setCurrentInput("");
-
-    const questionId = `q${categoryInfo.questionIndex + 1}`;
-    const updatedAnswers = {
-      ...answers,
-      [categoryInfo.category]: {
-        ...answers[categoryInfo.category],
-        [questionId]: userMessage,
-      },
+    const userMessage: Message = {
+      id: Date.now(),
+      role: "user",
+      content: userInput.trim(),
     };
+    setMessages((prev) => [...prev, userMessage]);
+    setUserInput("");
+    setIsProcessing(true);
 
-    setAnswers(updatedAnswers);
-    console.log("💾 Answer stored:", {
-      category: categoryInfo.category,
-      questionId,
-      answer: userMessage,
-      allAnswers: updatedAnswers,
-    });
+    const aiResponse = await processChatAnswer(
+      {
+        pillarName: currentPillar,
+        previousQuestion: lastQuestion,
+        userAnswer: userMessage.content,
+      },
+      authToken!
+    );
 
-    const nextQuestionIndex = categoryInfo.questionIndex + 1;
-    const maxQuestions = categoryInfo.questionCount;
+    const newHistory = [...currentHistory, userMessage];
 
-    if (nextQuestionIndex < maxQuestions) {
-      console.log(
-        `➡️ Moving to question ${nextQuestionIndex + 1} in ${
-          categoryInfo.category
-        }`
-      );
-      setCurrentQuestionIndex(nextQuestionIndex);
-      setTimeout(() => generateNextQuestion(), 1000);
+    if (aiResponse.isRelevant && aiResponse.nextQuestion) {
+      const aiMessage: Message = {
+        id: Date.now() + 1,
+        role: "ai",
+        content: aiResponse.nextQuestion,
+      };
+      newHistory.push(aiMessage);
+
+      setConversationState((prev) => {
+        const newState = { ...prev! };
+        newState.answers.history = newHistory;
+        newState.answers.scores[currentPillar] =
+          (newState.answers.scores[currentPillar] || 0) + aiResponse.score;
+        newState.answers.questionCount[currentPillar] =
+          (newState.answers.questionCount[currentPillar] || 0) + 1;
+        return newState;
+      });
     } else {
-      const nextCategoryIndex = categoryInfo.categoryIndex + 1;
+      const feedbackMessage: Message = {
+        id: Date.now() + 1,
+        role: "feedback",
+        content: aiResponse.feedback!,
+      };
+      newHistory.push(feedbackMessage);
+      setConversationState((prev) => ({
+        ...prev!,
+        answers: { ...prev!.answers, history: newHistory },
+      }));
+    }
+    setMessages(newHistory);
+    setIsProcessing(false);
 
-      if (nextCategoryIndex < orderedCategories.length) {
-        console.log(
-          `🔄 Moving to next category: ${orderedCategories[nextCategoryIndex]} (index ${nextCategoryIndex})`
-        );
-        setCurrentCategoryIndex(nextCategoryIndex);
-        setCurrentQuestionIndex(0);
-        setTimeout(() => generateNextQuestion(), 1500);
-      } else {
-        console.log(
-          "🎉 All categories completed! Final answers:",
-          updatedAnswers
-        );
-        onComplete(updatedAnswers as Record<Pillar, Record<string, string>>);
-      }
+    const totalAIQuestions = newHistory.filter((m) => m.role === "ai").length;
+    if (totalAIQuestions >= 6) {
+      // 2+2+1+1 = 6 questions total
+      onComplete(conversationState!);
     }
   };
 
-  const progress = calculateOverallProgress();
-  const progressPercentage = Math.round(
-    (progress.completed / progress.total) * 100
-  );
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // --- Progress Calculation for UI ---
+  const getPillarInfo = () => {
+    if (!conversationState)
+      return { name: orderedPillars[0], type: "Main Focus" };
+    const aiQuestionCount = conversationState.answers.history.filter(
+      (m) => m.role === "ai"
+    ).length;
+    if (aiQuestionCount <= 2)
+      return { name: priorities.mainFocus, type: "Main Focus" };
+    if (aiQuestionCount <= 4)
+      return { name: priorities.secondaryFocus, type: "Secondary Focus" };
+    return {
+      name: orderedPillars[Math.min(aiQuestionCount - 3, 3)],
+      type: "Maintenance",
+    };
+  };
+
+  const pillarInfo = getPillarInfo();
+  const questionsInPillar = pillarInfo.type === "Maintenance" ? 1 : 2;
+  const currentQuestionNum =
+    conversationState?.answers.questionCount[pillarInfo.name] || 0;
+  const overallCompleted = conversationState
+    ? Object.values(conversationState.answers.questionCount).reduce(
+        (a, b) => a + b,
+        0
+      )
+    : 0;
+  const progressPercentage = Math.round((overallCompleted / 6) * 100);
+
+  // --- Render Logic ---
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full max-w-4xl mx-auto p-4">
-      {/* --- START: MODIFICATION --- */}
+      {/* --- PROGRESS BAR ADDED BACK --- */}
       <div className="sticky top-4 z-10 mb-6 p-5 bg-gradient-to-br from-gray-800/60 to-gray-900/80 border border-purple-500/30 rounded-2xl shadow-xl backdrop-blur-md">
-        {/* --- END: MODIFICATION --- */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 text-sm">
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-600 to-purple-700 animate-pulse shadow-lg"></div>
             <span className="font-semibold text-white">
-              Step {getCurrentStep()}: {getCurrentStepName()}
+              Step 2: {pillarInfo.type}
             </span>
-            <span className="text-purple-300">
-              ({orderedCategories[currentCategoryIndex]})
-            </span>
+            <span className="text-purple-300">({pillarInfo.name})</span>
           </div>
           <div className="flex flex-col sm:items-end gap-1">
             <span className="text-gray-300 font-medium">
-              Question {currentQuestionIndex + 1} of{" "}
-              {getQuestionCount(currentCategoryIndex)}
+              Question {Math.min(currentQuestionNum + 1, questionsInPillar)} of{" "}
+              {questionsInPillar}
             </span>
             <span className="text-xs text-gray-400">
-              Overall: {progress.completed} of {progress.total} (
-              {progressPercentage}%)
+              Overall: {overallCompleted} of 6 ({progressPercentage}%)
             </span>
           </div>
         </div>
         <div className="w-full bg-gray-700/50 rounded-full h-3 mt-4 overflow-hidden border border-gray-600/30">
           <div
-            className="bg-gradient-to-r from-purple-600 to-purple-700 h-3 rounded-full transition-all duration-700 ease-out shadow-lg shadow-purple-500/20"
+            className="bg-gradient-to-r from-purple-600 to-purple-700 h-3 rounded-full transition-all duration-700 ease-out"
             style={{ width: `${progressPercentage}%` }}
           />
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-6 mb-6 pr-2">
-        {messages.map((msg, index) => (
+        {messages.map((msg) => (
           <div
-            key={index}
+            key={msg.id}
             className={cn(
-              "flex gap-4 animate-in slide-in-from-bottom-4 duration-500",
+              "flex items-start gap-4",
               msg.role === "user" ? "flex-row-reverse" : "flex-row"
             )}
           >
             {msg.role !== "user" && (
-              <div className="flex flex-col items-center space-y-1 mt-1">
-                <div
-                  className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-lg",
-                    msg.role === "hero"
-                      ? "bg-gradient-to-br from-purple-500 to-purple-600 text-white"
-                      : "bg-gradient-to-br from-gray-600 to-gray-700 text-white"
-                  )}
-                >
-                  {msg.role === "hero" ? "✨" : "😰"}
-                </div>
-                <div
-                  className={cn(
-                    "text-[10px] font-bold uppercase tracking-wider",
-                    msg.role === "hero" ? "text-purple-300" : "text-gray-300"
-                  )}
-                >
-                  {msg.role === "hero" ? "Future" : "Doubt"}
-                </div>
-              </div>
-            )}
-
-            <div
-              className={cn(
-                "flex-1 max-w-[80%]",
-                msg.role === "user" ? "text-right" : "text-left"
-              )}
-            >
-              {msg.role !== "user" && (
-                <div
-                  className={cn(
-                    "text-xs font-semibold mb-2 px-2",
-                    msg.role === "hero" ? "text-white" : "text-gray-300"
-                  )}
-                >
-                  {msg.role === "hero"
-                    ? "Your Future Self speaks:"
-                    : "Your Inner Doubt whispers:"}
-                </div>
-              )}
-
               <div
                 className={cn(
-                  "px-4 py-3 rounded-2xl shadow-sm",
-                  msg.role === "user"
-                    ? "bg-primary text-primary-foreground ml-auto"
-                    : msg.role === "hero"
-                    ? "bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 text-purple-900"
-                    : "bg-gray-700 border border-gray-600 text-gray-100"
+                  "w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold shadow-lg",
+                  msg.role === "ai"
+                    ? "bg-gradient-to-br from-purple-500 to-purple-600 text-white"
+                    : "bg-gradient-to-br from-gray-600 to-gray-700 text-white"
                 )}
               >
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {msg.content}
-                </p>
+                {msg.role === "ai" ? "✨" : "😰"}
               </div>
+            )}
+            <div
+              className={cn(
+                "px-4 py-3 rounded-2xl shadow-sm max-w-[80%]",
+                msg.role === "user"
+                  ? "bg-primary text-primary-foreground ml-auto"
+                  : msg.role === "ai"
+                  ? "bg-gray-100 text-gray-800"
+                  : "bg-red-100 border border-red-200 text-red-800"
+              )}
+            >
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                {msg.content}
+              </p>
             </div>
-
             {msg.role === "user" && (
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg mt-1">
-                You
-              </div>
+              <div className="w-10 h-10 rounded-full flex-shrink-0" />
             )}
           </div>
         ))}
-
-        {isLoading && (
-          <div className="flex gap-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white animate-pulse">
-              ✨
-            </div>
-            <div className="flex-1">
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 px-4 py-3 rounded-2xl">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
-                  <div
-                    className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"
-                    style={{ animationDelay: "0.1s" }}
-                  ></div>
-                  <div
-                    className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"
-                    style={{ animationDelay: "0.2s" }}
-                  ></div>
-                </div>
-              </div>
-            </div>
+        {isProcessing && (
+          <div className="flex justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-purple-300" />
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSubmit} className="flex gap-3">
+      <form onSubmit={handleSubmit} className="flex items-center gap-3">
         <Textarea
-          value={currentInput}
-          onChange={(e) => setCurrentInput(e.target.value)}
+          value={userInput}
+          onChange={(e) => setUserInput(e.target.value)}
           placeholder="Share your thoughts..."
-          className="flex-1 min-h-[60px] resize-none bg-card border border-border text-foreground placeholder:text-muted-foreground"
-          disabled={isLoading}
+          className="flex-1 min-h-[50px] resize-none bg-card border-border text-foreground"
+          disabled={isProcessing}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -408,8 +327,9 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
         />
         <Button
           type="submit"
-          disabled={!currentInput.trim() || isLoading}
-          className="h-[60px] px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
+          disabled={!userInput.trim() || isProcessing}
+          size="lg"
+          className="h-[50px]"
         >
           <Send className="h-5 w-5" />
         </Button>
