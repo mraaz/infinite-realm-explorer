@@ -7,11 +7,12 @@ import { QuestionnaireSteps } from "@/components/futureQuestionnaire/Questionnai
 import { QuestionnaireNavigation } from "@/components/futureQuestionnaire/QuestionnaireNavigation";
 import { AIChatQuestionnaire } from "@/components/futureQuestionnaire/AIChatQuestionnaire";
 import { Pillar, Priorities } from "@/components/priority-ranking/types";
+import SocialLoginModal from "@/components/SocialLoginModal"; // --- MODIFICATION: Import the modal ---
 import { useQuestionnaireState } from "@/hooks/useQuestionnaireState";
 import {
   saveQuestionnaireProgress,
-  generateBlueprint, // Import the blueprint generator
-  Blueprint, // Import the Blueprint type
+  generateBlueprint,
+  Blueprint,
 } from "@/services/apiService";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -26,9 +27,10 @@ const FutureQuestionnaire: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isChatComplete, setIsChatComplete] = useState(false);
-
-  // --- MODIFICATION: Add state to hold the generated blueprint ---
   const [blueprint, setBlueprint] = useState<Blueprint | null>(null);
+
+  // --- MODIFICATION: Add state to control the login modal ---
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const {
     isLoading,
@@ -53,17 +55,21 @@ const FutureQuestionnaire: React.FC = () => {
     setStep(targetStep);
   };
 
-  // --- MODIFICATION: handleNext now generates the blueprint when moving from step 2 to 3 ---
+  // --- MODIFICATION: handleNext now checks if the user is a guest ---
   const handleNext = async () => {
+    // If user is a guest and trying to proceed past step 1, show the login modal.
+    if (!user && step === 1) {
+      setIsLoginModalOpen(true);
+      return; // Stop the function here
+    }
+
     setSaveError(null);
     const targetStep = step + 1;
 
     if (user && authToken) {
       setIsSaving(true);
       try {
-        // If moving from chat to confirmation, generate the blueprint
         if (step === 2) {
-          console.log("✅ Generating final blueprint...");
           const finalPayload = { priorities, answers, step: 2 };
           const generatedBlueprint = await generateBlueprint(
             finalPayload,
@@ -71,7 +77,6 @@ const FutureQuestionnaire: React.FC = () => {
           );
           setBlueprint(generatedBlueprint);
         }
-
         await saveQuestionnaireProgress(
           { priorities, answers, step: targetStep },
           authToken
@@ -83,13 +88,12 @@ const FutureQuestionnaire: React.FC = () => {
         setIsSaving(false);
       }
     } else {
+      // This path is for guests moving between non-gated steps, if any.
       setStep(targetStep);
     }
   };
 
-  // --- MODIFICATION: handleConfirm is now much simpler ---
   const handleConfirm = () => {
-    // This function's only job is to navigate to the results page.
     navigate("/results");
   };
 
@@ -130,7 +134,6 @@ const FutureQuestionnaire: React.FC = () => {
           )
         );
       case 3:
-        // --- MODIFICATION: Pass the blueprint data to the ConfirmationStep ---
         return (
           <ConfirmationStep
             priorities={priorities}
@@ -180,6 +183,12 @@ const FutureQuestionnaire: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* --- MODIFICATION: Add the modal to the page's JSX --- */}
+      <SocialLoginModal
+        open={isLoginModalOpen}
+        onOpenChange={setIsLoginModalOpen}
+      />
     </div>
   );
 };
