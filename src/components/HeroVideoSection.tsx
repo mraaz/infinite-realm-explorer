@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import useOnScreen from "@/hooks/useOnScreen";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -22,21 +21,45 @@ const HeroVideoSection = () => {
   const [connectionSpeed, setConnectionSpeed] = useState<'fast' | 'slow' | 'unknown'>('unknown');
   const [showPoster, setShowPoster] = useState(true);
   const [currentVideoQuality, setCurrentVideoQuality] = useState<'HD' | 'SD' | 'Mobile'>('Mobile');
+  const [isDesktop, setIsDesktop] = useState(false);
 
-  // Enhanced iOS detection
+  // Enhanced device detection with better desktop/iOS distinction
   useEffect(() => {
     const userAgent = navigator.userAgent;
     const platform = navigator.platform;
     const maxTouchPoints = navigator.maxTouchPoints;
     
+    // More precise iOS detection - exclude Mac Desktop
     const isIOSDevice = 
       /iPad|iPhone|iPod/.test(userAgent) ||
-      (platform === 'MacIntel' && maxTouchPoints > 1) ||
-      (/Safari/.test(userAgent) && /Mobile/.test(userAgent)) ||
-      /iPhone OS|iOS/.test(userAgent) ||
-      (/Mac/.test(platform) && 'ontouchend' in document);
+      (/Safari/.test(userAgent) && /Mobile/.test(userAgent) && !/Mac/.test(platform)) ||
+      /iPhone OS|iOS/.test(userAgent);
+    
+    // Desktop detection - includes Mac Desktop with Chrome
+    const isDesktopDevice = 
+      !isMobile && 
+      !isIOSDevice &&
+      (window.innerWidth >= 1024) &&
+      (
+        /Mac/.test(platform) ||
+        /Win/.test(platform) ||
+        /Linux/.test(platform) ||
+        /Chrome/.test(userAgent) ||
+        /Firefox/.test(userAgent) ||
+        /Safari/.test(userAgent) && /Mac/.test(platform)
+      );
     
     setIsIOS(isIOSDevice);
+    setIsDesktop(isDesktopDevice);
+    
+    console.log('Device Detection:', { 
+      isIOSDevice, 
+      isDesktopDevice, 
+      isMobile, 
+      userAgent: userAgent.substring(0, 50) + '...', 
+      platform,
+      screenWidth: window.innerWidth
+    });
     
     // For iOS devices, require user consent before loading
     if (isIOSDevice) {
@@ -45,9 +68,9 @@ const HeroVideoSection = () => {
     } else {
       setUserConsentToLoad(true);
     }
-  }, []);
+  }, [isMobile]);
 
-  // Enhanced connection speed detection
+  // Enhanced connection speed detection with desktop priority
   useEffect(() => {
     const detectConnectionSpeed = () => {
       // Use Navigator connection API if available
@@ -57,59 +80,79 @@ const HeroVideoSection = () => {
           const effectiveType = conn.effectiveType;
           const downlink = conn.downlink;
           
+          console.log('Connection Info:', { effectiveType, downlink });
+          
           if (effectiveType === '4g' && downlink > 10) {
             setConnectionSpeed('fast');
           } else if (effectiveType === '4g' && downlink > 2) {
             setConnectionSpeed('fast');
-          } else {
+          } else if (effectiveType === '3g' || effectiveType === 'slow-2g' || effectiveType === '2g') {
             setConnectionSpeed('slow');
+          } else {
+            setConnectionSpeed('unknown');
           }
           return;
         }
       }
       
-      // Fallback: detect based on device type and screen size
-      if (isMobile || isIOS) {
+      // Enhanced fallback logic - prioritize desktop as fast
+      if (isDesktop) {
+        setConnectionSpeed('fast');
+      } else if (isMobile || isIOS) {
         setConnectionSpeed('slow');
       } else {
-        setConnectionSpeed('fast');
+        setConnectionSpeed('unknown');
       }
     };
 
     detectConnectionSpeed();
-  }, [isMobile, isIOS]);
+  }, [isMobile, isIOS, isDesktop]);
 
-  // Smart video quality selection
+  // Smart video quality selection with desktop priority
   const getOptimalVideoUrl = () => {
     const baseUrl = "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/";
     
-    // Force mobile quality for slow connections
-    if (connectionSpeed === 'slow') {
+    console.log('Quality Selection Logic:', { 
+      isDesktop, 
+      isMobile, 
+      isIOS, 
+      connectionSpeed, 
+      screenWidth: window.innerWidth 
+    });
+    
+    // iOS devices always get mobile quality
+    if (isIOS) {
       setCurrentVideoQuality('Mobile');
       return `${baseUrl}HomePageVideoMobile.mp4`;
     }
     
-    // Device-based quality selection
-    const screenWidth = window.innerWidth;
-    
-    if (screenWidth < 768 || isMobile || isIOS) {
-      // Mobile phones
-      setCurrentVideoQuality('Mobile');
-      return `${baseUrl}HomePageVideoMobile.mp4`;
-    } else if (screenWidth >= 768 && screenWidth <= 1024) {
-      // Tablets
-      setCurrentVideoQuality('SD');
-      return `${baseUrl}HomePageVideoSD.mp4`;
-    } else {
-      // Desktop - use HD for fast connections, SD for unknown
-      if (connectionSpeed === 'fast') {
-        setCurrentVideoQuality('HD');
-        return `${baseUrl}HomePageVideoHD.mp4`;
-      } else {
+    // Desktop gets HD by default, SD for slow connections
+    if (isDesktop) {
+      if (connectionSpeed === 'slow') {
         setCurrentVideoQuality('SD');
         return `${baseUrl}HomePageVideoSD.mp4`;
+      } else {
+        setCurrentVideoQuality('HD');
+        return `${baseUrl}HomePageVideoHD.mp4`;
       }
     }
+    
+    // Mobile phones get mobile quality
+    if (isMobile) {
+      setCurrentVideoQuality('Mobile');
+      return `${baseUrl}HomePageVideoMobile.mp4`;
+    }
+    
+    // Tablets and other devices
+    const screenWidth = window.innerWidth;
+    if (screenWidth >= 768 && screenWidth <= 1024) {
+      setCurrentVideoQuality('SD');
+      return `${baseUrl}HomePageVideoSD.mp4`;
+    }
+    
+    // Default fallback
+    setCurrentVideoQuality('SD');
+    return `${baseUrl}HomePageVideoSD.mp4`;
   };
 
   // Smart video loading strategy with quality fallback
@@ -119,6 +162,7 @@ const HeroVideoSection = () => {
 
     console.log('Starting video load process...', { 
       isIOS, 
+      isDesktop,
       connectionSpeed, 
       userConsentToLoad, 
       screenWidth: window.innerWidth,
@@ -383,16 +427,30 @@ const HeroVideoSection = () => {
           Your browser does not support the video tag.
         </video>
 
-        {/* Overlay for text content */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex items-center justify-center">
+        {/* Enhanced Responsive Overlay for text content */}
+        <div className={`absolute inset-0 ${
+          isMobile 
+            ? 'bg-gradient-to-t from-black/90 via-black/20 to-transparent' 
+            : 'bg-gradient-to-t from-black/80 via-black/30 to-transparent'
+        } flex ${
+          isMobile ? 'items-end pb-8' : 'items-end pb-16'
+        } justify-center`}>
           <div className="text-center px-4 sm:px-6 max-w-4xl">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold text-white tracking-tight mb-3 sm:mb-4 md:mb-6 drop-shadow-lg leading-tight">
+            <h2 className={`${
+              isMobile 
+                ? 'text-xl sm:text-2xl md:text-3xl' 
+                : 'text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl'
+            } font-extrabold text-white tracking-tight mb-3 sm:mb-4 md:mb-6 drop-shadow-lg leading-tight`}>
               Discover Your{" "}
               <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                 5-Year Future
               </span>
             </h2>
-            <p className="text-sm sm:text-base md:text-lg text-gray-200 max-w-2xl mx-auto drop-shadow-md leading-relaxed">
+            <p className={`${
+              isMobile 
+                ? 'text-xs sm:text-sm' 
+                : 'text-sm sm:text-base md:text-lg'
+            } text-gray-200 max-w-2xl mx-auto drop-shadow-md leading-relaxed`}>
               Get a personalised snapshot of where your life is heading. Our AI
               analyses your current situation across four key pillars to project
               your path forward.
@@ -476,12 +534,13 @@ const HeroVideoSection = () => {
           </div>
         )}
 
-        {/* Quality Indicator (Development) */}
+        {/* Enhanced Quality Indicator (Development) */}
         {process.env.NODE_ENV === 'development' && (
           <div className="absolute top-2 right-2 bg-black/80 text-white text-xs p-2 rounded">
-            <div>{isIOS ? 'iOS' : 'Non-iOS'} | {connectionSpeed} | {window.innerWidth}px</div>
+            <div>Device: {isDesktop ? 'Desktop' : isMobile ? 'Mobile' : 'Tablet'} | {isIOS ? 'iOS' : 'Non-iOS'}</div>
+            <div>Connection: {connectionSpeed} | Screen: {window.innerWidth}px</div>
             <div>Quality: {currentVideoQuality}</div>
-            <div>{userConsentToLoad ? 'Consented' : 'No consent'}</div>
+            <div>Consent: {userConsentToLoad ? 'Yes' : 'No'}</div>
           </div>
         )}
       </div>
