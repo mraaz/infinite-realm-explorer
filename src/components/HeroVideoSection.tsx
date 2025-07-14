@@ -13,20 +13,21 @@ const HeroVideoSection = () => {
   const isMobile = useIsMobile();
   const { getOptimalVideoUrl, connectionSpeed, isIOS } = useVideoQuality();
   
+  // Simplified state management
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [showControls, setShowControls] = useState(false);
   const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
-  const [userConsentToLoad, setUserConsentToLoad] = useState(false);
-  const [showPoster, setShowPoster] = useState(true);
+  const [userConsentToLoad, setUserConsentToLoad] = useState(!isIOS); // Desktop loads immediately
   const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [videoLoadError, setVideoLoadError] = useState<string>("");
+  const [loadingTimeout, setLoadingTimeout] = useState<NodeJS.Timeout | null>(null);
   
-  // Get video info and initialize immediately  
+  // Single source of truth for video info
   const videoInfo = getOptimalVideoUrl();
-  const [currentVideoSrc, setCurrentVideoSrc] = useState(videoInfo.url);
-  const [currentQuality, setCurrentQuality] = useState(videoInfo.quality);
+  const currentVideoSrc = videoInfo.url;
+  const currentQuality = videoInfo.quality;
 
   // Debug state changes
   useEffect(() => {
@@ -34,56 +35,38 @@ const HeroVideoSection = () => {
       isLoaded,
       hasError,
       isMuted,
-      showControls,
       needsUserInteraction,
       userConsentToLoad,
-      showPoster,
       isVideoLoading,
       videoLoadError,
       currentVideoSrc,
       currentQuality,
       isOnScreen,
+      connectionSpeed,
       timestamp: new Date().toISOString()
     });
-  }, [isLoaded, hasError, isMuted, showControls, needsUserInteraction, userConsentToLoad, showPoster, isVideoLoading, videoLoadError, currentVideoSrc, currentQuality, isOnScreen]);
+  }, [isLoaded, hasError, isMuted, needsUserInteraction, userConsentToLoad, isVideoLoading, videoLoadError, currentVideoSrc, currentQuality, isOnScreen, connectionSpeed]);
 
-  // Initialize video source and consent logic
+  // Loading timeout management
   useEffect(() => {
-    console.log('🚀 [HeroVideo] Initialization Effect:', {
-      connectionSpeed,
-      isIOS,
-      isMobile,
-      screenWidth: window.innerWidth
-    });
-
-    const newVideoInfo = getOptimalVideoUrl();
-    setCurrentVideoSrc(newVideoInfo.url);
-    setCurrentQuality(newVideoInfo.quality);
-    
-    // Desktop: No consent needed, immediate load
-    // iOS: Requires explicit consent
-    if (isIOS) {
-      console.log('📱 [HeroVideo] iOS detected - requiring user consent');
-      setUserConsentToLoad(false);
-      setShowPoster(true);
-    } else {
-      console.log('💻 [HeroVideo] Desktop detected - auto-loading');
-      setUserConsentToLoad(true);
-      setShowPoster(false);
+    if (isVideoLoading && userConsentToLoad) {
+      console.log('⏰ [HeroVideo] Setting loading timeout (30s)');
+      const timeout = setTimeout(() => {
+        console.log('⏰ [HeroVideo] Loading timeout reached - showing error');
+        setIsVideoLoading(false);
+        setVideoLoadError('Video loading timeout - please try refreshing the page');
+        setHasError(true);
+      }, 30000);
+      setLoadingTimeout(timeout);
+      
+      return () => {
+        if (timeout) {
+          console.log('⏰ [HeroVideo] Clearing loading timeout');
+          clearTimeout(timeout);
+        }
+      };
     }
-    
-    console.log('🎯 [HeroVideo] Video Configuration:', {
-      quality: newVideoInfo.quality,
-      size: newVideoInfo.size,
-      url: newVideoInfo.url,
-      isIOS,
-      isMobile,
-      connectionSpeed,
-      screenWidth: window.innerWidth,
-      consentNeeded: isIOS,
-      timestamp: new Date().toISOString()
-    });
-  }, [connectionSpeed, isIOS, isMobile]);
+  }, [isVideoLoading, userConsentToLoad]);
 
   // Video event handlers with debugging
   const handleCanPlay = () => {
@@ -92,18 +75,26 @@ const HeroVideoSection = () => {
       duration: videoRef.current?.duration,
       readyState: videoRef.current?.readyState
     });
+    
+    // Clear loading timeout
+    if (loadingTimeout) {
+      clearTimeout(loadingTimeout);
+      setLoadingTimeout(null);
+    }
+    
     setIsLoaded(true);
     setIsVideoLoading(false);
-    setShowPoster(false);
   };
 
   const handleLoadStart = () => {
     console.log(`⏳ [HeroVideo] Video load started - Quality: ${currentQuality}`, {
       currentSrc: videoRef.current?.currentSrc,
-      networkState: videoRef.current?.networkState
+      networkState: videoRef.current?.networkState,
+      readyState: videoRef.current?.readyState
     });
     setIsVideoLoading(true);
-    setShowPoster(false);
+    setHasError(false);
+    setVideoLoadError("");
   };
 
   const handleLoadedData = () => {
@@ -112,6 +103,13 @@ const HeroVideoSection = () => {
       buffered: videoRef.current?.buffered.length,
       readyState: videoRef.current?.readyState
     });
+    
+    // Clear loading timeout
+    if (loadingTimeout) {
+      clearTimeout(loadingTimeout);
+      setLoadingTimeout(null);
+    }
+    
     setIsLoaded(true);
     setIsVideoLoading(false);
   };
@@ -129,75 +127,37 @@ const HeroVideoSection = () => {
       errorMessage: error?.message,
       currentSrc: video.currentSrc,
       networkState: video.networkState,
-      readyState: video.readyState,
-      fallbackPlan: currentQuality === 'HD' ? 'Will try SD' : currentQuality === 'SD' ? 'Will try Mobile' : 'No more fallbacks'
+      readyState: video.readyState
     });
     
-    // Recreate video element for better error recovery
-    const recreateVideo = () => {
-      console.log('🔄 [HeroVideo] Recreating video element for error recovery');
-      if (videoRef.current) {
-        const parent = videoRef.current.parentNode;
-        const newVideo = videoRef.current.cloneNode(false) as HTMLVideoElement;
-        if (parent) {
-          parent.replaceChild(newVideo, videoRef.current);
-          (videoRef as any).current = newVideo;
-        }
-      }
-    };
-    
-    // Try fallback quality with video element recreation
-    if (currentQuality === 'HD') {
-      console.log('📉 [HeroVideo] HD failed, falling back to SD quality');
-      recreateVideo();
-      const sdVideoInfo = {
-        url: "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoSD.mp4",
-        quality: 'SD' as const,
-        size: '29MB'
-      };
-      setCurrentVideoSrc(sdVideoInfo.url);
-      setCurrentQuality(sdVideoInfo.quality);
-      setIsLoaded(false);
-      setIsVideoLoading(true);
-    } else if (currentQuality === 'SD') {
-      console.log('📉 [HeroVideo] SD failed, falling back to Mobile quality');
-      recreateVideo();
-      const mobileVideoInfo = {
-        url: "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoMobile.mp4",
-        quality: 'Mobile' as const,
-        size: '7MB'
-      };
-      setCurrentVideoSrc(mobileVideoInfo.url);
-      setCurrentQuality(mobileVideoInfo.quality);
-      setIsLoaded(false);
-      setIsVideoLoading(true);
-    } else {
-      // Mobile quality failed - show error
-      console.error('💥 [HeroVideo] All quality levels failed - showing error state');
-      setVideoLoadError(errorMsg);
-      setHasError(true);
-      setIsVideoLoading(false);
+    // Clear loading timeout
+    if (loadingTimeout) {
+      clearTimeout(loadingTimeout);
+      setLoadingTimeout(null);
     }
+    
+    // Simple error handling without video recreation
+    console.error('💥 [HeroVideo] Video loading failed - showing error state');
+    setVideoLoadError(errorMsg);
+    setHasError(true);
+    setIsVideoLoading(false);
   };
 
   const handleProgress = () => {
     const video = videoRef.current;
-    if (video && video.buffered.length > 0) {
+    if (video && video.buffered.length > 0 && video.duration > 0) {
       const bufferedEnd = video.buffered.end(video.buffered.length - 1);
       const duration = video.duration;
-      const percentage = duration ? (bufferedEnd / duration * 100).toFixed(1) : '0';
+      const percentage = (bufferedEnd / duration * 100).toFixed(1);
       
       console.log('📈 [HeroVideo] Video progress:', {
         quality: currentQuality,
         bufferedEnd,
         duration,
         percentage: percentage + '%',
-        readyToHideLoading: bufferedEnd / duration > 0.1
+        readyState: video.readyState,
+        networkState: video.networkState
       });
-      
-      if (bufferedEnd / duration > 0.1) { // 10% buffered
-        setIsVideoLoading(false);
-      }
     }
   };
 
@@ -251,7 +211,7 @@ const HeroVideoSection = () => {
   const handleUserLoadVideo = () => {
     console.log('👆 [HeroVideo] User clicked to load video');
     setUserConsentToLoad(true);
-    setShowPoster(false);
+    setIsVideoLoading(true);
   };
 
   const handleUserPlay = () => {
@@ -317,12 +277,12 @@ const HeroVideoSection = () => {
   }
 
   console.log('🎬 [HeroVideo] Rendering main video section:', {
-    showPoster,
     userConsentToLoad,
     needsUserInteraction,
     isVideoLoading,
     isLoaded,
-    currentQuality
+    currentQuality,
+    isIOS
   });
 
   return (
@@ -334,8 +294,8 @@ const HeroVideoSection = () => {
     >
       {/* Video Container */}
       <div className={`relative w-full bg-gray-900 ${isMobile ? 'aspect-[4/3]' : 'aspect-video'}`}>
-        {/* Poster Image - Show for iOS until user consents or while loading */}
-        {showPoster && (
+        {/* Poster Image - Show for iOS until user consents */}
+        {isIOS && !userConsentToLoad && (
           <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
             <div className="text-center px-4">
               <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center">
@@ -354,11 +314,11 @@ const HeroVideoSection = () => {
         <VideoPlayer
           ref={videoRef}
           src={currentVideoSrc}
-          className={`w-full h-full object-cover transition-opacity duration-300 ${showPoster ? 'opacity-0' : 'opacity-100'}`}
+          className={`w-full h-full object-cover transition-opacity duration-300 ${(isIOS && !userConsentToLoad) ? 'opacity-0' : 'opacity-100'}`}
           muted={isMuted}
           loop
           playsInline
-          preload={isIOS ? "none" : "metadata"}
+          preload={isIOS ? "metadata" : "metadata"}
           controlsList="nodownload"
           disablePictureInPicture={isIOS}
           onCanPlay={handleCanPlay}

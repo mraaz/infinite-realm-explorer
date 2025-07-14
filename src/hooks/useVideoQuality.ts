@@ -47,7 +47,7 @@ export const useVideoQuality = () => {
     setIsIOS(isIOSDevice);
   }, [isMobile]);
 
-  // Connection speed detection with debugging
+  // Immediate connection speed detection to prevent loading delays
   useEffect(() => {
     console.log('🌐 [VideoQuality] Connection Speed Detection Started:', {
       isMobile,
@@ -55,16 +55,12 @@ export const useVideoQuality = () => {
       timestamp: new Date().toISOString()
     });
 
-    // Desktop gets fast connection immediately
-    if (!isMobile && !isIOS) {
-      console.log('💻 [VideoQuality] Desktop detected - setting fast connection');
-      setConnectionSpeed('fast');
-    } else {
-      console.log('📱 [VideoQuality] Mobile/iOS detected - setting slow connection initially');
-      setConnectionSpeed('slow');
-    }
+    // Initialize connection speed immediately based on device type
+    const initialSpeed = (!isMobile && !isIOS) ? 'fast' : 'slow';
+    console.log(`⚡ [VideoQuality] Setting initial connection speed: ${initialSpeed}`);
+    setConnectionSpeed(initialSpeed);
     
-    // Optional: Try to detect actual connection speed for mobile
+    // Optional: Refine connection speed for mobile devices
     if (isMobile || isIOS) {
       if ('connection' in navigator) {
         const conn = (navigator as any).connection;
@@ -82,15 +78,8 @@ export const useVideoQuality = () => {
           if (effectiveType === '4g' || downlink > 1) {
             console.log('🚀 [VideoQuality] Good mobile connection - upgrading to fast');
             setConnectionSpeed('fast');
-          } else if (effectiveType === '3g' || effectiveType === '2g') {
-            console.log('🐌 [VideoQuality] Slow mobile connection - keeping slow');
-            setConnectionSpeed('slow');
           }
-        } else {
-          console.log('❌ [VideoQuality] No connection object available');
         }
-      } else {
-        console.log('❌ [VideoQuality] Navigator.connection not supported');
       }
     }
   }, [isMobile, isIOS]);
