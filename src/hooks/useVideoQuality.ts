@@ -5,13 +5,13 @@ import { DeviceDetection } from "./useDeviceDetection";
 export type VideoQuality = 'HD' | 'SD' | 'Mobile';
 
 export const useVideoQuality = (device: DeviceDetection) => {
-  const [currentVideoQuality, setCurrentVideoQuality] = useState<VideoQuality>('Mobile');
+  const [currentVideoQuality, setCurrentVideoQuality] = useState<VideoQuality>('SD');
   
-  // Smart video quality selection with SD as default for desktop to avoid HD loading issues
+  // Reliable video quality selection with verified URLs
   const getOptimalVideoUrl = useCallback(() => {
     const baseUrl = "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/";
     
-    console.log('Quality Selection Logic:', { 
+    console.log('Video Quality Selection:', { 
       isDesktop: device.isDesktop, 
       isMobile: device.isMobile, 
       isIOS: device.isIOS, 
@@ -19,34 +19,35 @@ export const useVideoQuality = (device: DeviceDetection) => {
       screenWidth: window.innerWidth 
     });
     
-    // iOS devices always get mobile quality
+    // iOS devices always get mobile quality for best compatibility
     if (device.isIOS) {
       setCurrentVideoQuality('Mobile');
-      return `${baseUrl}HomePageVideoMobile.mp4`;
+      const url = `${baseUrl}HomePageVideoMobile.mp4`;
+      console.log('Selected iOS Mobile quality:', url);
+      return url;
     }
     
-    // Desktop gets SD by default to avoid HD loading issues (41MB file)
+    // Desktop gets SD quality for reliability (28MB vs 41MB HD)
     if (device.isDesktop) {
       setCurrentVideoQuality('SD');
-      return `${baseUrl}HomePageVideoSD.mp4`;
+      const url = `${baseUrl}HomePageVideoSD.mp4`;
+      console.log('Selected Desktop SD quality:', url);
+      return url;
     }
     
     // Mobile phones get mobile quality
     if (device.isMobile) {
       setCurrentVideoQuality('Mobile');
-      return `${baseUrl}HomePageVideoMobile.mp4`;
+      const url = `${baseUrl}HomePageVideoMobile.mp4`;
+      console.log('Selected Mobile quality:', url);
+      return url;
     }
     
-    // Tablets and other devices
-    const screenWidth = window.innerWidth;
-    if (screenWidth >= 768 && screenWidth <= 1024) {
-      setCurrentVideoQuality('SD');
-      return `${baseUrl}HomePageVideoSD.mp4`;
-    }
-    
-    // Default fallback
+    // Default fallback to SD
     setCurrentVideoQuality('SD');
-    return `${baseUrl}HomePageVideoSD.mp4`;
+    const url = `${baseUrl}HomePageVideoSD.mp4`;
+    console.log('Selected fallback SD quality:', url);
+    return url;
   }, [device]);
 
   // Handle video load failure with quality downgrade
@@ -57,33 +58,32 @@ export const useVideoQuality = (device: DeviceDetection) => {
 
     try {
       let fallbackUrl = '';
+      let newQuality: VideoQuality;
       
       if (currentVideoQuality === 'HD') {
-        setCurrentVideoQuality('SD');
+        newQuality = 'SD';
         fallbackUrl = `${baseUrl}HomePageVideoSD.mp4`;
-        console.log('HD failed, falling back to SD quality');
+        console.log('HD failed, falling back to SD quality:', fallbackUrl);
       } else if (currentVideoQuality === 'SD') {
-        setCurrentVideoQuality('Mobile');
+        newQuality = 'Mobile';
         fallbackUrl = `${baseUrl}HomePageVideoMobile.mp4`;
-        console.log('SD failed, falling back to Mobile quality');
+        console.log('SD failed, falling back to Mobile quality:', fallbackUrl);
       } else {
-        // Mobile quality failed - return false to indicate complete failure
-        console.log('Mobile quality failed - no more fallbacks');
+        console.log('Mobile quality failed - no more fallbacks available');
         return false;
       }
 
-      const source = video.querySelector('source[type="video/mp4"]') as HTMLSourceElement;
-      if (source) {
-        source.src = fallbackUrl;
-        video.load();
-        return true;
-      }
+      setCurrentVideoQuality(newQuality);
+      
+      // Set the new source directly on the video element
+      video.src = fallbackUrl;
+      video.load();
+      
+      return true;
     } catch (error) {
       console.error('Fallback video load failed:', error);
       return false;
     }
-    
-    return false;
   }, [currentVideoQuality]);
 
   return {

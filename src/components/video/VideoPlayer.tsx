@@ -5,6 +5,7 @@ interface VideoPlayerProps {
   isMuted: boolean;
   isMobile: boolean;
   showPoster: boolean;
+  videoSrc: string;
   onLoadStart: () => void;
   onLoadedData: () => void;
   onCanPlay: () => void;
@@ -13,7 +14,7 @@ interface VideoPlayerProps {
 }
 
 export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
-  ({ isMuted, isMobile, showPoster, onLoadStart, onLoadedData, onCanPlay, onError, onProgress }, ref) => {
+  ({ isMuted, isMobile, showPoster, videoSrc, onLoadStart, onLoadedData, onCanPlay, onError, onProgress }, ref) => {
     return (
       <video
         ref={ref}
@@ -21,7 +22,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         muted={isMuted}
         loop
         playsInline
-        preload="none"
+        preload="metadata"
         poster="/placeholder.svg"
         controlsList="nodownload"
         disablePictureInPicture={isMobile}
@@ -30,9 +31,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         onCanPlay={onCanPlay}
         onError={onError}
         onProgress={onProgress}
+        src={videoSrc}
       >
         <source
-          src=""
+          src={videoSrc}
           type="video/mp4"
         />
         Your browser does not support the video tag.
