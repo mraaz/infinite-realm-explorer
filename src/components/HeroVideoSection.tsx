@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import useOnScreen from "@/hooks/useOnScreen";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -29,8 +28,34 @@ const HeroVideoSection = () => {
   const [currentVideoSrc, setCurrentVideoSrc] = useState(videoInfo.url);
   const [currentQuality, setCurrentQuality] = useState(videoInfo.quality);
 
+  // Debug state changes
+  useEffect(() => {
+    console.log('🎭 [HeroVideo] State Update:', {
+      isLoaded,
+      hasError,
+      isMuted,
+      showControls,
+      needsUserInteraction,
+      userConsentToLoad,
+      showPoster,
+      isVideoLoading,
+      videoLoadError,
+      currentVideoSrc,
+      currentQuality,
+      isOnScreen,
+      timestamp: new Date().toISOString()
+    });
+  }, [isLoaded, hasError, isMuted, showControls, needsUserInteraction, userConsentToLoad, showPoster, isVideoLoading, videoLoadError, currentVideoSrc, currentQuality, isOnScreen]);
+
   // Initialize video source and consent logic
   useEffect(() => {
+    console.log('🚀 [HeroVideo] Initialization Effect:', {
+      connectionSpeed,
+      isIOS,
+      isMobile,
+      screenWidth: window.innerWidth
+    });
+
     const newVideoInfo = getOptimalVideoUrl();
     setCurrentVideoSrc(newVideoInfo.url);
     setCurrentQuality(newVideoInfo.quality);
@@ -38,14 +63,16 @@ const HeroVideoSection = () => {
     // Desktop: No consent needed, immediate load
     // iOS: Requires explicit consent
     if (isIOS) {
+      console.log('📱 [HeroVideo] iOS detected - requiring user consent');
       setUserConsentToLoad(false);
       setShowPoster(true);
     } else {
+      console.log('💻 [HeroVideo] Desktop detected - auto-loading');
       setUserConsentToLoad(true);
       setShowPoster(false);
     }
     
-    console.log('Video initialized:', {
+    console.log('🎯 [HeroVideo] Video Configuration:', {
       quality: newVideoInfo.quality,
       size: newVideoInfo.size,
       url: newVideoInfo.url,
@@ -53,26 +80,38 @@ const HeroVideoSection = () => {
       isMobile,
       connectionSpeed,
       screenWidth: window.innerWidth,
-      consentNeeded: isIOS
+      consentNeeded: isIOS,
+      timestamp: new Date().toISOString()
     });
   }, [connectionSpeed, isIOS, isMobile]);
 
-  // Video event handlers
+  // Video event handlers with debugging
   const handleCanPlay = () => {
-    console.log(`Video can play - Quality: ${currentQuality}`);
+    console.log(`✅ [HeroVideo] Video can play - Quality: ${currentQuality}`, {
+      currentSrc: videoRef.current?.currentSrc,
+      duration: videoRef.current?.duration,
+      readyState: videoRef.current?.readyState
+    });
     setIsLoaded(true);
     setIsVideoLoading(false);
     setShowPoster(false);
   };
 
   const handleLoadStart = () => {
-    console.log(`Video load started - Quality: ${currentQuality}`);
+    console.log(`⏳ [HeroVideo] Video load started - Quality: ${currentQuality}`, {
+      currentSrc: videoRef.current?.currentSrc,
+      networkState: videoRef.current?.networkState
+    });
     setIsVideoLoading(true);
     setShowPoster(false);
   };
 
   const handleLoadedData = () => {
-    console.log(`Video data loaded - Quality: ${currentQuality}`);
+    console.log(`📊 [HeroVideo] Video data loaded - Quality: ${currentQuality}`, {
+      duration: videoRef.current?.duration,
+      buffered: videoRef.current?.buffered.length,
+      readyState: videoRef.current?.readyState
+    });
     setIsLoaded(true);
     setIsVideoLoading(false);
   };
@@ -83,10 +122,20 @@ const HeroVideoSection = () => {
     const errorMsg = error ? 
       `Error ${error.code}: ${error.message}` : 
       'Unknown video error';
-    console.error(`Video error (${currentQuality}):`, errorMsg);
+    
+    console.error(`❌ [HeroVideo] Video error (${currentQuality}):`, {
+      errorMsg,
+      errorCode: error?.code,
+      errorMessage: error?.message,
+      currentSrc: video.currentSrc,
+      networkState: video.networkState,
+      readyState: video.readyState,
+      fallbackPlan: currentQuality === 'HD' ? 'Will try SD' : currentQuality === 'SD' ? 'Will try Mobile' : 'No more fallbacks'
+    });
     
     // Recreate video element for better error recovery
     const recreateVideo = () => {
+      console.log('🔄 [HeroVideo] Recreating video element for error recovery');
       if (videoRef.current) {
         const parent = videoRef.current.parentNode;
         const newVideo = videoRef.current.cloneNode(false) as HTMLVideoElement;
@@ -99,7 +148,7 @@ const HeroVideoSection = () => {
     
     // Try fallback quality with video element recreation
     if (currentQuality === 'HD') {
-      console.log('HD failed, falling back to SD quality');
+      console.log('📉 [HeroVideo] HD failed, falling back to SD quality');
       recreateVideo();
       const sdVideoInfo = {
         url: "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoSD.mp4",
@@ -111,7 +160,7 @@ const HeroVideoSection = () => {
       setIsLoaded(false);
       setIsVideoLoading(true);
     } else if (currentQuality === 'SD') {
-      console.log('SD failed, falling back to Mobile quality');
+      console.log('📉 [HeroVideo] SD failed, falling back to Mobile quality');
       recreateVideo();
       const mobileVideoInfo = {
         url: "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoMobile.mp4",
@@ -124,6 +173,7 @@ const HeroVideoSection = () => {
       setIsVideoLoading(true);
     } else {
       // Mobile quality failed - show error
+      console.error('💥 [HeroVideo] All quality levels failed - showing error state');
       setVideoLoadError(errorMsg);
       setHasError(true);
       setIsVideoLoading(false);
@@ -135,6 +185,16 @@ const HeroVideoSection = () => {
     if (video && video.buffered.length > 0) {
       const bufferedEnd = video.buffered.end(video.buffered.length - 1);
       const duration = video.duration;
+      const percentage = duration ? (bufferedEnd / duration * 100).toFixed(1) : '0';
+      
+      console.log('📈 [HeroVideo] Video progress:', {
+        quality: currentQuality,
+        bufferedEnd,
+        duration,
+        percentage: percentage + '%',
+        readyToHideLoading: bufferedEnd / duration > 0.1
+      });
+      
       if (bufferedEnd / duration > 0.1) { // 10% buffered
         setIsVideoLoading(false);
       }
@@ -144,34 +204,58 @@ const HeroVideoSection = () => {
   // Autoplay when video is loaded and in view
   useEffect(() => {
     const video = videoRef.current;
+    
+    console.log('🎮 [HeroVideo] Autoplay Effect Check:', {
+      hasVideo: !!video,
+      hasError,
+      needsUserInteraction,
+      isLoaded,
+      userConsentToLoad,
+      isOnScreen,
+      canAttemptAutoplay: !!video && !hasError && !needsUserInteraction && isLoaded && userConsentToLoad
+    });
+
     if (!video || hasError || needsUserInteraction || !isLoaded || !userConsentToLoad) return;
 
     if (isOnScreen) {
+      console.log('🎯 [HeroVideo] Attempting autoplay - video is on screen');
       video.muted = true;
       setIsMuted(true);
       
       const playPromise = video.play();
       if (playPromise !== undefined) {
         playPromise.then(() => {
-          console.log(`Autoplay successful - Quality: ${currentQuality}`);
+          console.log(`✅ [HeroVideo] Autoplay successful - Quality: ${currentQuality}`, {
+            currentTime: video.currentTime,
+            paused: video.paused,
+            muted: video.muted
+          });
         }).catch((error) => {
-          console.log('Autoplay prevented:', error.name);
+          console.log('🚫 [HeroVideo] Autoplay prevented:', {
+            errorName: error.name,
+            errorMessage: error.message,
+            quality: currentQuality,
+            willRequireUserInteraction: error.name === "NotAllowedError"
+          });
           if (error.name === "NotAllowedError") {
             setNeedsUserInteraction(true);
           }
         });
       }
     } else {
+      console.log('👁️ [HeroVideo] Video not on screen - pausing');
       video.pause();
     }
   }, [isOnScreen, isLoaded, hasError, needsUserInteraction, userConsentToLoad, currentQuality]);
 
   const handleUserLoadVideo = () => {
+    console.log('👆 [HeroVideo] User clicked to load video');
     setUserConsentToLoad(true);
     setShowPoster(false);
   };
 
   const handleUserPlay = () => {
+    console.log('👆 [HeroVideo] User clicked to play video');
     const video = videoRef.current;
     if (!video) return;
 
@@ -182,24 +266,34 @@ const HeroVideoSection = () => {
     const playPromise = video.play();
     if (playPromise !== undefined) {
       playPromise.then(() => {
-        console.log(`User play successful - Quality: ${currentQuality}`);
+        console.log(`✅ [HeroVideo] User play successful - Quality: ${currentQuality}`, {
+          currentTime: video.currentTime,
+          paused: video.paused
+        });
       }).catch((error) => {
-        console.error('User play failed:', error);
+        console.error('❌ [HeroVideo] User play failed:', {
+          errorName: error.name,
+          errorMessage: error.message,
+          quality: currentQuality
+        });
         setHasError(true);
       });
     }
   };
 
   const toggleMute = () => {
+    console.log('🔊 [HeroVideo] Toggle mute clicked');
     const video = videoRef.current;
     if (!video) return;
     
     video.muted = !video.muted;
     setIsMuted(video.muted);
+    console.log('🔊 [HeroVideo] Mute toggled:', { muted: video.muted });
   };
 
   // Error fallback
   if (hasError) {
+    console.log('💥 [HeroVideo] Rendering error fallback');
     return (
       <section ref={sectionRef} className="text-center mb-8 md:mb-16 px-4">
         <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white tracking-tight mb-4 md:mb-6">
@@ -221,6 +315,15 @@ const HeroVideoSection = () => {
       </section>
     );
   }
+
+  console.log('🎬 [HeroVideo] Rendering main video section:', {
+    showPoster,
+    userConsentToLoad,
+    needsUserInteraction,
+    isVideoLoading,
+    isLoaded,
+    currentQuality
+  });
 
   return (
     <section 
@@ -356,12 +459,24 @@ const HeroVideoSection = () => {
           </div>
         )}
 
-        {/* Quality Indicator (Development) */}
+        {/* Enhanced Quality Indicator (Development) */}
         {process.env.NODE_ENV === 'development' && (
-          <div className="absolute top-2 right-2 bg-black/80 text-white text-xs p-2 rounded">
-            <div>{isIOS ? 'iOS' : 'Desktop'} | {connectionSpeed} | {window.innerWidth}px</div>
+          <div className="absolute top-2 right-2 bg-black/90 text-white text-xs p-3 rounded-lg border border-white/20">
+            <div className="font-bold text-green-400">🎬 Video Debug Info</div>
+            <div>Device: {isIOS ? 'iOS' : isMobile ? 'Mobile' : 'Desktop'}</div>
+            <div>Connection: {connectionSpeed}</div>
+            <div>Screen: {window.innerWidth}px</div>
             <div>Quality: {currentQuality} ({videoInfo.size})</div>
-            <div>{userConsentToLoad ? 'Loaded' : 'Waiting for consent'}</div>
+            <div>Status: {userConsentToLoad ? 'Loaded' : 'Waiting for consent'}</div>
+            <div>State: {isLoaded ? 'Ready' : isVideoLoading ? 'Loading' : hasError ? 'Error' : 'Pending'}</div>
+            <div>OnScreen: {isOnScreen ? '✅' : '❌'}</div>
+            {videoRef.current && (
+              <div>
+                <div>ReadyState: {videoRef.current.readyState}</div>
+                <div>NetworkState: {videoRef.current.networkState}</div>
+                <div>Duration: {videoRef.current.duration?.toFixed(1)}s</div>
+              </div>
+            )}
           </div>
         )}
       </div>
