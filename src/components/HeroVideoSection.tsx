@@ -4,264 +4,129 @@ import useOnScreen from "@/hooks/useOnScreen";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Volume2, VolumeX, Play, Wifi, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useVideoQuality } from "@/hooks/useVideoQuality";
+import VideoPlayer from "@/components/video/VideoPlayer";
 
 const HeroVideoSection = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
   const isOnScreen = useOnScreen(sectionRef, { threshold: 0.3 });
   const isMobile = useIsMobile();
+  const { getOptimalVideoUrl, connectionSpeed, isIOS } = useVideoQuality();
+  
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [showControls, setShowControls] = useState(false);
   const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [videoLoadError, setVideoLoadError] = useState<string>("");
-  const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [userConsentToLoad, setUserConsentToLoad] = useState(false);
-  const [connectionSpeed, setConnectionSpeed] = useState<'fast' | 'slow' | 'unknown'>('unknown');
   const [showPoster, setShowPoster] = useState(true);
-  const [currentVideoQuality, setCurrentVideoQuality] = useState<'HD' | 'SD' | 'Mobile'>('Mobile');
+  const [isVideoLoading, setIsVideoLoading] = useState(false);
+  const [videoLoadError, setVideoLoadError] = useState<string>("");
+  
+  // Get video info
+  const videoInfo = getOptimalVideoUrl();
+  const [currentVideoSrc, setCurrentVideoSrc] = useState(videoInfo.url);
+  const [currentQuality, setCurrentQuality] = useState(videoInfo.quality);
 
-  // Enhanced iOS detection
+  // Initialize video source immediately
   useEffect(() => {
-    const userAgent = navigator.userAgent;
-    const platform = navigator.platform;
-    const maxTouchPoints = navigator.maxTouchPoints;
+    const newVideoInfo = getOptimalVideoUrl();
+    setCurrentVideoSrc(newVideoInfo.url);
+    setCurrentQuality(newVideoInfo.quality);
     
-    const isIOSDevice = 
-      /iPad|iPhone|iPod/.test(userAgent) ||
-      (platform === 'MacIntel' && maxTouchPoints > 1) ||
-      (/Safari/.test(userAgent) && /Mobile/.test(userAgent)) ||
-      /iPhone OS|iOS/.test(userAgent) ||
-      (/Mac/.test(platform) && 'ontouchend' in document);
-    
-    setIsIOS(isIOSDevice);
-    
-    // For iOS devices, require user consent before loading
-    if (isIOSDevice) {
+    console.log('Video initialized:', {
+      quality: newVideoInfo.quality,
+      size: newVideoInfo.size,
+      url: newVideoInfo.url,
+      isIOS,
+      isMobile,
+      connectionSpeed,
+      screenWidth: window.innerWidth
+    });
+  }, [connectionSpeed, isIOS, isMobile]);
+
+  // Set user consent - iOS requires explicit consent
+  useEffect(() => {
+    if (isIOS) {
       setUserConsentToLoad(false);
       setShowPoster(true);
     } else {
       setUserConsentToLoad(true);
-    }
-  }, []);
-
-  // Enhanced connection speed detection
-  useEffect(() => {
-    const detectConnectionSpeed = () => {
-      // Use Navigator connection API if available
-      if ('connection' in navigator) {
-        const conn = (navigator as any).connection;
-        if (conn) {
-          const effectiveType = conn.effectiveType;
-          const downlink = conn.downlink;
-          
-          if (effectiveType === '4g' && downlink > 10) {
-            setConnectionSpeed('fast');
-          } else if (effectiveType === '4g' && downlink > 2) {
-            setConnectionSpeed('fast');
-          } else {
-            setConnectionSpeed('slow');
-          }
-          return;
-        }
-      }
-      
-      // Fallback: detect based on device type and screen size
-      if (isMobile || isIOS) {
-        setConnectionSpeed('slow');
-      } else {
-        setConnectionSpeed('fast');
-      }
-    };
-
-    detectConnectionSpeed();
-  }, [isMobile, isIOS]);
-
-  // Smart video quality selection
-  const getOptimalVideoUrl = () => {
-    const baseUrl = "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/";
-    
-    // Force mobile quality for slow connections
-    if (connectionSpeed === 'slow') {
-      setCurrentVideoQuality('Mobile');
-      return `${baseUrl}HomePageVideoMobile.mp4`;
-    }
-    
-    // Device-based quality selection
-    const screenWidth = window.innerWidth;
-    
-    if (screenWidth < 768 || isMobile || isIOS) {
-      // Mobile phones
-      setCurrentVideoQuality('Mobile');
-      return `${baseUrl}HomePageVideoMobile.mp4`;
-    } else if (screenWidth >= 768 && screenWidth <= 1024) {
-      // Tablets
-      setCurrentVideoQuality('SD');
-      return `${baseUrl}HomePageVideoSD.mp4`;
-    } else {
-      // Desktop - use HD for fast connections, SD for unknown
-      if (connectionSpeed === 'fast') {
-        setCurrentVideoQuality('HD');
-        return `${baseUrl}HomePageVideoHD.mp4`;
-      } else {
-        setCurrentVideoQuality('SD');
-        return `${baseUrl}HomePageVideoSD.mp4`;
-      }
-    }
-  };
-
-  // Smart video loading strategy with quality fallback
-  const loadVideo = async () => {
-    const video = videoRef.current;
-    if (!video || isVideoLoading) return;
-
-    console.log('Starting video load process...', { 
-      isIOS, 
-      connectionSpeed, 
-      userConsentToLoad, 
-      screenWidth: window.innerWidth,
-      selectedQuality: currentVideoQuality 
-    });
-    
-    setIsVideoLoading(true);
-    setVideoLoadError('');
-
-    try {
-      const videoSrc = getOptimalVideoUrl();
-      
-      // Set video source
-      const source = video.querySelector('source[type="video/mp4"]') as HTMLSourceElement;
-      if (source) {
-        source.src = videoSrc;
-      }
-
-      // Load the video
-      video.load();
-      
-      // Hide poster once loading starts
       setShowPoster(false);
-      
-    } catch (error) {
-      console.error('Video load failed:', error);
-      await handleVideoLoadFailure();
     }
+  }, [isIOS]);
+
+  // Video event handlers
+  const handleCanPlay = () => {
+    console.log(`Video can play - Quality: ${currentQuality}`);
+    setIsLoaded(true);
+    setIsVideoLoading(false);
+    setShowPoster(false);
   };
 
-  // Handle video load failure with quality downgrade
-  const handleVideoLoadFailure = async () => {
-    const baseUrl = "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/";
-    const video = videoRef.current;
-    if (!video) return;
+  const handleLoadStart = () => {
+    console.log(`Video load started - Quality: ${currentQuality}`);
+    setIsVideoLoading(true);
+    setShowPoster(false);
+  };
 
-    try {
-      let fallbackUrl = '';
-      
-      if (currentVideoQuality === 'HD') {
-        setCurrentVideoQuality('SD');
-        fallbackUrl = `${baseUrl}HomePageVideoSD.mp4`;
-        console.log('HD failed, falling back to SD quality');
-      } else if (currentVideoQuality === 'SD') {
-        setCurrentVideoQuality('Mobile');
-        fallbackUrl = `${baseUrl}HomePageVideoMobile.mp4`;
-        console.log('SD failed, falling back to Mobile quality');
-      } else {
-        // Mobile quality failed - show error
-        setVideoLoadError('Unable to load video');
-        setHasError(true);
-        setIsVideoLoading(false);
-        return;
-      }
+  const handleLoadedData = () => {
+    console.log(`Video data loaded - Quality: ${currentQuality}`);
+    setIsLoaded(true);
+    setIsVideoLoading(false);
+  };
 
-      const source = video.querySelector('source[type="video/mp4"]') as HTMLSourceElement;
-      if (source) {
-        source.src = fallbackUrl;
-        video.load();
-      }
-    } catch (error) {
-      console.error('Fallback video load failed:', error);
-      setVideoLoadError('Failed to load video');
+  const handleError = (event: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+    const video = event.currentTarget;
+    const error = video.error;
+    const errorMsg = error ? 
+      `Error ${error.code}: ${error.message}` : 
+      'Unknown video error';
+    console.error(`Video error (${currentQuality}):`, errorMsg);
+    
+    // Try fallback quality
+    if (currentQuality === 'HD') {
+      console.log('HD failed, falling back to SD quality');
+      const sdVideoInfo = {
+        url: "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoSD.mp4",
+        quality: 'SD' as const,
+        size: '29MB'
+      };
+      setCurrentVideoSrc(sdVideoInfo.url);
+      setCurrentQuality(sdVideoInfo.quality);
+    } else if (currentQuality === 'SD') {
+      console.log('SD failed, falling back to Mobile quality');
+      const mobileVideoInfo = {
+        url: "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoMobile.mp4",
+        quality: 'Mobile' as const,
+        size: '7MB'
+      };
+      setCurrentVideoSrc(mobileVideoInfo.url);
+      setCurrentQuality(mobileVideoInfo.quality);
+    } else {
+      // Mobile quality failed - show error
+      setVideoLoadError(errorMsg);
       setHasError(true);
       setIsVideoLoading(false);
     }
   };
 
-  // Video event handlers
-  useEffect(() => {
+  const handleProgress = () => {
     const video = videoRef.current;
-    if (!video) return;
-
-    const handleCanPlay = () => {
-      console.log(`Video can play - Quality: ${currentVideoQuality}`);
-      setIsLoaded(true);
-      setIsVideoLoading(false);
-    };
-
-    const handleLoadStart = () => {
-      console.log(`Video load started - Quality: ${currentVideoQuality}`);
-      setIsVideoLoading(true);
-    };
-
-    const handleLoadedData = () => {
-      console.log(`Video data loaded - Quality: ${currentVideoQuality}`);
-      setIsLoaded(true);
-      setIsVideoLoading(false);
-    };
-
-    const handleError = async (event: Event) => {
-      const error = video.error;
-      const errorMsg = error ? 
-        `Error ${error.code}: ${error.message}` : 
-        'Unknown video error';
-      console.error(`Video error (${currentVideoQuality}):`, errorMsg);
-      
-      // Try fallback quality before showing error
-      if (currentVideoQuality !== 'Mobile') {
-        await handleVideoLoadFailure();
-      } else {
-        setVideoLoadError(errorMsg);
-        setHasError(true);
+    if (video && video.buffered.length > 0) {
+      const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+      const duration = video.duration;
+      if (bufferedEnd / duration > 0.1) { // 10% buffered
         setIsVideoLoading(false);
       }
-    };
-
-    const handleProgress = () => {
-      if (video.buffered.length > 0) {
-        const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-        const duration = video.duration;
-        if (bufferedEnd / duration > 0.1) { // 10% buffered
-          setIsVideoLoading(false);
-        }
-      }
-    };
-
-    video.addEventListener('canplay', handleCanPlay);
-    video.addEventListener('loadstart', handleLoadStart);
-    video.addEventListener('loadeddata', handleLoadedData);
-    video.addEventListener('error', handleError);
-    video.addEventListener('progress', handleProgress);
-
-    return () => {
-      video.removeEventListener('canplay', handleCanPlay);
-      video.removeEventListener('loadstart', handleLoadStart);
-      video.removeEventListener('loadeddata', handleLoadedData);
-      video.removeEventListener('error', handleError);
-      video.removeEventListener('progress', handleProgress);
-    };
-  }, [currentVideoQuality]);
-
-  // Auto-load video for non-iOS devices when in view
-  useEffect(() => {
-    if (isOnScreen && !isIOS && userConsentToLoad && !isLoaded && !isVideoLoading) {
-      loadVideo();
     }
-  }, [isOnScreen, isIOS, userConsentToLoad, isLoaded, isVideoLoading]);
+  };
 
   // Autoplay when video is loaded and in view
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || hasError || needsUserInteraction || !isLoaded) return;
+    if (!video || hasError || needsUserInteraction || !isLoaded || !userConsentToLoad) return;
 
     if (isOnScreen) {
       video.muted = true;
@@ -270,7 +135,7 @@ const HeroVideoSection = () => {
       const playPromise = video.play();
       if (playPromise !== undefined) {
         playPromise.then(() => {
-          console.log(`Autoplay successful - Quality: ${currentVideoQuality}`);
+          console.log(`Autoplay successful - Quality: ${currentQuality}`);
         }).catch((error) => {
           console.log('Autoplay prevented:', error.name);
           if (error.name === "NotAllowedError") {
@@ -281,11 +146,11 @@ const HeroVideoSection = () => {
     } else {
       video.pause();
     }
-  }, [isOnScreen, isLoaded, hasError, needsUserInteraction, currentVideoQuality]);
+  }, [isOnScreen, isLoaded, hasError, needsUserInteraction, userConsentToLoad, currentQuality]);
 
   const handleUserLoadVideo = () => {
     setUserConsentToLoad(true);
-    loadVideo();
+    setShowPoster(false);
   };
 
   const handleUserPlay = () => {
@@ -299,7 +164,7 @@ const HeroVideoSection = () => {
     const playPromise = video.play();
     if (playPromise !== undefined) {
       playPromise.then(() => {
-        console.log(`User play successful - Quality: ${currentVideoQuality}`);
+        console.log(`User play successful - Quality: ${currentQuality}`);
       }).catch((error) => {
         console.error('User play failed:', error);
         setHasError(true);
@@ -348,7 +213,7 @@ const HeroVideoSection = () => {
     >
       {/* Video Container */}
       <div className={`relative w-full bg-gray-900 ${isMobile ? 'aspect-[4/3]' : 'aspect-video'}`}>
-        {/* Poster Image - Always show for iOS until user consents */}
+        {/* Poster Image - Show for iOS until user consents or while loading */}
         {showPoster && (
           <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
             <div className="text-center px-4">
@@ -365,23 +230,22 @@ const HeroVideoSection = () => {
           </div>
         )}
 
-        <video
+        <VideoPlayer
           ref={videoRef}
+          src={userConsentToLoad ? currentVideoSrc : ""}
           className={`w-full h-full object-cover transition-opacity duration-300 ${showPoster ? 'opacity-0' : 'opacity-100'}`}
           muted={isMuted}
           loop
           playsInline
           preload="none"
-          poster="/placeholder.svg"
           controlsList="nodownload"
           disablePictureInPicture={isIOS}
-        >
-          <source
-            src=""
-            type="video/mp4"
-          />
-          Your browser does not support the video tag.
-        </video>
+          onCanPlay={handleCanPlay}
+          onLoadStart={handleLoadStart}
+          onLoadedData={handleLoadedData}
+          onError={handleError}
+          onProgress={handleProgress}
+        />
 
         {/* Overlay for text content */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex items-center justify-center">
@@ -415,9 +279,9 @@ const HeroVideoSection = () => {
               Tap to load video
             </p>
             <p className="text-white/60 text-sm max-w-xs">
-              {currentVideoQuality === 'Mobile' 
+              {currentQuality === 'Mobile' 
                 ? "Optimized mobile version (7MB)" 
-                : `Loading ${currentVideoQuality} quality`
+                : `Loading ${currentQuality} quality (${videoInfo.size})`
               }
             </p>
           </div>
@@ -441,17 +305,15 @@ const HeroVideoSection = () => {
         )}
 
         {/* Loading State */}
-        {isVideoLoading && (
+        {isVideoLoading && userConsentToLoad && (
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-5">
             <div className="text-center text-white">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4 mx-auto"></div>
               <p className="text-sm">
-                Loading {currentVideoQuality} quality video...
+                Loading {currentQuality} quality video...
               </p>
               <p className="text-xs text-gray-300 mt-1">
-                {currentVideoQuality === 'Mobile' && '~7MB'} 
-                {currentVideoQuality === 'SD' && '~28MB'}
-                {currentVideoQuality === 'HD' && '~41MB'}
+                ~{videoInfo.size}
               </p>
             </div>
           </div>
@@ -479,9 +341,9 @@ const HeroVideoSection = () => {
         {/* Quality Indicator (Development) */}
         {process.env.NODE_ENV === 'development' && (
           <div className="absolute top-2 right-2 bg-black/80 text-white text-xs p-2 rounded">
-            <div>{isIOS ? 'iOS' : 'Non-iOS'} | {connectionSpeed} | {window.innerWidth}px</div>
-            <div>Quality: {currentVideoQuality}</div>
-            <div>{userConsentToLoad ? 'Consented' : 'No consent'}</div>
+            <div>{isIOS ? 'iOS' : 'Desktop'} | {connectionSpeed} | {window.innerWidth}px</div>
+            <div>Quality: {currentQuality} ({videoInfo.size})</div>
+            <div>{userConsentToLoad ? 'Loaded' : 'Waiting for consent'}</div>
           </div>
         )}
       </div>
