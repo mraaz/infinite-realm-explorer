@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import useOnScreen from "@/hooks/useOnScreen";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
@@ -24,6 +25,7 @@ const HeroVideoSection = () => {
   const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [userConsentToLoad, setUserConsentToLoad] = useState(false);
   const [showPoster, setShowPoster] = useState(true);
+  const [videoSrc, setVideoSrc] = useState<string>("");
 
   // Auto-consent for non-iOS devices
   useEffect(() => {
@@ -35,10 +37,19 @@ const HeroVideoSection = () => {
     }
   }, [device.isIOS]);
 
-  // Smart video loading strategy with quality fallback
+  // Initialize video source
+  useEffect(() => {
+    if (userConsentToLoad && !videoSrc) {
+      const optimalUrl = getOptimalVideoUrl();
+      setVideoSrc(optimalUrl);
+      console.log('Video source initialized:', optimalUrl);
+    }
+  }, [userConsentToLoad, videoSrc, getOptimalVideoUrl]);
+
+  // Smart video loading strategy with enhanced error handling
   const loadVideo = async () => {
     const video = videoRef.current;
-    if (!video || isVideoLoading) return;
+    if (!video || isVideoLoading || !videoSrc) return;
 
     console.log('Starting video load process...', { 
       isIOS: device.isIOS, 
@@ -46,22 +57,16 @@ const HeroVideoSection = () => {
       connectionSpeed: device.connectionSpeed, 
       userConsentToLoad, 
       screenWidth: window.innerWidth,
-      selectedQuality: currentVideoQuality 
+      selectedQuality: currentVideoQuality,
+      videoSrc: videoSrc
     });
     
     setIsVideoLoading(true);
     setVideoLoadError('');
+    setHasError(false);
 
     try {
-      const videoSrc = getOptimalVideoUrl();
-      
-      // Set video source
-      const source = video.querySelector('source[type="video/mp4"]') as HTMLSourceElement;
-      if (source) {
-        source.src = videoSrc;
-      }
-
-      // Load the video
+      // Load the video with the current source
       video.load();
       
       // Hide poster once loading starts
@@ -71,27 +76,28 @@ const HeroVideoSection = () => {
       console.error('Video load failed:', error);
       const fallbackSuccess = await handleVideoLoadFailure(videoRef);
       if (!fallbackSuccess) {
-        setVideoLoadError('Unable to load video');
+        setVideoLoadError('Unable to load video - all quality levels failed');
         setHasError(true);
         setIsVideoLoading(false);
       }
     }
   };
 
-  // Video event handlers
+  // Video event handlers with enhanced error reporting
   const handleCanPlay = () => {
-    console.log(`Video can play - Quality: ${currentVideoQuality}`);
+    console.log(`Video can play - Quality: ${currentVideoQuality}, Source: ${videoSrc}`);
     setIsLoaded(true);
     setIsVideoLoading(false);
+    setHasError(false);
   };
 
   const handleLoadStart = () => {
-    console.log(`Video load started - Quality: ${currentVideoQuality}`);
+    console.log(`Video load started - Quality: ${currentVideoQuality}, Source: ${videoSrc}`);
     setIsVideoLoading(true);
   };
 
   const handleLoadedData = () => {
-    console.log(`Video data loaded - Quality: ${currentVideoQuality}`);
+    console.log(`Video data loaded - Quality: ${currentVideoQuality}, Source: ${videoSrc}`);
     setIsLoaded(true);
     setIsVideoLoading(false);
   };
@@ -99,19 +105,44 @@ const HeroVideoSection = () => {
   const handleError = async (event: React.SyntheticEvent<HTMLVideoElement, Event>) => {
     const video = videoRef.current;
     const error = video?.error;
-    const errorMsg = error ? 
-      `Error ${error.code}: ${error.message}` : 
-      'Unknown video error';
-    console.error(`Video error (${currentVideoQuality}):`, errorMsg);
+    
+    // Enhanced error reporting with specific error codes
+    let errorMsg = 'Unknown video error';
+    if (error) {
+      switch (error.code) {
+        case error.MEDIA_ERR_ABORTED:
+          errorMsg = 'Video loading was aborted';
+          break;
+        case error.MEDIA_ERR_NETWORK:
+          errorMsg = 'Network error while loading video';
+          break;
+        case error.MEDIA_ERR_DECODE:
+          errorMsg = 'Video decode error';
+          break;
+        case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+          errorMsg = 'Video format not supported';
+          break;
+        default:
+          errorMsg = `Video error code: ${error.code} - ${error.message || 'Unknown error'}`;
+      }
+    }
+    
+    console.error(`Video error (${currentVideoQuality}):`, {
+      errorCode: error?.code,
+      errorMessage: error?.message,
+      networkState: video?.networkState,
+      readyState: video?.readyState,
+      currentSrc: video?.currentSrc,
+      videoSrc: videoSrc
+    });
     
     // Try fallback quality before showing error
-    if (currentVideoQuality !== 'Mobile') {
-      const fallbackSuccess = await handleVideoLoadFailure(videoRef);
-      if (!fallbackSuccess) {
-        setVideoLoadError(errorMsg);
-        setHasError(true);
-        setIsVideoLoading(false);
-      }
+    const fallbackSuccess = await handleVideoLoadFailure(videoRef);
+    if (fallbackSuccess) {
+      // Update the React state to match the new video source
+      const newSrc = video?.src || '';
+      setVideoSrc(newSrc);
+      console.log('Fallback successful, new source:', newSrc);
     } else {
       setVideoLoadError(errorMsg);
       setHasError(true);
@@ -132,10 +163,10 @@ const HeroVideoSection = () => {
 
   // Auto-load video for non-iOS devices when in view
   useEffect(() => {
-    if (isOnScreen && !device.isIOS && userConsentToLoad && !isLoaded && !isVideoLoading) {
+    if (isOnScreen && !device.isIOS && userConsentToLoad && !isLoaded && !isVideoLoading && videoSrc) {
       loadVideo();
     }
-  }, [isOnScreen, device.isIOS, userConsentToLoad, isLoaded, isVideoLoading]);
+  }, [isOnScreen, device.isIOS, userConsentToLoad, isLoaded, isVideoLoading, videoSrc]);
 
   // Autoplay when video is loaded and in view
   useEffect(() => {
@@ -164,7 +195,8 @@ const HeroVideoSection = () => {
 
   const handleUserLoadVideo = () => {
     setUserConsentToLoad(true);
-    loadVideo();
+    const optimalUrl = getOptimalVideoUrl();
+    setVideoSrc(optimalUrl);
   };
 
   const handleUserPlay = () => {
@@ -194,7 +226,7 @@ const HeroVideoSection = () => {
     setIsMuted(video.muted);
   };
 
-  // Error fallback
+  // Enhanced error fallback with retry option
   if (hasError) {
     return (
       <section ref={sectionRef} className="text-center mb-8 md:mb-16 px-4">
@@ -210,8 +242,19 @@ const HeroVideoSection = () => {
           your path forward.
         </p>
         {videoLoadError && (
-          <div className="text-xs text-red-400 bg-red-900/20 p-2 rounded max-w-md mx-auto">
-            Video Error: {videoLoadError}
+          <div className="text-xs text-red-400 bg-red-900/20 p-3 rounded max-w-md mx-auto mb-4">
+            <div className="mb-2">Video Error: {videoLoadError}</div>
+            <button 
+              onClick={() => {
+                setHasError(false);
+                setVideoLoadError('');
+                setVideoSrc('');
+                setUserConsentToLoad(true);
+              }}
+              className="text-blue-400 hover:text-blue-300 underline text-xs"
+            >
+              Try Again
+            </button>
           </div>
         )}
       </section>
@@ -234,6 +277,7 @@ const HeroVideoSection = () => {
           isMuted={isMuted}
           isMobile={device.isMobile}
           showPoster={showPoster}
+          videoSrc={videoSrc}
           onLoadStart={handleLoadStart}
           onLoadedData={handleLoadedData}
           onCanPlay={handleCanPlay}
@@ -268,8 +312,9 @@ const HeroVideoSection = () => {
           <div className="absolute top-2 right-2 bg-black/80 text-white text-xs p-2 rounded">
             <div>Device: {device.isDesktop ? 'Desktop' : device.isMobile ? 'Mobile' : 'Tablet'} | {device.isIOS ? 'iOS' : 'Non-iOS'}</div>
             <div>Connection: {device.connectionSpeed} | Screen: {window.innerWidth}px</div>
-            <div>Quality: {currentVideoQuality}</div>
-            <div>Consent: {userConsentToLoad ? 'Yes' : 'No'}</div>
+            <div>Quality: {currentVideoQuality} | Loaded: {isLoaded ? 'Yes' : 'No'}</div>
+            <div>Source: {videoSrc || 'Not set'}</div>
+            <div>Consent: {userConsentToLoad ? 'Yes' : 'No'} | Error: {hasError ? 'Yes' : 'No'}</div>
           </div>
         )}
       </div>
