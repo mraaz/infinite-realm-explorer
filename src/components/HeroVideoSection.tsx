@@ -1,6 +1,5 @@
 
-import React, { useRef, useState } from "react";
-import ReactPlayer from 'react-player';
+import React, { useRef, useState, useEffect } from "react";
 import useOnScreen from "@/hooks/useOnScreen";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Volume2, VolumeX, Play } from "lucide-react";
@@ -8,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 const HeroVideoSection = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<ReactPlayer>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const isOnScreen = useOnScreen(sectionRef, { threshold: 0.3 });
   const isMobile = useIsMobile();
   
@@ -18,86 +17,78 @@ const HeroVideoSection = () => {
   const [isMuted, setIsMuted] = useState(true);
   const [showControls, setShowControls] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
-  // Video sources with progressive quality fallback
-  const videoSources = [
-    {
-      src: "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoHD.mp4",
-      type: "video/mp4",
-      quality: "HD"
-    },
-    {
-      src: "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoSD.mp4", 
-      type: "video/mp4",
-      quality: "SD"
-    },
-    {
-      src: "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoMobile.mp4",
-      type: "video/mp4", 
-      quality: "Mobile"
-    }
-  ];
-
-  // Select optimal video source based on device
+  // Get video URL with automatic fallback
   const getVideoUrl = () => {
     if (isMobile || window.innerWidth < 768) {
-      return videoSources[2].src; // Mobile quality
+      return "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoMobile.mp4";
     } else if (window.innerWidth >= 1920) {
-      return videoSources[0].src; // HD quality
+      return "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoHD.mp4";  
     } else {
-      return videoSources[1].src; // SD quality
+      return "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoSD.mp4";
     }
   };
 
   const handleReady = () => {
-    console.log('🎬 [HeroVideo] React Player ready');
+    console.log('🎬 [HeroVideo] Video ready');
     setIsReady(true);
     setHasError(false);
-    
-    // Start playing when ready and in view
-    if (isOnScreen) {
-      setPlaying(true);
-    }
+    setLoadingTimeout(false);
   };
 
   const handleError = (error: any) => {
-    console.error('❌ [HeroVideo] React Player error:', error);
+    console.error('❌ [HeroVideo] Video error:', error);
     setHasError(true);
     setIsReady(false);
   };
 
   const handlePlay = () => {
-    console.log('▶️ [HeroVideo] Video started playing');
     setPlaying(true);
   };
 
   const handlePause = () => {
-    console.log('⏸️ [HeroVideo] Video paused');
     setPlaying(false);
   };
 
   const toggleMute = () => {
-    setIsMuted(!isMuted);
-    console.log('🔊 [HeroVideo] Mute toggled:', { muted: !isMuted });
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
   };
 
   const handleUserPlay = () => {
-    setPlaying(true);
+    if (videoRef.current) {
+      videoRef.current.play();
+    }
   };
 
+  // Loading timeout - prevent infinite loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!isReady && !hasError) {
+        console.warn('⏰ [HeroVideo] Loading timeout - showing fallback');
+        setLoadingTimeout(true);
+      }
+    }, 10000); // 10 second timeout
+
+    return () => clearTimeout(timer);
+  }, [isReady, hasError]);
+
   // Control playing state based on visibility
-  React.useEffect(() => {
-    if (isReady) {
+  useEffect(() => {
+    if (videoRef.current && isReady) {
       if (isOnScreen && !hasError) {
-        setPlaying(true);
+        videoRef.current.play().catch(console.error);
       } else {
-        setPlaying(false);
+        videoRef.current.pause();
       }
     }
   }, [isOnScreen, isReady, hasError]);
 
-  // Error fallback
-  if (hasError) {
+  // Error or timeout fallback
+  if (hasError || loadingTimeout) {
     return (
       <section ref={sectionRef} className="text-center mb-8 md:mb-16 px-4">
         <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white tracking-tight mb-4 md:mb-6">
@@ -127,35 +118,19 @@ const HeroVideoSection = () => {
     >
       {/* Video Container */}
       <div className={`relative w-full bg-gray-900 ${isMobile ? 'aspect-[4/3]' : 'aspect-video'}`}>
-        <ReactPlayer
-          ref={playerRef}
-          url={getVideoUrl()}
-          width="100%"
-          height="100%"
-          playing={playing}
+        <video
+          ref={videoRef}
+          src={getVideoUrl()}
+          className="absolute inset-0 w-full h-full object-cover"
+          autoPlay={isOnScreen}
           muted={isMuted}
           loop
-          playsinline
-          controls={false}
-          onReady={handleReady}
+          playsInline
+          preload="metadata"
+          onLoadedData={handleReady}
           onError={handleError}
           onPlay={handlePlay}
           onPause={handlePause}
-          config={{
-            file: {
-              attributes: {
-                preload: 'metadata',
-                disablePictureInPicture: true,
-                controlsList: 'nodownload'
-              }
-            }
-          }}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            objectFit: 'cover'
-          }}
         />
 
         {/* Overlay for text content */}
