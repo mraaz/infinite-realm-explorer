@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Pillar } from "@/components/priority-ranking/types";
 import { PillarAnswers } from "@/components/futureQuestionnaire/PillarQuestions";
 import {
@@ -7,8 +7,12 @@ import {
 } from "@/services/apiService";
 import { useAuth } from "@/contexts/AuthContext";
 
+// --- Type Definitions ---
 interface User {
   sub: string;
+  name?: string;
+  email?: string;
+  exp: number;
 }
 
 type Priorities = {
@@ -20,35 +24,31 @@ type Answers = { [key in Pillar]?: PillarAnswers };
 
 const LOCAL_STORAGE_KEY = "futureQuestionnaireGuestProgress";
 
-export const useQuestionnaireState = () => {
-  const { user, authToken } = useAuth();
-
+/**
+ * Manages the state of the Future Self Questionnaire.
+ * @param user - The user object from useAuth(), or null for guests.
+ */
+export const useQuestionnaireState = (user: User | null) => {
+  const { authToken } = useAuth();
   const [priorities, setPriorities] = useState<Priorities | null>(null);
   const [answers, setAnswers] = useState<Answers>({});
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Effect to load initial data
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-
       if (user && authToken) {
         const savedState = await getQuestionnaireState(authToken);
-
-        // --- NEW DEBUGGING LOG ---
-
         if (savedState) {
           setPriorities(savedState.priorities || null);
           setAnswers(savedState.answers || {});
-
           if (savedState.step && savedState.step > 0) {
             setStep(savedState.step);
-          } else {
-            setStep(1);
           }
         }
       } else {
-        // Guest logic remains the same...
         const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (savedData) {
           try {
@@ -63,10 +63,10 @@ export const useQuestionnaireState = () => {
       }
       setIsLoading(false);
     };
-
     loadData();
   }, [user, authToken]);
 
+  // Effect to save progress for GUESTS
   useEffect(() => {
     if (!user && !isLoading) {
       const dataToSave: QuestionnaireStatePayload = {
@@ -100,5 +100,7 @@ export const useQuestionnaireState = () => {
     setStep,
     handlePrioritiesComplete,
     handlePillarAnswersUpdate,
+    // --- MODIFICATION: Expose the setAnswers function ---
+    setAnswers,
   };
 };

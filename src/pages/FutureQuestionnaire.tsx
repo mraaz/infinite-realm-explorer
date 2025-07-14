@@ -1,5 +1,3 @@
-// FutureQuestionnaire.tsx (With Step Persistence Fix)
-
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -9,12 +7,11 @@ import { QuestionnaireSteps } from "@/components/futureQuestionnaire/Questionnai
 import { QuestionnaireNavigation } from "@/components/futureQuestionnaire/QuestionnaireNavigation";
 import { AIChatQuestionnaire } from "@/components/futureQuestionnaire/AIChatQuestionnaire";
 import { Pillar, Priorities } from "@/components/priority-ranking/types";
-
-// Import hooks and services
 import { useQuestionnaireState } from "@/hooks/useQuestionnaireState";
 import {
   saveQuestionnaireProgress,
-  getQuestionnaireState,
+  generateBlueprint, // Import the blueprint generator
+  Blueprint, // Import the Blueprint type
 } from "@/services/apiService";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -26,45 +23,27 @@ const FutureQuestionnaire: React.FC = () => {
   };
 
   const { user, authToken } = useAuth();
-  const [step, setStep] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isChatComplete, setIsChatComplete] = useState(false);
+
+  // --- MODIFICATION: Add state to hold the generated blueprint ---
+  const [blueprint, setBlueprint] = useState<Blueprint | null>(null);
 
   const {
     isLoading,
     priorities,
     answers,
+    step,
+    setStep,
+    setAnswers,
     handlePrioritiesComplete,
-    handlePillarAnswersUpdate,
-  } = useQuestionnaireState(user);
+  } = useQuestionnaireState();
 
   const totalSteps = 3;
 
-  // --- MODIFICATION 1 of 3: Add a useEffect to load the saved step from the DB for logged-in users ---
-  useEffect(() => {
-    const fetchInitialStep = async () => {
-      // Only run for logged-in users after the initial local state has been loaded
-      if (authToken && !isLoading) {
-        const savedState = await getQuestionnaireState(authToken);
-        // Ensure we have a valid step number to restore to
-        if (
-          savedState?.step &&
-          savedState.step > 1 &&
-          savedState.step <= totalSteps
-        ) {
-          console.log(`Restoring user to step: ${savedState.step}`);
-          setStep(savedState.step);
-        }
-      }
-    };
-
-    fetchInitialStep();
-  }, [authToken, isLoading]); // This runs once the auth token and initial local data are ready.
-
   const handlePrevious = async () => {
     const targetStep = Math.max(step - 1, 1);
-    // --- MODIFICATION 2 of 3: Save progress when going backward ---
     if (user && authToken) {
       await saveQuestionnaireProgress(
         { priorities, answers, step: targetStep },
@@ -74,24 +53,32 @@ const FutureQuestionnaire: React.FC = () => {
     setStep(targetStep);
   };
 
+  // --- MODIFICATION: handleNext now generates the blueprint when moving from step 2 to 3 ---
   const handleNext = async () => {
     setSaveError(null);
     const targetStep = step + 1;
-    console.log("⏭️ Moving to next step:", targetStep);
 
     if (user && authToken) {
       setIsSaving(true);
       try {
-        // --- MODIFICATION 3 of 3: Include the next step number in the payload ---
+        // If moving from chat to confirmation, generate the blueprint
+        if (step === 2) {
+          console.log("✅ Generating final blueprint...");
+          const finalPayload = { priorities, answers, step: 2 };
+          const generatedBlueprint = await generateBlueprint(
+            finalPayload,
+            authToken
+          );
+          setBlueprint(generatedBlueprint);
+        }
+
         await saveQuestionnaireProgress(
           { priorities, answers, step: targetStep },
           authToken
         );
-        console.log("💾 Progress saved successfully");
         setStep(targetStep);
       } catch (error: any) {
-        console.error("❌ Save error:", error);
-        setSaveError("Failed to save progress. Please try again.");
+        setSaveError("An error occurred. Please try again.");
       } finally {
         setIsSaving(false);
       }
@@ -100,47 +87,28 @@ const FutureQuestionnaire: React.FC = () => {
     }
   };
 
-  const handleConfirm = async () => {
-    console.log("✅ Confirming questionnaire with data:", {
-      priorities,
-      answers,
-    });
-    const finalPayload = { priorities, answers, step: 3 }; // Save final step as 3
-    if (user && authToken) {
-      await saveQuestionnaireProgress(finalPayload, authToken);
-    }
-    localStorage.removeItem("futureQuestionnaireGuestProgress");
-    navigate("/results", {
-      state: {
-        ...location.state,
-        futureQuestionnaire: finalPayload,
-      },
-    });
+  // --- MODIFICATION: handleConfirm is now much simpler ---
+  const handleConfirm = () => {
+    // This function's only job is to navigate to the results page.
+    navigate("/results");
   };
 
   const isNextDisabled = (): boolean => {
     if (isSaving) return true;
-    if (!priorities) return true;
-
-    switch (step) {
-      case 1:
-        return !(
-          priorities.mainFocus &&
-          priorities.secondaryFocus &&
-          priorities.maintenance.length === 2
-        );
-      case 2:
-        return !isChatComplete;
-      default:
-        return true;
-    }
+    if (step === 1)
+      return !(
+        priorities?.mainFocus &&
+        priorities?.secondaryFocus &&
+        priorities?.maintenance.length === 2
+      );
+    if (step === 2) return !isChatComplete;
+    return true;
   };
 
   const renderCurrentStep = (): React.ReactNode => {
     if (isLoading) {
       return <div className="text-center text-gray-500">Loading...</div>;
     }
-
     switch (step) {
       case 1:
         return (
@@ -154,25 +122,21 @@ const FutureQuestionnaire: React.FC = () => {
           priorities && (
             <AIChatQuestionnaire
               priorities={priorities}
-              onComplete={(completeAnswers) => {
-                Object.entries(completeAnswers).forEach(
-                  ([pillar, pillarAnswers]) => {
-                    handlePillarAnswersUpdate(pillar as Pillar, pillarAnswers);
-                  }
-                );
+              onComplete={(completedState) => {
+                setAnswers(completedState.answers);
                 setIsChatComplete(true);
               }}
             />
           )
         );
       case 3:
+        // --- MODIFICATION: Pass the blueprint data to the ConfirmationStep ---
         return (
           <ConfirmationStep
             priorities={priorities}
-            answers={answers}
+            blueprint={blueprint}
             onConfirm={handleConfirm}
             onPrevious={handlePrevious}
-            isConfirming={isSaving}
           />
         );
       default:
@@ -185,7 +149,6 @@ const FutureQuestionnaire: React.FC = () => {
       <Header />
       <main className="flex-grow flex flex-col items-center px-4 py-8 md:py-12">
         <div className="w-full max-w-5xl">
-          <div className="flex justify-end items-center mb-4 min-h-[40px]"></div>
           <div className="bg-[#1e1e24] p-6 md:p-10 rounded-2xl shadow-lg border border-gray-700">
             <div className="text-center mb-8">
               <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">

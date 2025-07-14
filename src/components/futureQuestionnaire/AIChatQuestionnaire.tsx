@@ -47,6 +47,8 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
 }) => {
   const { authToken } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  // --- MODIFICATION 1 of 3: Create a ref for the textarea input ---
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -125,11 +127,10 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
       (m) => m.role === "ai"
     ).length;
 
-    // Determine the current pillar based on how many AI questions have been asked
     let pillarIndex = 0;
-    if (aiQuestionCount > 2) pillarIndex = 1; // 2 questions for main focus
-    if (aiQuestionCount > 4) pillarIndex = 2; // 2 questions for secondary
-    if (aiQuestionCount > 5) pillarIndex = 3; // 1 question for first maintenance
+    if (aiQuestionCount > 2) pillarIndex = 1;
+    if (aiQuestionCount > 4) pillarIndex = 2;
+    if (aiQuestionCount > 5) pillarIndex = 3;
     const currentPillar = orderedPillars[pillarIndex];
 
     const userMessage: Message = {
@@ -186,13 +187,15 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
 
     const totalAIQuestions = newHistory.filter((m) => m.role === "ai").length;
     if (totalAIQuestions >= 6) {
-      // 2+2+1+1 = 6 questions total
       onComplete(conversationState!);
     }
   };
 
+  // --- MODIFICATION 2 of 3: Update the useEffect for scrolling and focusing ---
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Set focus back to the input field after messages update
+    inputRef.current?.focus();
   }, [messages]);
 
   // --- Progress Calculation for UI ---
@@ -235,7 +238,6 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
 
   return (
     <div className="flex flex-col h-full max-w-4xl mx-auto p-4">
-      {/* --- PROGRESS BAR ADDED BACK --- */}
       <div className="sticky top-4 z-10 mb-6 p-5 bg-gradient-to-br from-gray-800/60 to-gray-900/80 border border-purple-500/30 rounded-2xl shadow-xl backdrop-blur-md">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 text-sm">
           <div className="flex items-center gap-3">
@@ -312,7 +314,9 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
       </div>
 
       <form onSubmit={handleSubmit} className="flex items-center gap-3">
+        {/* --- MODIFICATION 3 of 3: Attach the ref to the Textarea --- */}
         <Textarea
+          ref={inputRef}
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
           placeholder="Share your thoughts..."

@@ -119,3 +119,51 @@ export const processChatAnswer = async (
     throw error;
   }
 };
+
+export interface Blueprint {
+  title: string;
+  overallSummary: string;
+  mainFocus: {
+    pillar: Pillar;
+    summary: string;
+    actionableSteps: string[];
+  };
+  secondaryFocus: {
+    pillar: Pillar;
+    summary: string;
+    actionableSteps: string[];
+  };
+}
+
+/**
+ * Sends the completed questionnaire state to the backend to generate the final blueprint.
+ * @param {QuestionnaireStatePayload} payload - The final state of the conversation.
+ * @param {string} token - The user's JWT token.
+ * @returns {Promise<Blueprint>} The AI-generated blueprint.
+ */
+export const generateBlueprint = async (
+  payload: QuestionnaireStatePayload,
+  token: string
+): Promise<Blueprint> => {
+  const url = `${API_BASE_URL}/futureQuestionnaire/blueprint`;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to generate blueprint.");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("An error occurred while generating the blueprint:", error);
+    throw error;
+  }
+};
