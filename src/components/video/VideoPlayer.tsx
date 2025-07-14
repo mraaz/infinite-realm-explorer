@@ -19,6 +19,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       <video
         ref={ref}
         className={`w-full h-full object-cover transition-opacity duration-300 ${showPoster ? 'opacity-0' : 'opacity-100'}`}
+        src={videoSrc || undefined}
         muted={isMuted}
         loop
         playsInline
@@ -31,12 +32,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         onCanPlay={onCanPlay}
         onError={onError}
         onProgress={onProgress}
-        src={videoSrc}
       >
-        <source
-          src={videoSrc}
-          type="video/mp4"
-        />
         Your browser does not support the video tag.
       </video>
     );

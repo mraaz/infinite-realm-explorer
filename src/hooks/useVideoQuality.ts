@@ -7,83 +7,47 @@ export type VideoQuality = 'HD' | 'SD' | 'Mobile';
 export const useVideoQuality = (device: DeviceDetection) => {
   const [currentVideoQuality, setCurrentVideoQuality] = useState<VideoQuality>('SD');
   
-  // Reliable video quality selection with verified URLs
+  // Get optimal video URL based on device - synchronous and simple
   const getOptimalVideoUrl = useCallback(() => {
     const baseUrl = "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/";
+    
+    let quality: VideoQuality;
+    let filename: string;
+    
+    // Simple, reliable device-based selection
+    if (device.isIOS || device.isMobile) {
+      quality = 'Mobile';
+      filename = 'HomePageVideoMobile.mp4';
+    } else {
+      quality = 'SD';
+      filename = 'HomePageVideoSD.mp4';
+    }
+    
+    setCurrentVideoQuality(quality);
+    const url = `${baseUrl}${filename}`;
     
     console.log('Video Quality Selection:', { 
       isDesktop: device.isDesktop, 
       isMobile: device.isMobile, 
-      isIOS: device.isIOS, 
-      connectionSpeed: device.connectionSpeed, 
-      screenWidth: window.innerWidth 
+      isIOS: device.isIOS,
+      selectedQuality: quality,
+      url: url
     });
     
-    // iOS devices always get mobile quality for best compatibility
-    if (device.isIOS) {
-      setCurrentVideoQuality('Mobile');
-      const url = `${baseUrl}HomePageVideoMobile.mp4`;
-      console.log('Selected iOS Mobile quality:', url);
-      return url;
-    }
-    
-    // Desktop gets SD quality for reliability (28MB vs 41MB HD)
-    if (device.isDesktop) {
-      setCurrentVideoQuality('SD');
-      const url = `${baseUrl}HomePageVideoSD.mp4`;
-      console.log('Selected Desktop SD quality:', url);
-      return url;
-    }
-    
-    // Mobile phones get mobile quality
-    if (device.isMobile) {
-      setCurrentVideoQuality('Mobile');
-      const url = `${baseUrl}HomePageVideoMobile.mp4`;
-      console.log('Selected Mobile quality:', url);
-      return url;
-    }
-    
-    // Default fallback to SD
-    setCurrentVideoQuality('SD');
-    const url = `${baseUrl}HomePageVideoSD.mp4`;
-    console.log('Selected fallback SD quality:', url);
     return url;
   }, [device]);
 
-  // Handle video load failure with quality downgrade
-  const handleVideoLoadFailure = useCallback(async (videoRef: React.RefObject<HTMLVideoElement>) => {
-    const baseUrl = "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/";
-    const video = videoRef.current;
-    if (!video) return false;
-
-    try {
-      let fallbackUrl = '';
-      let newQuality: VideoQuality;
-      
-      if (currentVideoQuality === 'HD') {
-        newQuality = 'SD';
-        fallbackUrl = `${baseUrl}HomePageVideoSD.mp4`;
-        console.log('HD failed, falling back to SD quality:', fallbackUrl);
-      } else if (currentVideoQuality === 'SD') {
-        newQuality = 'Mobile';
-        fallbackUrl = `${baseUrl}HomePageVideoMobile.mp4`;
-        console.log('SD failed, falling back to Mobile quality:', fallbackUrl);
-      } else {
-        console.log('Mobile quality failed - no more fallbacks available');
-        return false;
-      }
-
-      setCurrentVideoQuality(newQuality);
-      
-      // Set the new source directly on the video element
-      video.src = fallbackUrl;
-      video.load();
-      
-      return true;
-    } catch (error) {
-      console.error('Fallback video load failed:', error);
-      return false;
+  // Simplified fallback - just try mobile quality
+  const handleVideoLoadFailure = useCallback(() => {
+    if (currentVideoQuality !== 'Mobile') {
+      console.log('Falling back to Mobile quality');
+      setCurrentVideoQuality('Mobile');
+      const baseUrl = "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/";
+      return `${baseUrl}HomePageVideoMobile.mp4`;
     }
+    
+    console.log('Mobile quality also failed - no more fallbacks');
+    return null;
   }, [currentVideoQuality]);
 
   return {

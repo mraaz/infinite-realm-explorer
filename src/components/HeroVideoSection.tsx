@@ -16,162 +16,79 @@ const HeroVideoSection = () => {
   const device = useDeviceDetection();
   const { currentVideoQuality, getOptimalVideoUrl, handleVideoLoadFailure } = useVideoQuality(device);
   
+  // Simplified state management
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [showControls, setShowControls] = useState(false);
   const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
-  const [videoLoadError, setVideoLoadError] = useState<string>("");
-  const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [userConsentToLoad, setUserConsentToLoad] = useState(false);
   const [showPoster, setShowPoster] = useState(true);
   const [videoSrc, setVideoSrc] = useState<string>("");
 
-  // Auto-consent for non-iOS devices
+  // Initialize video source immediately based on device
   useEffect(() => {
-    if (device.isIOS) {
-      setUserConsentToLoad(false);
-      setShowPoster(true);
-    } else {
+    // Auto-consent for non-iOS devices
+    if (!device.isIOS) {
       setUserConsentToLoad(true);
     }
-  }, [device.isIOS]);
-
-  // Initialize video source
-  useEffect(() => {
-    if (userConsentToLoad && !videoSrc) {
+    
+    // Set video source immediately when device detection is ready
+    if (userConsentToLoad || !device.isIOS) {
       const optimalUrl = getOptimalVideoUrl();
       setVideoSrc(optimalUrl);
-      console.log('Video source initialized:', optimalUrl);
-    }
-  }, [userConsentToLoad, videoSrc, getOptimalVideoUrl]);
-
-  // Smart video loading strategy with enhanced error handling
-  const loadVideo = async () => {
-    const video = videoRef.current;
-    if (!video || isVideoLoading || !videoSrc) return;
-
-    console.log('Starting video load process...', { 
-      isIOS: device.isIOS, 
-      isDesktop: device.isDesktop,
-      connectionSpeed: device.connectionSpeed, 
-      userConsentToLoad, 
-      screenWidth: window.innerWidth,
-      selectedQuality: currentVideoQuality,
-      videoSrc: videoSrc
-    });
-    
-    setIsVideoLoading(true);
-    setVideoLoadError('');
-    setHasError(false);
-
-    try {
-      // Load the video with the current source
-      video.load();
-      
-      // Hide poster once loading starts
       setShowPoster(false);
-      
-    } catch (error) {
-      console.error('Video load failed:', error);
-      const fallbackSuccess = await handleVideoLoadFailure(videoRef);
-      if (!fallbackSuccess) {
-        setVideoLoadError('Unable to load video - all quality levels failed');
-        setHasError(true);
-        setIsVideoLoading(false);
-      }
+      console.log('Video source set:', optimalUrl);
     }
-  };
+  }, [device.isIOS, userConsentToLoad, getOptimalVideoUrl]);
 
-  // Video event handlers with enhanced error reporting
+  // Video event handlers
   const handleCanPlay = () => {
-    console.log(`Video can play - Quality: ${currentVideoQuality}, Source: ${videoSrc}`);
+    console.log(`Video can play - Quality: ${currentVideoQuality}`);
     setIsLoaded(true);
-    setIsVideoLoading(false);
     setHasError(false);
   };
 
   const handleLoadStart = () => {
-    console.log(`Video load started - Quality: ${currentVideoQuality}, Source: ${videoSrc}`);
-    setIsVideoLoading(true);
+    console.log(`Video load started - Quality: ${currentVideoQuality}`);
   };
 
   const handleLoadedData = () => {
-    console.log(`Video data loaded - Quality: ${currentVideoQuality}, Source: ${videoSrc}`);
+    console.log(`Video data loaded - Quality: ${currentVideoQuality}`);
     setIsLoaded(true);
-    setIsVideoLoading(false);
   };
 
-  const handleError = async (event: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+  const handleError = (event: React.SyntheticEvent<HTMLVideoElement, Event>) => {
     const video = videoRef.current;
     const error = video?.error;
-    
-    // Enhanced error reporting with specific error codes
-    let errorMsg = 'Unknown video error';
-    if (error) {
-      switch (error.code) {
-        case error.MEDIA_ERR_ABORTED:
-          errorMsg = 'Video loading was aborted';
-          break;
-        case error.MEDIA_ERR_NETWORK:
-          errorMsg = 'Network error while loading video';
-          break;
-        case error.MEDIA_ERR_DECODE:
-          errorMsg = 'Video decode error';
-          break;
-        case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
-          errorMsg = 'Video format not supported';
-          break;
-        default:
-          errorMsg = `Video error code: ${error.code} - ${error.message || 'Unknown error'}`;
-      }
-    }
     
     console.error(`Video error (${currentVideoQuality}):`, {
       errorCode: error?.code,
       errorMessage: error?.message,
-      networkState: video?.networkState,
-      readyState: video?.readyState,
       currentSrc: video?.currentSrc,
       videoSrc: videoSrc
     });
     
-    // Try fallback quality before showing error
-    const fallbackSuccess = await handleVideoLoadFailure(videoRef);
-    if (fallbackSuccess) {
-      // Update the React state to match the new video source
-      const newSrc = video?.src || '';
-      setVideoSrc(newSrc);
-      console.log('Fallback successful, new source:', newSrc);
+    // Try fallback quality
+    const fallbackUrl = handleVideoLoadFailure();
+    if (fallbackUrl) {
+      console.log('Trying fallback URL:', fallbackUrl);
+      setVideoSrc(fallbackUrl);
+      setHasError(false);
     } else {
-      setVideoLoadError(errorMsg);
+      console.log('No more fallbacks available');
       setHasError(true);
-      setIsVideoLoading(false);
     }
   };
 
   const handleProgress = () => {
-    const video = videoRef.current;
-    if (video && video.buffered.length > 0) {
-      const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-      const duration = video.duration;
-      if (bufferedEnd / duration > 0.1) { // 10% buffered
-        setIsVideoLoading(false);
-      }
-    }
+    // Simple progress tracking
   };
-
-  // Auto-load video for non-iOS devices when in view
-  useEffect(() => {
-    if (isOnScreen && !device.isIOS && userConsentToLoad && !isLoaded && !isVideoLoading && videoSrc) {
-      loadVideo();
-    }
-  }, [isOnScreen, device.isIOS, userConsentToLoad, isLoaded, isVideoLoading, videoSrc]);
 
   // Autoplay when video is loaded and in view
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || hasError || needsUserInteraction || !isLoaded) return;
+    if (!video || hasError || needsUserInteraction || !isLoaded || !videoSrc) return;
 
     if (isOnScreen) {
       video.muted = true;
@@ -191,12 +108,13 @@ const HeroVideoSection = () => {
     } else {
       video.pause();
     }
-  }, [isOnScreen, isLoaded, hasError, needsUserInteraction, currentVideoQuality]);
+  }, [isOnScreen, isLoaded, hasError, needsUserInteraction, currentVideoQuality, videoSrc]);
 
   const handleUserLoadVideo = () => {
     setUserConsentToLoad(true);
     const optimalUrl = getOptimalVideoUrl();
     setVideoSrc(optimalUrl);
+    setShowPoster(false);
   };
 
   const handleUserPlay = () => {
@@ -226,7 +144,7 @@ const HeroVideoSection = () => {
     setIsMuted(video.muted);
   };
 
-  // Enhanced error fallback with retry option
+  // Error fallback
   if (hasError) {
     return (
       <section ref={sectionRef} className="text-center mb-8 md:mb-16 px-4">
@@ -241,22 +159,19 @@ const HeroVideoSection = () => {
           analyses your current situation across four key pillars to project
           your path forward.
         </p>
-        {videoLoadError && (
-          <div className="text-xs text-red-400 bg-red-900/20 p-3 rounded max-w-md mx-auto mb-4">
-            <div className="mb-2">Video Error: {videoLoadError}</div>
-            <button 
-              onClick={() => {
-                setHasError(false);
-                setVideoLoadError('');
-                setVideoSrc('');
-                setUserConsentToLoad(true);
-              }}
-              className="text-blue-400 hover:text-blue-300 underline text-xs"
-            >
-              Try Again
-            </button>
-          </div>
-        )}
+        <div className="text-xs text-red-400 bg-red-900/20 p-3 rounded max-w-md mx-auto mb-4">
+          <div className="mb-2">Video temporarily unavailable</div>
+          <button 
+            onClick={() => {
+              setHasError(false);
+              setVideoSrc('');
+              setUserConsentToLoad(true);
+            }}
+            className="text-blue-400 hover:text-blue-300 underline text-xs"
+          >
+            Try Again
+          </button>
+        </div>
       </section>
     );
   }
@@ -289,7 +204,7 @@ const HeroVideoSection = () => {
 
         <VideoInteractionOverlays
           device={device}
-          isVideoLoading={isVideoLoading}
+          isVideoLoading={false}
           currentVideoQuality={currentVideoQuality}
           userConsentToLoad={userConsentToLoad}
           needsUserInteraction={needsUserInteraction}
@@ -307,11 +222,10 @@ const HeroVideoSection = () => {
           />
         )}
 
-        {/* Enhanced Quality Indicator (Development) */}
+        {/* Debug Info (Development) */}
         {process.env.NODE_ENV === 'development' && (
           <div className="absolute top-2 right-2 bg-black/80 text-white text-xs p-2 rounded">
             <div>Device: {device.isDesktop ? 'Desktop' : device.isMobile ? 'Mobile' : 'Tablet'} | {device.isIOS ? 'iOS' : 'Non-iOS'}</div>
-            <div>Connection: {device.connectionSpeed} | Screen: {window.innerWidth}px</div>
             <div>Quality: {currentVideoQuality} | Loaded: {isLoaded ? 'Yes' : 'No'}</div>
             <div>Source: {videoSrc || 'Not set'}</div>
             <div>Consent: {userConsentToLoad ? 'Yes' : 'No'} | Error: {hasError ? 'Yes' : 'No'}</div>
