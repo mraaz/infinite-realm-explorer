@@ -1,19 +1,19 @@
-// FutureQuestionnaire.tsx (Refactored for 3-Step AI Chat Flow)
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import { PriorityRanking } from "@/components/PriorityRanking";
 import { ConfirmationStep } from "@/components/futureQuestionnaire/ConfirmationStep";
 import { QuestionnaireSteps } from "@/components/futureQuestionnaire/QuestionnaireSteps";
 import { QuestionnaireNavigation } from "@/components/futureQuestionnaire/QuestionnaireNavigation";
-// NEW: Import the placeholder for the AI Chat component
 import { AIChatQuestionnaire } from "@/components/futureQuestionnaire/AIChatQuestionnaire";
 import { Pillar, Priorities } from "@/components/priority-ranking/types";
-
-// Import hooks and services
-import { useQuestionnaireState } from "@/hooks/useQuestionnaireState.tsx";
-import { saveQuestionnaireProgress } from "@/services/apiService.tsx";
+import SocialLoginModal from "@/components/SocialLoginModal"; // --- MODIFICATION: Import the modal ---
+import { useQuestionnaireState } from "@/hooks/useQuestionnaireState";
+import {
+  saveQuestionnaireProgress,
+  generateBlueprint,
+  Blueprint,
+} from "@/services/apiService";
 import { useAuth } from "@/contexts/AuthContext";
 
 const FutureQuestionnaire: React.FC = () => {
@@ -24,88 +24,95 @@ const FutureQuestionnaire: React.FC = () => {
   };
 
   const { user, authToken } = useAuth();
-  const [step, setStep] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isChatComplete, setIsChatComplete] = useState(false);
+  const [blueprint, setBlueprint] = useState<Blueprint | null>(null);
+
+  // --- MODIFICATION: Add state to control the login modal ---
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const {
     isLoading,
     priorities,
     answers,
+    step,
+    setStep,
+    setAnswers,
     handlePrioritiesComplete,
-    handlePillarAnswersUpdate,
-  } = useQuestionnaireState(user);
+  } = useQuestionnaireState();
 
-  const handlePrevious = () => setStep((prev) => Math.max(prev - 1, 1));
+  const totalSteps = 3;
 
+  const handlePrevious = async () => {
+    const targetStep = Math.max(step - 1, 1);
+    if (user && authToken) {
+      await saveQuestionnaireProgress(
+        { priorities, answers, step: targetStep },
+        authToken
+      );
+    }
+    setStep(targetStep);
+  };
+
+  // --- MODIFICATION: handleNext now checks if the user is a guest ---
   const handleNext = async () => {
+    // If user is a guest and trying to proceed past step 1, show the login modal.
+    if (!user && step === 1) {
+      setIsLoginModalOpen(true);
+      return; // Stop the function here
+    }
+
     setSaveError(null);
+    const targetStep = step + 1;
+
     if (user && authToken) {
       setIsSaving(true);
       try {
-        await saveQuestionnaireProgress({ priorities, answers }, authToken);
-        setStep((prev) => prev + 1);
+        if (step === 2) {
+          const finalPayload = { priorities, answers, step: 2 };
+          const generatedBlueprint = await generateBlueprint(
+            finalPayload,
+            authToken
+          );
+          setBlueprint(generatedBlueprint);
+        }
+        await saveQuestionnaireProgress(
+          { priorities, answers, step: targetStep },
+          authToken
+        );
+        setStep(targetStep);
       } catch (error: any) {
-        setSaveError("Failed to save progress. Please try again.");
+        setSaveError("An error occurred. Please try again.");
       } finally {
         setIsSaving(false);
       }
     } else {
-      setStep((prev) => prev + 1);
+      // This path is for guests moving between non-gated steps, if any.
+      setStep(targetStep);
     }
   };
 
-  const handleConfirm = async () => {
-    // The final payload no longer includes an 'analysis' key
-    const finalPayload = { priorities, answers };
-    if (user && authToken) {
-      await saveQuestionnaireProgress(finalPayload, authToken);
-    }
-    localStorage.removeItem("futureQuestionnaireGuestProgress");
-    navigate("/results", {
-      state: {
-        ...location.state,
-        futureQuestionnaire: finalPayload,
-      },
-    });
+  const handleConfirm = () => {
+    navigate("/results");
   };
-
-  // The total number of steps is now 3
-  const totalSteps = 3;
 
   const isNextDisabled = (): boolean => {
     if (isSaving) return true;
-    if (!priorities) return true; // Priorities must be set for all steps past 1
-
-    switch (step) {
-      case 1:
-        // Step 1 is complete when all priorities are set
-        return (
-          !priorities.mainFocus ||
-          !priorities.secondaryFocus ||
-          priorities.maintenance.length !== 2
-        );
-      case 2:
-        // Step 2 is complete when the answers object is populated for all required pillars
-        const requiredPillars: Pillar[] = [
-          priorities.mainFocus,
-          priorities.secondaryFocus,
-          ...priorities.maintenance,
-        ];
-        // The button is disabled if any required pillar does not have an entry in the answers object
-        return requiredPillars.some((p) => !answers[p]);
-      default:
-        // Disable by default on the confirmation step
-        return true;
-    }
+    if (step === 1)
+      return !(
+        priorities?.mainFocus &&
+        priorities?.secondaryFocus &&
+        priorities?.maintenance.length === 2
+      );
+    if (step === 2) return !isChatComplete;
+    return true;
   };
 
   const renderCurrentStep = (): React.ReactNode => {
     if (isLoading) {
       return <div className="text-center text-gray-500">Loading...</div>;
     }
-
-    // Render based on the new 3-step flow
     switch (step) {
       case 1:
         return (
@@ -115,25 +122,24 @@ const FutureQuestionnaire: React.FC = () => {
           />
         );
       case 2:
-        // Render the new AI Chat component if priorities are set
         return (
           priorities && (
             <AIChatQuestionnaire
               priorities={priorities}
-              // The chat component will call this function with the complete answers object when done
-              onComplete={handlePillarAnswersUpdate}
+              onComplete={(completedState) => {
+                setAnswers(completedState.answers);
+                setIsChatComplete(true);
+              }}
             />
           )
         );
       case 3:
-        // The final confirmation step
         return (
           <ConfirmationStep
             priorities={priorities}
-            answers={answers}
+            blueprint={blueprint}
             onConfirm={handleConfirm}
             onPrevious={handlePrevious}
-            isConfirming={false} // This can be removed or repurposed if needed
           />
         );
       default:
@@ -146,7 +152,6 @@ const FutureQuestionnaire: React.FC = () => {
       <Header />
       <main className="flex-grow flex flex-col items-center px-4 py-8 md:py-12">
         <div className="w-full max-w-5xl">
-          <div className="flex justify-end items-center mb-4 min-h-[40px]"></div>
           <div className="bg-[#1e1e24] p-6 md:p-10 rounded-2xl shadow-lg border border-gray-700">
             <div className="text-center mb-8">
               <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
@@ -157,12 +162,7 @@ const FutureQuestionnaire: React.FC = () => {
                 for the next five years.
               </p>
             </div>
-            {/* Pass the new totalSteps to the stepper */}
-            <QuestionnaireSteps
-              step={step}
-              totalSteps={totalSteps}
-              isArchitect={isArchitect}
-            />
+            <QuestionnaireSteps step={step} isArchitect={isArchitect} />
             <div className="mt-10 min-h-[400px]">{renderCurrentStep()}</div>
             {step < totalSteps && (
               <>
@@ -173,6 +173,7 @@ const FutureQuestionnaire: React.FC = () => {
                 )}
                 <QuestionnaireNavigation
                   step={step}
+                  isArchitect={isArchitect}
                   onPrevious={step > 1 ? handlePrevious : undefined}
                   onNext={handleNext}
                   nextDisabled={isNextDisabled()}
@@ -182,6 +183,12 @@ const FutureQuestionnaire: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* --- MODIFICATION: Add the modal to the page's JSX --- */}
+      <SocialLoginModal
+        open={isLoginModalOpen}
+        onOpenChange={setIsLoginModalOpen}
+      />
     </div>
   );
 };

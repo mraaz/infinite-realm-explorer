@@ -1,61 +1,46 @@
-// /src/components/futureQuestionnaire/ConfirmationStep.tsx (Modified)
-
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Pillar } from "@/components/priority-ranking/types";
-import { questionnaireData } from "./questionnaireData";
 import { PrioritiesSummary } from "./PrioritiesSummary";
-import { ArrowLeft, Loader2 } from "lucide-react"; // Import Loader2 icon
+import { ArrowLeft, CheckCircle } from "lucide-react";
+import { Priorities, Pillar } from "@/components/priority-ranking/types";
+import { Blueprint } from "@/services/apiService"; // Import the Blueprint type
 
-// --- Type Definitions ---
-type Priorities = {
-  mainFocus: Pillar;
-  secondaryFocus: Pillar;
-  maintenance: Pillar[];
-};
-type PillarAnswers = Record<string, string>;
-type Answers = { [key in Pillar]?: PillarAnswers };
-
-// Add the new `isConfirming` prop to the interface
+// --- MODIFICATION: The props have changed to accept the blueprint ---
 interface ConfirmationStepProps {
   priorities: Priorities | null;
-  answers: Answers;
+  blueprint: Blueprint | null;
   onConfirm: () => void;
   onPrevious: () => void;
-  isConfirming: boolean; // This prop will control the loading state
 }
 
-const AnswerSummary: React.FC<{
-  pillarName: Pillar;
-  pillarAnswers?: PillarAnswers;
-  focusType: "main" | "secondary" | "maintenance";
-}> = ({ pillarName, pillarAnswers, focusType }) => {
-  const questionSet = questionnaireData[pillarName]?.[focusType];
-  if (!questionSet || !pillarAnswers) return null;
-  return (
-    <div className="space-y-4">
-      <h4 className="text-lg font-semibold text-purple-400">{pillarName}</h4>
-      <div className="space-y-4 pl-4 border-l-2 border-gray-700">
-        {questionSet.questions.map((q) => (
-          <div key={q.id}>
-            <Label className="text-sm text-gray-400">{q.label}</Label>
-            <p className="text-white whitespace-pre-wrap mt-1">
-              {pillarAnswers[q.id] || "No answer provided."}
-            </p>
-          </div>
+// --- MODIFICATION: New component to display a single part of the blueprint ---
+const BlueprintSection: React.FC<{
+  title: string;
+  summary: string;
+  steps: string[];
+}> = ({ title, summary, steps }) => (
+  <div className="space-y-3">
+    <h4 className="text-lg font-semibold text-purple-400">{title}</h4>
+    <p className="text-gray-300 whitespace-pre-wrap">{summary}</p>
+    <div>
+      <h5 className="font-semibold text-gray-200 mb-2">Your First Steps:</h5>
+      <ul className="space-y-2 pl-5">
+        {steps.map((step, index) => (
+          <li key={index} className="flex items-start">
+            <CheckCircle className="h-5 w-5 text-green-400 mr-3 mt-1 flex-shrink-0" />
+            <span className="text-gray-300">{step}</span>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
-  );
-};
+  </div>
+);
 
 export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   priorities,
-  answers,
+  blueprint,
   onConfirm,
   onPrevious,
-  isConfirming, // Destructure the new prop
 }) => {
   if (!priorities) {
     return <div className="text-center text-gray-400">Loading summary...</div>;
@@ -68,64 +53,67 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
           Your Future Self Blueprint
         </h3>
         <p className="text-gray-400 mt-2">
-          Review your answers below. This is the foundation for the habits
-          you're about to build.
+          Here is the AI-generated summary of your vision and your first steps.
         </p>
       </div>
 
       <div className="space-y-3">
         <h3 className="text-sm uppercase font-bold text-gray-500 tracking-wider">
-          Your Priorities
+          YOUR PRIORITIES
         </h3>
         <PrioritiesSummary priorities={priorities} />
       </div>
 
-      <div className="space-y-3">
-        <h3 className="text-sm uppercase font-bold text-gray-500 tracking-wider">
-          Your Answers
-        </h3>
-        <div className="space-y-8 bg-black/20 rounded-lg p-6">
-          <AnswerSummary
-            pillarName={priorities.mainFocus}
-            pillarAnswers={answers[priorities.mainFocus]}
-            focusType="main"
-          />
-          <AnswerSummary
-            pillarName={priorities.secondaryFocus}
-            pillarAnswers={answers[priorities.secondaryFocus]}
-            focusType="secondary"
-          />
-          {priorities.maintenance.map((pillar) => (
-            <AnswerSummary
-              key={pillar}
-              pillarName={pillar}
-              pillarAnswers={answers[pillar]}
-              focusType="maintenance"
+      {/* --- MODIFICATION: This section now displays the blueprint --- */}
+      <div className="space-y-6 bg-black/20 rounded-lg p-6">
+        {!blueprint ? (
+          <p className="text-center text-gray-400">
+            Generating your blueprint...
+          </p>
+        ) : (
+          <>
+            <div className="text-center space-y-2">
+              <h4 className="text-lg font-semibold text-purple-400">
+                Overall Summary
+              </h4>
+              <p className="text-gray-300 max-w-2xl mx-auto">
+                {blueprint.overallSummary}
+              </p>
+            </div>
+            <hr className="border-gray-700" />
+            <BlueprintSection
+              title={`Main Focus: ${blueprint.mainFocus.pillar}`}
+              summary={blueprint.mainFocus.summary}
+              steps={blueprint.mainFocus.actionableSteps}
             />
-          ))}
-        </div>
+            <hr className="border-gray-700" />
+            <BlueprintSection
+              title={`Secondary Focus: ${blueprint.secondaryFocus.pillar}`}
+              summary={blueprint.secondaryFocus.summary}
+              steps={blueprint.secondaryFocus.actionableSteps}
+            />
+          </>
+        )}
       </div>
 
-      <div className="flex justify-between items-center pt-4">
+      <div className="flex flex-col md:flex-row md:justify-between items-center gap-4 pt-4">
         <Button
           size="lg"
           variant="outline"
-          className="bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700"
+          className="w-full md:w-auto bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700"
           onClick={onPrevious}
-          disabled={isConfirming} // Disable button when confirming
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Previous
         </Button>
-        <Button size="lg" onClick={onConfirm} disabled={isConfirming}>
-          {isConfirming ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Analyzing...
-            </>
-          ) : (
-            "Show Me My Future Self"
-          )}
+        {/* --- MODIFICATION: Button text updated, now just navigates --- */}
+        <Button
+          size="lg"
+          onClick={onConfirm}
+          disabled={!blueprint} // Disable until blueprint is loaded
+          className="w-full md:w-auto"
+        >
+          Finish & View Results
         </Button>
       </div>
     </div>

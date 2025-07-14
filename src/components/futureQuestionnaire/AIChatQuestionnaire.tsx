@@ -1,175 +1,341 @@
-// /src/components/futureQuestionnaire/AIChatQuestionnaire.tsx (Scaffolding)
-
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 import { Send, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Pillar } from "@/components/priority-ranking/types";
+import { useAuth } from "@/contexts/AuthContext";
 import {
-  Priorities,
-  Pillar,
-  Answers,
-} from "@/components/priority-ranking/types";
+  getQuestionnaireState,
+  saveQuestionnaireProgress,
+  processChatAnswer,
+  QuestionnaireStatePayload,
+} from "@/services/apiService";
 
-// Define the shape of a single chat message
-type Message = {
-  role: "user" | "assistant";
-  content: string;
+// --- Type Definitions ---
+type Priorities = {
+  mainFocus: Pillar;
+  secondaryFocus: Pillar;
+  maintenance: Pillar[];
 };
 
-// Define the props the component will receive
+interface Message {
+  id: number;
+  role: "ai" | "user" | "feedback";
+  content: string;
+}
+
 interface AIChatQuestionnaireProps {
   priorities: Priorities;
-  onComplete: (answers: Answers) => void;
+  onComplete: (finalState: QuestionnaireStatePayload) => void;
 }
+
+const initialQuestions: Record<Pillar, string> = {
+  Career:
+    "When you picture yourself thriving in your dream career 5 years from now, what work are you doing that makes you lose track of time?",
+  Financials:
+    "Describe your ideal financial situation in 5 years. What does financial freedom look and feel like to you?",
+  Health:
+    "Imagine it's 5 years from now and you are in peak health. What does your daily routine look like, and how do you feel?",
+  Connections:
+    "Envision your relationships in 5 years. How are you connecting with the most important people in your life?",
+};
 
 export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
   priorities,
   onComplete,
 }) => {
-  // State for the conversation messages
-  const [messages, setMessages] = useState<Message[]>([]);
-  // State for the user's current input
-  const [inputValue, setInputValue] = useState("");
-  // State to show a loading indicator while the "AI" is "thinking"
-  const [isLoading, setIsLoading] = useState(false);
-
-  // A ref to the scrollable message container
+  const { authToken } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  // --- MODIFICATION 1 of 3: Create a ref for the textarea input ---
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Function to scroll to the latest message
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [userInput, setUserInput] = useState("");
+  const [conversationState, setConversationState] =
+    useState<QuestionnaireStatePayload | null>(null);
 
-  useEffect(scrollToBottom, [messages]);
+  const orderedPillars = [
+    priorities.mainFocus,
+    priorities.secondaryFocus,
+    ...priorities.maintenance,
+  ];
 
-  // Effect to kick off the conversation with a welcome message
+  // --- Initial Data Loading & Resuming Progress ---
   useEffect(() => {
-    setIsLoading(true);
-    // Simulate the AI starting the conversation
-    setTimeout(() => {
-      setMessages([
-        {
-          role: "assistant",
-          content: `Hello! I see your main focus is on ${priorities.mainFocus}. To start, can you describe what your ideal future looks like in this area 5 years from now?`,
-        },
-      ]);
-      setIsLoading(false);
-    }, 1000);
-  }, [priorities.mainFocus]);
-
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputValue.trim() || isLoading) return;
-
-    const userMessage: Message = { role: "user", content: inputValue };
-    const newMessages = [...messages, userMessage];
-
-    setMessages(newMessages);
-    setInputValue("");
-    setIsLoading(true);
-
-    // --- Placeholder for Supabase Edge Function Call ---
-    // In the real implementation, you would send `priorities` and `newMessages`
-    // to your 'questionnaire-chat' edge function here.
-    try {
-      // const aiResponse = await callSupabaseFunction(priorities, newMessages);
-      // For now, we just simulate a delay and an echo response.
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      const aiResponse = {
-        response: `That's a great goal. This is where the next question would go. You said: "${userMessage.content}"`,
-        isComplete: false, // Your function would determine when this is true
-      };
-
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: aiResponse.response },
-      ]);
-
-      // If the AI signals the conversation is complete, call the onComplete prop
-      if (aiResponse.isComplete) {
-        // You would need to construct the final 'answers' object from the conversation
-        const finalAnswers = {}; // Placeholder
-        onComplete(finalAnswers);
+    const loadState = async () => {
+      if (!authToken) return;
+      const savedState = await getQuestionnaireState(authToken);
+      if (
+        savedState &&
+        savedState.priorities &&
+        savedState.answers?.history?.length > 0
+      ) {
+        setConversationState(savedState);
+        setMessages(savedState.answers.history);
+      } else {
+        const initialState: QuestionnaireStatePayload = {
+          priorities: priorities,
+          answers: {
+            history: [],
+            scores: { Career: 0, Financials: 0, Health: 0, Connections: 0 },
+            questionCount: {
+              Career: 0,
+              Financials: 0,
+              Health: 0,
+              Connections: 0,
+            },
+          },
+        };
+        const firstQuestion = initialQuestions[orderedPillars[0]];
+        const firstMessage = {
+          id: 1,
+          role: "ai",
+          content: firstQuestion,
+        } as Message;
+        const stateWithFirstMessage = {
+          ...initialState,
+          answers: { ...initialState.answers, history: [firstMessage] },
+        };
+        setConversationState(stateWithFirstMessage);
+        setMessages([firstMessage]);
       }
-    } catch (error) {
-      console.error("Error calling AI function:", error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "Sorry, I encountered an error. Please try again.",
-        },
-      ]);
-    } finally {
       setIsLoading(false);
+    };
+    loadState();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authToken]);
+
+  // --- Auto-saving progress ---
+  useEffect(() => {
+    if (conversationState && !isLoading && authToken) {
+      saveQuestionnaireProgress(conversationState, authToken);
+    }
+  }, [conversationState, isLoading, authToken]);
+
+  // --- Handling User Submission ---
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userInput.trim() || isProcessing || !conversationState) return;
+
+    const currentHistory = conversationState.answers.history;
+    const lastQuestion =
+      currentHistory.findLast((m) => m.role === "ai")?.content || "";
+    const aiQuestionCount = currentHistory.filter(
+      (m) => m.role === "ai"
+    ).length;
+
+    let pillarIndex = 0;
+    if (aiQuestionCount > 2) pillarIndex = 1;
+    if (aiQuestionCount > 4) pillarIndex = 2;
+    if (aiQuestionCount > 5) pillarIndex = 3;
+    const currentPillar = orderedPillars[pillarIndex];
+
+    const userMessage: Message = {
+      id: Date.now(),
+      role: "user",
+      content: userInput.trim(),
+    };
+    setMessages((prev) => [...prev, userMessage]);
+    setUserInput("");
+    setIsProcessing(true);
+
+    const aiResponse = await processChatAnswer(
+      {
+        pillarName: currentPillar,
+        previousQuestion: lastQuestion,
+        userAnswer: userMessage.content,
+      },
+      authToken!
+    );
+
+    const newHistory = [...currentHistory, userMessage];
+
+    if (aiResponse.isRelevant && aiResponse.nextQuestion) {
+      const aiMessage: Message = {
+        id: Date.now() + 1,
+        role: "ai",
+        content: aiResponse.nextQuestion,
+      };
+      newHistory.push(aiMessage);
+
+      setConversationState((prev) => {
+        const newState = { ...prev! };
+        newState.answers.history = newHistory;
+        newState.answers.scores[currentPillar] =
+          (newState.answers.scores[currentPillar] || 0) + aiResponse.score;
+        newState.answers.questionCount[currentPillar] =
+          (newState.answers.questionCount[currentPillar] || 0) + 1;
+        return newState;
+      });
+    } else {
+      const feedbackMessage: Message = {
+        id: Date.now() + 1,
+        role: "feedback",
+        content: aiResponse.feedback!,
+      };
+      newHistory.push(feedbackMessage);
+      setConversationState((prev) => ({
+        ...prev!,
+        answers: { ...prev!.answers, history: newHistory },
+      }));
+    }
+    setMessages(newHistory);
+    setIsProcessing(false);
+
+    const totalAIQuestions = newHistory.filter((m) => m.role === "ai").length;
+    if (totalAIQuestions >= 6) {
+      onComplete(conversationState!);
     }
   };
 
+  // --- MODIFICATION 2 of 3: Update the useEffect for scrolling and focusing ---
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Set focus back to the input field after messages update
+    inputRef.current?.focus();
+  }, [messages]);
+
+  // --- Progress Calculation for UI ---
+  const getPillarInfo = () => {
+    if (!conversationState)
+      return { name: orderedPillars[0], type: "Main Focus" };
+    const aiQuestionCount = conversationState.answers.history.filter(
+      (m) => m.role === "ai"
+    ).length;
+    if (aiQuestionCount <= 2)
+      return { name: priorities.mainFocus, type: "Main Focus" };
+    if (aiQuestionCount <= 4)
+      return { name: priorities.secondaryFocus, type: "Secondary Focus" };
+    return {
+      name: orderedPillars[Math.min(aiQuestionCount - 3, 3)],
+      type: "Maintenance",
+    };
+  };
+
+  const pillarInfo = getPillarInfo();
+  const questionsInPillar = pillarInfo.type === "Maintenance" ? 1 : 2;
+  const currentQuestionNum =
+    conversationState?.answers.questionCount[pillarInfo.name] || 0;
+  const overallCompleted = conversationState
+    ? Object.values(conversationState.answers.questionCount).reduce(
+        (a, b) => a + b,
+        0
+      )
+    : 0;
+  const progressPercentage = Math.round((overallCompleted / 6) * 100);
+
+  // --- Render Logic ---
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-400" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col h-[60vh] bg-black/20 rounded-lg p-4">
-      {/* Message Display Area */}
-      <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-        {messages.map((msg, index) => (
+    <div className="flex flex-col h-full max-w-4xl mx-auto p-4">
+      <div className="sticky top-4 z-10 mb-6 p-5 bg-gradient-to-br from-gray-800/60 to-gray-900/80 border border-purple-500/30 rounded-2xl shadow-xl backdrop-blur-md">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 text-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-600 to-purple-700 animate-pulse shadow-lg"></div>
+            <span className="font-semibold text-white">
+              Step 2: {pillarInfo.type}
+            </span>
+            <span className="text-purple-300">({pillarInfo.name})</span>
+          </div>
+          <div className="flex flex-col sm:items-end gap-1">
+            <span className="text-gray-300 font-medium">
+              Question {Math.min(currentQuestionNum + 1, questionsInPillar)} of{" "}
+              {questionsInPillar}
+            </span>
+            <span className="text-xs text-gray-400">
+              Overall: {overallCompleted} of 6 ({progressPercentage}%)
+            </span>
+          </div>
+        </div>
+        <div className="w-full bg-gray-700/50 rounded-full h-3 mt-4 overflow-hidden border border-gray-600/30">
           <div
-            key={index}
+            className="bg-gradient-to-r from-purple-600 to-purple-700 h-3 rounded-full transition-all duration-700 ease-out"
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto space-y-6 mb-6 pr-2">
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
             className={cn(
-              "flex items-end gap-2",
-              msg.role === "user" ? "justify-end" : "justify-start"
+              "flex items-start gap-4",
+              msg.role === "user" ? "flex-row-reverse" : "flex-row"
             )}
           >
+            {msg.role !== "user" && (
+              <div
+                className={cn(
+                  "w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold shadow-lg",
+                  msg.role === "ai"
+                    ? "bg-gradient-to-br from-purple-500 to-purple-600 text-white"
+                    : "bg-gradient-to-br from-gray-600 to-gray-700 text-white"
+                )}
+              >
+                {msg.role === "ai" ? "✨" : "😰"}
+              </div>
+            )}
             <div
               className={cn(
-                "p-3 rounded-lg max-w-sm md:max-w-md",
+                "px-4 py-3 rounded-2xl shadow-sm max-w-[80%]",
                 msg.role === "user"
-                  ? "bg-purple-600 text-white rounded-br-none"
-                  : "bg-gray-700 text-white rounded-bl-none"
+                  ? "bg-primary text-primary-foreground ml-auto"
+                  : msg.role === "ai"
+                  ? "bg-gray-100 text-gray-800"
+                  : "bg-red-100 border border-red-200 text-red-800"
               )}
             >
-              <p className="whitespace-pre-wrap">{msg.content}</p>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                {msg.content}
+              </p>
             </div>
+            {msg.role === "user" && (
+              <div className="w-10 h-10 rounded-full flex-shrink-0" />
+            )}
           </div>
         ))}
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="p-3 rounded-lg bg-gray-700 rounded-bl-none">
-              <Loader2 className="h-5 w-5 animate-spin" />
-            </div>
+        {isProcessing && (
+          <div className="flex justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-purple-300" />
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Form */}
-      <form
-        onSubmit={handleSendMessage}
-        className="mt-4 flex items-center gap-2 border-t border-gray-700 pt-4"
-      >
+      <form onSubmit={handleSubmit} className="flex items-center gap-3">
+        {/* --- MODIFICATION 3 of 3: Attach the ref to the Textarea --- */}
         <Textarea
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          placeholder="Type your answer here..."
-          className="bg-gray-800 border-gray-600 text-white resize-none"
-          rows={1}
-          disabled={isLoading}
+          ref={inputRef}
+          value={userInput}
+          onChange={(e) => setUserInput(e.target.value)}
+          placeholder="Share your thoughts..."
+          className="flex-1 min-h-[50px] resize-none bg-card border-border text-foreground"
+          disabled={isProcessing}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
-              handleSendMessage(e);
+              handleSubmit(e);
             }
           }}
         />
         <Button
           type="submit"
-          size="icon"
-          disabled={isLoading || !inputValue.trim()}
+          disabled={!userInput.trim() || isProcessing}
+          size="lg"
+          className="h-[50px]"
         >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
+          <Send className="h-5 w-5" />
         </Button>
       </form>
     </div>

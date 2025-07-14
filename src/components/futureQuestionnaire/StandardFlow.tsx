@@ -33,11 +33,10 @@ export const StandardFlow: React.FC<StandardFlowProps> = ({
     switch (step) {
         case 1:
             return (
-                <PriorityRanking 
-                    progress={progress} 
-                    onComplete={onPrioritiesChange} 
-                    value={priorities} 
-                />
+            <PriorityRanking
+              onComplete={onPrioritiesChange}
+              value={priorities}
+            />
             );
         case 2:
             if (!priorities) return null;

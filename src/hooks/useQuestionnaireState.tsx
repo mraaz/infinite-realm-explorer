@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { Pillar } from "@/components/priority-ranking/types";
 import { PillarAnswers } from "@/components/futureQuestionnaire/PillarQuestions";
+import {
+  getQuestionnaireState,
+  QuestionnaireStatePayload,
+} from "@/services/apiService";
+import { useAuth } from "@/contexts/AuthContext";
 
 // --- Type Definitions ---
 interface User {
@@ -16,10 +21,6 @@ type Priorities = {
   maintenance: Pillar[];
 };
 type Answers = { [key in Pillar]?: PillarAnswers };
-type QuestionnaireState = {
-  priorities: Priorities | null;
-  answers: Answers;
-};
 
 const LOCAL_STORAGE_KEY = "futureQuestionnaireGuestProgress";
 
@@ -28,38 +29,54 @@ const LOCAL_STORAGE_KEY = "futureQuestionnaireGuestProgress";
  * @param user - The user object from useAuth(), or null for guests.
  */
 export const useQuestionnaireState = (user: User | null) => {
+  const { authToken } = useAuth();
   const [priorities, setPriorities] = useState<Priorities | null>(null);
   const [answers, setAnswers] = useState<Answers>({});
+  const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Effect to load initial data from localStorage
+  // Effect to load initial data
   useEffect(() => {
-    const loadData = () => {
-      // This logic now applies to BOTH guests and logged-in users on initial load.
-      // This ensures a seamless transition if a user logs in mid-questionnaire.
-      const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (savedData) {
-        try {
-          const parsedData: QuestionnaireState = JSON.parse(savedData);
-          setPriorities(parsedData.priorities || null);
-          setAnswers(parsedData.answers || {});
-        } catch (error) {
-          console.error("Failed to parse progress from localStorage", error);
+    const loadData = async () => {
+      setIsLoading(true);
+      if (user && authToken) {
+        const savedState = await getQuestionnaireState(authToken);
+        if (savedState) {
+          setPriorities(savedState.priorities || null);
+          setAnswers(savedState.answers || {});
+          if (savedState.step && savedState.step > 0) {
+            setStep(savedState.step);
+          }
+        }
+      } else {
+        const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (savedData) {
+          try {
+            const parsedData: QuestionnaireStatePayload = JSON.parse(savedData);
+            setPriorities(parsedData.priorities || null);
+            setAnswers(parsedData.answers || {});
+            setStep(parsedData.step || 1);
+          } catch (error) {
+            console.error("Failed to parse progress from localStorage", error);
+          }
         }
       }
       setIsLoading(false);
     };
-
     loadData();
-  }, []); // Runs only once on initial mount
+  }, [user, authToken]);
 
-  // This effect now ONLY saves progress for GUESTS to localStorage.
+  // Effect to save progress for GUESTS
   useEffect(() => {
     if (!user && !isLoading) {
-      const dataToSave: QuestionnaireState = { priorities, answers };
+      const dataToSave: QuestionnaireStatePayload = {
+        priorities,
+        answers,
+        step,
+      };
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
     }
-  }, [priorities, answers, user, isLoading]);
+  }, [priorities, answers, step, user, isLoading]);
 
   const handlePrioritiesComplete = (newPriorities: Priorities | null) => {
     setPriorities(newPriorities);
@@ -79,7 +96,11 @@ export const useQuestionnaireState = (user: User | null) => {
     isLoading,
     priorities,
     answers,
+    step,
+    setStep,
     handlePrioritiesComplete,
     handlePillarAnswersUpdate,
+    // --- MODIFICATION: Expose the setAnswers function ---
+    setAnswers,
   };
 };
