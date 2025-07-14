@@ -7,7 +7,7 @@ export type VideoQuality = 'HD' | 'SD' | 'Mobile';
 export const useVideoQuality = (device: DeviceDetection) => {
   const [currentVideoQuality, setCurrentVideoQuality] = useState<VideoQuality>('Mobile');
   
-  // Smart video quality selection with SD as default for desktop to avoid HD loading issues
+  // Smart video quality selection with desktop priority
   const getOptimalVideoUrl = useCallback(() => {
     const baseUrl = "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/";
     
@@ -25,10 +25,15 @@ export const useVideoQuality = (device: DeviceDetection) => {
       return `${baseUrl}HomePageVideoMobile.mp4`;
     }
     
-    // Desktop gets SD by default to avoid HD loading issues (41MB file)
+    // Desktop gets HD by default, SD for slow connections
     if (device.isDesktop) {
-      setCurrentVideoQuality('SD');
-      return `${baseUrl}HomePageVideoSD.mp4`;
+      if (device.connectionSpeed === 'slow') {
+        setCurrentVideoQuality('SD');
+        return `${baseUrl}HomePageVideoSD.mp4`;
+      } else {
+        setCurrentVideoQuality('HD');
+        return `${baseUrl}HomePageVideoHD.mp4`;
+      }
     }
     
     // Mobile phones get mobile quality
