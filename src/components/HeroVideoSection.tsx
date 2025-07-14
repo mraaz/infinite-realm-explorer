@@ -24,16 +24,26 @@ const HeroVideoSection = () => {
   const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [videoLoadError, setVideoLoadError] = useState<string>("");
   
-  // Get video info
+  // Get video info and initialize immediately  
   const videoInfo = getOptimalVideoUrl();
   const [currentVideoSrc, setCurrentVideoSrc] = useState(videoInfo.url);
   const [currentQuality, setCurrentQuality] = useState(videoInfo.quality);
 
-  // Initialize video source immediately
+  // Initialize video source and consent logic
   useEffect(() => {
     const newVideoInfo = getOptimalVideoUrl();
     setCurrentVideoSrc(newVideoInfo.url);
     setCurrentQuality(newVideoInfo.quality);
+    
+    // Desktop: No consent needed, immediate load
+    // iOS: Requires explicit consent
+    if (isIOS) {
+      setUserConsentToLoad(false);
+      setShowPoster(true);
+    } else {
+      setUserConsentToLoad(true);
+      setShowPoster(false);
+    }
     
     console.log('Video initialized:', {
       quality: newVideoInfo.quality,
@@ -42,20 +52,10 @@ const HeroVideoSection = () => {
       isIOS,
       isMobile,
       connectionSpeed,
-      screenWidth: window.innerWidth
+      screenWidth: window.innerWidth,
+      consentNeeded: isIOS
     });
   }, [connectionSpeed, isIOS, isMobile]);
-
-  // Set user consent - iOS requires explicit consent
-  useEffect(() => {
-    if (isIOS) {
-      setUserConsentToLoad(false);
-      setShowPoster(true);
-    } else {
-      setUserConsentToLoad(true);
-      setShowPoster(false);
-    }
-  }, [isIOS]);
 
   // Video event handlers
   const handleCanPlay = () => {
@@ -85,9 +85,22 @@ const HeroVideoSection = () => {
       'Unknown video error';
     console.error(`Video error (${currentQuality}):`, errorMsg);
     
-    // Try fallback quality
+    // Recreate video element for better error recovery
+    const recreateVideo = () => {
+      if (videoRef.current) {
+        const parent = videoRef.current.parentNode;
+        const newVideo = videoRef.current.cloneNode(false) as HTMLVideoElement;
+        if (parent) {
+          parent.replaceChild(newVideo, videoRef.current);
+          (videoRef as any).current = newVideo;
+        }
+      }
+    };
+    
+    // Try fallback quality with video element recreation
     if (currentQuality === 'HD') {
       console.log('HD failed, falling back to SD quality');
+      recreateVideo();
       const sdVideoInfo = {
         url: "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoSD.mp4",
         quality: 'SD' as const,
@@ -95,8 +108,11 @@ const HeroVideoSection = () => {
       };
       setCurrentVideoSrc(sdVideoInfo.url);
       setCurrentQuality(sdVideoInfo.quality);
+      setIsLoaded(false);
+      setIsVideoLoading(true);
     } else if (currentQuality === 'SD') {
       console.log('SD failed, falling back to Mobile quality');
+      recreateVideo();
       const mobileVideoInfo = {
         url: "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoMobile.mp4",
         quality: 'Mobile' as const,
@@ -104,6 +120,8 @@ const HeroVideoSection = () => {
       };
       setCurrentVideoSrc(mobileVideoInfo.url);
       setCurrentQuality(mobileVideoInfo.quality);
+      setIsLoaded(false);
+      setIsVideoLoading(true);
     } else {
       // Mobile quality failed - show error
       setVideoLoadError(errorMsg);
@@ -232,12 +250,12 @@ const HeroVideoSection = () => {
 
         <VideoPlayer
           ref={videoRef}
-          src={userConsentToLoad ? currentVideoSrc : ""}
+          src={currentVideoSrc}
           className={`w-full h-full object-cover transition-opacity duration-300 ${showPoster ? 'opacity-0' : 'opacity-100'}`}
           muted={isMuted}
           loop
           playsInline
-          preload="none"
+          preload={isIOS ? "none" : "metadata"}
           controlsList="nodownload"
           disablePictureInPicture={isIOS}
           onCanPlay={handleCanPlay}
