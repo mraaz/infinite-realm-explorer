@@ -26,38 +26,32 @@ export const useVideoQuality = () => {
     setIsIOS(isIOSDevice);
   }, []);
 
-  // Enhanced connection speed detection - DEFAULT DESKTOP TO FAST
+  // Initialize connection speed immediately - DEFAULT DESKTOP TO FAST
   useEffect(() => {
+    // Immediately set default based on device type
+    const initialSpeed = (!isMobile && !isIOS) ? 'fast' : 'slow';
+    setConnectionSpeed(initialSpeed);
+    
+    // Then try to detect actual connection speed
     const detectConnectionSpeed = () => {
-      // Use Navigator connection API if available
       if ('connection' in navigator) {
         const conn = (navigator as any).connection;
         if (conn) {
           const effectiveType = conn.effectiveType;
           const downlink = conn.downlink;
           
-          // More permissive detection for desktop
+          // Update based on actual connection info
           if (effectiveType === '4g' || downlink > 1) {
             setConnectionSpeed('fast');
           } else if (effectiveType === '3g' || effectiveType === '2g') {
             setConnectionSpeed('slow');
-          } else {
-            // Default desktop to fast, mobile to slow
-            setConnectionSpeed(!isMobile && !isIOS ? 'fast' : 'slow');
           }
-          return;
         }
-      }
-      
-      // Fallback: DEFAULT DESKTOP TO FAST CONNECTION
-      if (!isMobile && !isIOS) {
-        setConnectionSpeed('fast');
-      } else {
-        setConnectionSpeed('slow');
       }
     };
 
-    detectConnectionSpeed();
+    // Small delay to allow the initial render with default speed
+    setTimeout(detectConnectionSpeed, 100);
   }, [isMobile, isIOS]);
 
   // Smart video quality selection with desktop preference for SD
@@ -90,6 +84,15 @@ export const useVideoQuality = () => {
         url: `${baseUrl}HomePageVideoMobile.mp4`,
         quality: 'Mobile' as VideoQuality,
         size: '7MB'
+      };
+    }
+    
+    // Handle unknown connection speed - default to SD for desktop
+    if (connectionSpeed === 'unknown') {
+      return {
+        url: `${baseUrl}HomePageVideoSD.mp4`,
+        quality: 'SD' as VideoQuality,
+        size: '29MB'
       };
     }
     
