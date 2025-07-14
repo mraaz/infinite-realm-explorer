@@ -5,7 +5,7 @@ const ResultsHeader = () => {
   return (
     <section className="text-center mb-12">
       <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-        Welcome and Thank You for being an Early Explorer of Infinite Game!
+        Welcome and Thank You for being an Early Explorer of Infinite Life!
       </h1>
       <p className="text-lg text-gray-400 max-w-2xl mx-auto">
         You've just taken the first step toward discovering your personalised Life View — a unique, data-driven glimpse into the patterns shaping your future.
