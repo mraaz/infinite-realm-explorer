@@ -8,7 +8,7 @@ interface VideoPlayerProps {
   onLoadStart: () => void;
   onLoadedData: () => void;
   onCanPlay: () => void;
-  onError: (event: Event) => void;
+  onError: (event: React.SyntheticEvent<HTMLVideoElement, Event>) => void;
   onProgress: () => void;
 }
 

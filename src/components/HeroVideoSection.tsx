@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import useOnScreen from "@/hooks/useOnScreen";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
@@ -97,7 +96,7 @@ const HeroVideoSection = () => {
     setIsVideoLoading(false);
   };
 
-  const handleError = async (event: Event) => {
+  const handleError = async (event: React.SyntheticEvent<HTMLVideoElement, Event>) => {
     const video = videoRef.current;
     const error = video?.error;
     const errorMsg = error ? 
