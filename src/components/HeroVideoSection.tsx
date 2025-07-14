@@ -35,7 +35,7 @@ const HeroVideoSection = () => {
     }
   }, [device.isIOS]);
 
-  // Smart video loading strategy with quality fallback
+  // Smart video loading strategy with quality fallback and enhanced error handling
   const loadVideo = async () => {
     const video = videoRef.current;
     if (!video || isVideoLoading) return;
@@ -51,9 +51,11 @@ const HeroVideoSection = () => {
     
     setIsVideoLoading(true);
     setVideoLoadError('');
+    setHasError(false);
 
     try {
       const videoSrc = getOptimalVideoUrl();
+      console.log('Loading video source:', videoSrc);
       
       // Set video source
       const source = video.querySelector('source[type="video/mp4"]') as HTMLSourceElement;
@@ -71,18 +73,19 @@ const HeroVideoSection = () => {
       console.error('Video load failed:', error);
       const fallbackSuccess = await handleVideoLoadFailure(videoRef);
       if (!fallbackSuccess) {
-        setVideoLoadError('Unable to load video');
+        setVideoLoadError('Unable to load video - all quality levels failed');
         setHasError(true);
         setIsVideoLoading(false);
       }
     }
   };
 
-  // Video event handlers
+  // Video event handlers with enhanced error reporting
   const handleCanPlay = () => {
     console.log(`Video can play - Quality: ${currentVideoQuality}`);
     setIsLoaded(true);
     setIsVideoLoading(false);
+    setHasError(false);
   };
 
   const handleLoadStart = () => {
@@ -99,20 +102,39 @@ const HeroVideoSection = () => {
   const handleError = async (event: React.SyntheticEvent<HTMLVideoElement, Event>) => {
     const video = videoRef.current;
     const error = video?.error;
-    const errorMsg = error ? 
-      `Error ${error.code}: ${error.message}` : 
-      'Unknown video error';
-    console.error(`Video error (${currentVideoQuality}):`, errorMsg);
+    
+    // Enhanced error reporting with specific error codes
+    let errorMsg = 'Unknown video error';
+    if (error) {
+      switch (error.code) {
+        case error.MEDIA_ERR_ABORTED:
+          errorMsg = 'Video loading was aborted';
+          break;
+        case error.MEDIA_ERR_NETWORK:
+          errorMsg = 'Network error while loading video';
+          break;
+        case error.MEDIA_ERR_DECODE:
+          errorMsg = 'Video decode error';
+          break;
+        case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+          errorMsg = 'Video format not supported';
+          break;
+        default:
+          errorMsg = `Video error code: ${error.code} - ${error.message || 'Unknown error'}`;
+      }
+    }
+    
+    console.error(`Video error (${currentVideoQuality}):`, {
+      errorCode: error?.code,
+      errorMessage: error?.message,
+      networkState: video?.networkState,
+      readyState: video?.readyState,
+      currentSrc: video?.currentSrc
+    });
     
     // Try fallback quality before showing error
-    if (currentVideoQuality !== 'Mobile') {
-      const fallbackSuccess = await handleVideoLoadFailure(videoRef);
-      if (!fallbackSuccess) {
-        setVideoLoadError(errorMsg);
-        setHasError(true);
-        setIsVideoLoading(false);
-      }
-    } else {
+    const fallbackSuccess = await handleVideoLoadFailure(videoRef);
+    if (!fallbackSuccess) {
       setVideoLoadError(errorMsg);
       setHasError(true);
       setIsVideoLoading(false);
@@ -194,7 +216,7 @@ const HeroVideoSection = () => {
     setIsMuted(video.muted);
   };
 
-  // Error fallback
+  // Enhanced error fallback with retry option
   if (hasError) {
     return (
       <section ref={sectionRef} className="text-center mb-8 md:mb-16 px-4">
@@ -210,8 +232,18 @@ const HeroVideoSection = () => {
           your path forward.
         </p>
         {videoLoadError && (
-          <div className="text-xs text-red-400 bg-red-900/20 p-2 rounded max-w-md mx-auto">
-            Video Error: {videoLoadError}
+          <div className="text-xs text-red-400 bg-red-900/20 p-3 rounded max-w-md mx-auto mb-4">
+            <div className="mb-2">Video Error: {videoLoadError}</div>
+            <button 
+              onClick={() => {
+                setHasError(false);
+                setVideoLoadError('');
+                loadVideo();
+              }}
+              className="text-blue-400 hover:text-blue-300 underline text-xs"
+            >
+              Try Again
+            </button>
           </div>
         )}
       </section>
@@ -268,8 +300,8 @@ const HeroVideoSection = () => {
           <div className="absolute top-2 right-2 bg-black/80 text-white text-xs p-2 rounded">
             <div>Device: {device.isDesktop ? 'Desktop' : device.isMobile ? 'Mobile' : 'Tablet'} | {device.isIOS ? 'iOS' : 'Non-iOS'}</div>
             <div>Connection: {device.connectionSpeed} | Screen: {window.innerWidth}px</div>
-            <div>Quality: {currentVideoQuality}</div>
-            <div>Consent: {userConsentToLoad ? 'Yes' : 'No'}</div>
+            <div>Quality: {currentVideoQuality} | Loaded: {isLoaded ? 'Yes' : 'No'}</div>
+            <div>Consent: {userConsentToLoad ? 'Yes' : 'No'} | Error: {hasError ? 'Yes' : 'No'}</div>
           </div>
         )}
       </div>
