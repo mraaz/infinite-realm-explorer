@@ -1,259 +1,103 @@
-import { useEffect, useRef, useState } from "react";
+
+import React, { useRef, useState } from "react";
+import ReactPlayer from 'react-player';
 import useOnScreen from "@/hooks/useOnScreen";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Volume2, VolumeX, Play, Wifi, WifiOff } from "lucide-react";
+import { Volume2, VolumeX, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useVideoQuality } from "@/hooks/useVideoQuality";
-import VideoPlayer from "@/components/video/VideoPlayer";
 
 const HeroVideoSection = () => {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<ReactPlayer>(null);
   const isOnScreen = useOnScreen(sectionRef, { threshold: 0.3 });
   const isMobile = useIsMobile();
-  const { getOptimalVideoUrl, connectionSpeed, isIOS } = useVideoQuality();
   
   // Simplified state management
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [showControls, setShowControls] = useState(false);
-  const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
-  const [userConsentToLoad, setUserConsentToLoad] = useState(!isIOS); // Desktop loads immediately
-  const [isVideoLoading, setIsVideoLoading] = useState(false);
-  const [videoLoadError, setVideoLoadError] = useState<string>("");
-  const [loadingTimeout, setLoadingTimeout] = useState<NodeJS.Timeout | null>(null);
-  
-  // Single source of truth for video info
-  const videoInfo = getOptimalVideoUrl();
-  const currentVideoSrc = videoInfo.url;
-  const currentQuality = videoInfo.quality;
+  const [playing, setPlaying] = useState(false);
 
-  // Debug state changes
-  useEffect(() => {
-    console.log('🎭 [HeroVideo] State Update:', {
-      isLoaded,
-      hasError,
-      isMuted,
-      needsUserInteraction,
-      userConsentToLoad,
-      isVideoLoading,
-      videoLoadError,
-      currentVideoSrc,
-      currentQuality,
-      isOnScreen,
-      connectionSpeed,
-      timestamp: new Date().toISOString()
-    });
-  }, [isLoaded, hasError, isMuted, needsUserInteraction, userConsentToLoad, isVideoLoading, videoLoadError, currentVideoSrc, currentQuality, isOnScreen, connectionSpeed]);
-
-  // Loading timeout management
-  useEffect(() => {
-    if (isVideoLoading && userConsentToLoad) {
-      console.log('⏰ [HeroVideo] Setting loading timeout (30s)');
-      const timeout = setTimeout(() => {
-        console.log('⏰ [HeroVideo] Loading timeout reached - showing error');
-        setIsVideoLoading(false);
-        setVideoLoadError('Video loading timeout - please try refreshing the page');
-        setHasError(true);
-      }, 30000);
-      setLoadingTimeout(timeout);
-      
-      return () => {
-        if (timeout) {
-          console.log('⏰ [HeroVideo] Clearing loading timeout');
-          clearTimeout(timeout);
-        }
-      };
+  // Video sources with progressive quality fallback
+  const videoSources = [
+    {
+      src: "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoHD.mp4",
+      type: "video/mp4",
+      quality: "HD"
+    },
+    {
+      src: "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoSD.mp4", 
+      type: "video/mp4",
+      quality: "SD"
+    },
+    {
+      src: "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoMobile.mp4",
+      type: "video/mp4", 
+      quality: "Mobile"
     }
-  }, [isVideoLoading, userConsentToLoad]);
+  ];
 
-  // Video event handlers with debugging
-  const handleCanPlay = () => {
-    console.log(`✅ [HeroVideo] Video can play - Quality: ${currentQuality}`, {
-      currentSrc: videoRef.current?.currentSrc,
-      duration: videoRef.current?.duration,
-      readyState: videoRef.current?.readyState
-    });
-    
-    // Clear loading timeout
-    if (loadingTimeout) {
-      clearTimeout(loadingTimeout);
-      setLoadingTimeout(null);
-    }
-    
-    setIsLoaded(true);
-    setIsVideoLoading(false);
-  };
-
-  const handleLoadStart = () => {
-    console.log(`⏳ [HeroVideo] Video load started - Quality: ${currentQuality}`, {
-      currentSrc: videoRef.current?.currentSrc,
-      networkState: videoRef.current?.networkState,
-      readyState: videoRef.current?.readyState
-    });
-    setIsVideoLoading(true);
-    setHasError(false);
-    setVideoLoadError("");
-  };
-
-  const handleLoadedData = () => {
-    console.log(`📊 [HeroVideo] Video data loaded - Quality: ${currentQuality}`, {
-      duration: videoRef.current?.duration,
-      buffered: videoRef.current?.buffered.length,
-      readyState: videoRef.current?.readyState
-    });
-    
-    // Clear loading timeout
-    if (loadingTimeout) {
-      clearTimeout(loadingTimeout);
-      setLoadingTimeout(null);
-    }
-    
-    setIsLoaded(true);
-    setIsVideoLoading(false);
-  };
-
-  const handleError = (event: React.SyntheticEvent<HTMLVideoElement, Event>) => {
-    const video = event.currentTarget;
-    const error = video.error;
-    const errorMsg = error ? 
-      `Error ${error.code}: ${error.message}` : 
-      'Unknown video error';
-    
-    console.error(`❌ [HeroVideo] Video error (${currentQuality}):`, {
-      errorMsg,
-      errorCode: error?.code,
-      errorMessage: error?.message,
-      currentSrc: video.currentSrc,
-      networkState: video.networkState,
-      readyState: video.readyState
-    });
-    
-    // Clear loading timeout
-    if (loadingTimeout) {
-      clearTimeout(loadingTimeout);
-      setLoadingTimeout(null);
-    }
-    
-    // Simple error handling without video recreation
-    console.error('💥 [HeroVideo] Video loading failed - showing error state');
-    setVideoLoadError(errorMsg);
-    setHasError(true);
-    setIsVideoLoading(false);
-  };
-
-  const handleProgress = () => {
-    const video = videoRef.current;
-    if (video && video.buffered.length > 0 && video.duration > 0) {
-      const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-      const duration = video.duration;
-      const percentage = (bufferedEnd / duration * 100).toFixed(1);
-      
-      console.log('📈 [HeroVideo] Video progress:', {
-        quality: currentQuality,
-        bufferedEnd,
-        duration,
-        percentage: percentage + '%',
-        readyState: video.readyState,
-        networkState: video.networkState
-      });
-    }
-  };
-
-  // Autoplay when video is loaded and in view
-  useEffect(() => {
-    const video = videoRef.current;
-    
-    console.log('🎮 [HeroVideo] Autoplay Effect Check:', {
-      hasVideo: !!video,
-      hasError,
-      needsUserInteraction,
-      isLoaded,
-      userConsentToLoad,
-      isOnScreen,
-      canAttemptAutoplay: !!video && !hasError && !needsUserInteraction && isLoaded && userConsentToLoad
-    });
-
-    if (!video || hasError || needsUserInteraction || !isLoaded || !userConsentToLoad) return;
-
-    if (isOnScreen) {
-      console.log('🎯 [HeroVideo] Attempting autoplay - video is on screen');
-      video.muted = true;
-      setIsMuted(true);
-      
-      const playPromise = video.play();
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
-          console.log(`✅ [HeroVideo] Autoplay successful - Quality: ${currentQuality}`, {
-            currentTime: video.currentTime,
-            paused: video.paused,
-            muted: video.muted
-          });
-        }).catch((error) => {
-          console.log('🚫 [HeroVideo] Autoplay prevented:', {
-            errorName: error.name,
-            errorMessage: error.message,
-            quality: currentQuality,
-            willRequireUserInteraction: error.name === "NotAllowedError"
-          });
-          if (error.name === "NotAllowedError") {
-            setNeedsUserInteraction(true);
-          }
-        });
-      }
+  // Select optimal video source based on device
+  const getVideoUrl = () => {
+    if (isMobile || window.innerWidth < 768) {
+      return videoSources[2].src; // Mobile quality
+    } else if (window.innerWidth >= 1920) {
+      return videoSources[0].src; // HD quality
     } else {
-      console.log('👁️ [HeroVideo] Video not on screen - pausing');
-      video.pause();
+      return videoSources[1].src; // SD quality
     }
-  }, [isOnScreen, isLoaded, hasError, needsUserInteraction, userConsentToLoad, currentQuality]);
-
-  const handleUserLoadVideo = () => {
-    console.log('👆 [HeroVideo] User clicked to load video');
-    setUserConsentToLoad(true);
-    setIsVideoLoading(true);
   };
 
-  const handleUserPlay = () => {
-    console.log('👆 [HeroVideo] User clicked to play video');
-    const video = videoRef.current;
-    if (!video) return;
-
-    setNeedsUserInteraction(false);
-    video.muted = true;
-    setIsMuted(true);
+  const handleReady = () => {
+    console.log('🎬 [HeroVideo] React Player ready');
+    setIsReady(true);
+    setHasError(false);
     
-    const playPromise = video.play();
-    if (playPromise !== undefined) {
-      playPromise.then(() => {
-        console.log(`✅ [HeroVideo] User play successful - Quality: ${currentQuality}`, {
-          currentTime: video.currentTime,
-          paused: video.paused
-        });
-      }).catch((error) => {
-        console.error('❌ [HeroVideo] User play failed:', {
-          errorName: error.name,
-          errorMessage: error.message,
-          quality: currentQuality
-        });
-        setHasError(true);
-      });
+    // Start playing when ready and in view
+    if (isOnScreen) {
+      setPlaying(true);
     }
+  };
+
+  const handleError = (error: any) => {
+    console.error('❌ [HeroVideo] React Player error:', error);
+    setHasError(true);
+    setIsReady(false);
+  };
+
+  const handlePlay = () => {
+    console.log('▶️ [HeroVideo] Video started playing');
+    setPlaying(true);
+  };
+
+  const handlePause = () => {
+    console.log('⏸️ [HeroVideo] Video paused');
+    setPlaying(false);
   };
 
   const toggleMute = () => {
-    console.log('🔊 [HeroVideo] Toggle mute clicked');
-    const video = videoRef.current;
-    if (!video) return;
-    
-    video.muted = !video.muted;
-    setIsMuted(video.muted);
-    console.log('🔊 [HeroVideo] Mute toggled:', { muted: video.muted });
+    setIsMuted(!isMuted);
+    console.log('🔊 [HeroVideo] Mute toggled:', { muted: !isMuted });
   };
+
+  const handleUserPlay = () => {
+    setPlaying(true);
+  };
+
+  // Control playing state based on visibility
+  React.useEffect(() => {
+    if (isReady) {
+      if (isOnScreen && !hasError) {
+        setPlaying(true);
+      } else {
+        setPlaying(false);
+      }
+    }
+  }, [isOnScreen, isReady, hasError]);
 
   // Error fallback
   if (hasError) {
-    console.log('💥 [HeroVideo] Rendering error fallback');
     return (
       <section ref={sectionRef} className="text-center mb-8 md:mb-16 px-4">
         <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white tracking-tight mb-4 md:mb-6">
@@ -267,23 +111,12 @@ const HeroVideoSection = () => {
           analyses your current situation across four key pillars to project
           your path forward.
         </p>
-        {videoLoadError && (
-          <div className="text-xs text-red-400 bg-red-900/20 p-2 rounded max-w-md mx-auto">
-            Video Error: {videoLoadError}
-          </div>
-        )}
+        <div className="text-xs text-red-400 bg-red-900/20 p-2 rounded max-w-md mx-auto">
+          Video temporarily unavailable. Please refresh the page.
+        </div>
       </section>
     );
   }
-
-  console.log('🎬 [HeroVideo] Rendering main video section:', {
-    userConsentToLoad,
-    needsUserInteraction,
-    isVideoLoading,
-    isLoaded,
-    currentQuality,
-    isIOS
-  });
 
   return (
     <section 
@@ -294,42 +127,39 @@ const HeroVideoSection = () => {
     >
       {/* Video Container */}
       <div className={`relative w-full bg-gray-900 ${isMobile ? 'aspect-[4/3]' : 'aspect-video'}`}>
-        {/* Poster Image - Show for iOS until user consents */}
-        {isIOS && !userConsentToLoad && (
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
-            <div className="text-center px-4">
-              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center">
-                <Play className="h-10 w-10 text-white/80" />
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-2">
-                Interactive Video Preview
-              </h3>
-              <p className="text-gray-400 text-sm mb-4">
-                See how our AI analyzes your life across four key pillars
-              </p>
-            </div>
-          </div>
-        )}
-
-        <VideoPlayer
-          ref={videoRef}
-          src={currentVideoSrc}
-          className={`w-full h-full object-cover transition-opacity duration-300 ${(isIOS && !userConsentToLoad) ? 'opacity-0' : 'opacity-100'}`}
+        <ReactPlayer
+          ref={playerRef}
+          url={getVideoUrl()}
+          width="100%"
+          height="100%"
+          playing={playing}
           muted={isMuted}
           loop
-          playsInline
-          preload={isIOS ? "metadata" : "metadata"}
-          controlsList="nodownload"
-          disablePictureInPicture={isIOS}
-          onCanPlay={handleCanPlay}
-          onLoadStart={handleLoadStart}
-          onLoadedData={handleLoadedData}
+          playsinline
+          controls={false}
+          onReady={handleReady}
           onError={handleError}
-          onProgress={handleProgress}
+          onPlay={handlePlay}
+          onPause={handlePause}
+          config={{
+            file: {
+              attributes: {
+                preload: 'metadata',
+                disablePictureInPicture: true,
+                controlsList: 'nodownload'
+              }
+            }
+          }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            objectFit: 'cover'
+          }}
         />
 
         {/* Overlay for text content */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex items-center justify-center">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex items-center justify-center z-10">
           <div className="text-center px-4 sm:px-6 max-w-4xl">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold text-white tracking-tight mb-3 sm:mb-4 md:mb-6 drop-shadow-lg leading-tight">
               Discover Your{" "}
@@ -345,32 +175,9 @@ const HeroVideoSection = () => {
           </div>
         </div>
 
-        {/* iOS Tap to Load Overlay */}
-        {isIOS && !userConsentToLoad && (
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center z-10 text-center px-4">
-            <Button
-              onClick={handleUserLoadVideo}
-              size="lg"
-              className="bg-white/95 hover:bg-white text-black hover:text-black min-w-[100px] min-h-[100px] rounded-full shadow-2xl mb-6 transition-all duration-300 hover:scale-110 active:scale-95"
-              aria-label="Load video"
-            >
-              {connectionSpeed === 'slow' ? <WifiOff className="h-8 w-8" /> : <Wifi className="h-8 w-8" />}
-            </Button>
-            <p className="text-white text-base font-medium opacity-95 max-w-xs mb-2">
-              Tap to load video
-            </p>
-            <p className="text-white/60 text-sm max-w-xs">
-              {currentQuality === 'Mobile' 
-                ? "Optimized mobile version (7MB)" 
-                : `Loading ${currentQuality} quality (${videoInfo.size})`
-              }
-            </p>
-          </div>
-        )}
-
-        {/* Tap to Play Overlay */}
-        {needsUserInteraction && userConsentToLoad && (
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center z-10 text-center px-4">
+        {/* Play Button Overlay - Show when not playing */}
+        {!playing && isReady && (
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex flex-col items-center justify-center z-20 text-center px-4">
             <Button
               onClick={handleUserPlay}
               size="lg"
@@ -380,29 +187,24 @@ const HeroVideoSection = () => {
               <Play className="h-12 w-12 ml-1" />
             </Button>
             <p className="text-white text-base font-medium opacity-95 max-w-xs mb-2">
-              {isIOS ? "Tap to play video" : "Click to play video"}
+              {isMobile ? "Tap to play video" : "Click to play video"}
             </p>
           </div>
         )}
 
         {/* Loading State */}
-        {isVideoLoading && userConsentToLoad && (
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-5">
+        {!isReady && !hasError && (
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-15">
             <div className="text-center text-white">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4 mx-auto"></div>
-              <p className="text-sm">
-                Loading {currentQuality} quality video...
-              </p>
-              <p className="text-xs text-gray-300 mt-1">
-                ~{videoInfo.size}
-              </p>
+              <p className="text-sm">Loading video...</p>
             </div>
           </div>
         )}
 
         {/* Audio Controls */}
-        {isLoaded && !hasError && !needsUserInteraction && userConsentToLoad && (
-          <div className={`absolute bottom-3 sm:bottom-4 left-3 sm:left-4 transition-opacity duration-300 ${showControls || isMobile ? 'opacity-100' : 'opacity-60'}`}>
+        {isReady && !hasError && (
+          <div className={`absolute bottom-3 sm:bottom-4 left-3 sm:left-4 transition-opacity duration-300 z-30 ${showControls || isMobile ? 'opacity-100' : 'opacity-60'}`}>
             <Button
               variant="secondary"
               size={isMobile ? "default" : "sm"}
@@ -419,24 +221,16 @@ const HeroVideoSection = () => {
           </div>
         )}
 
-        {/* Enhanced Quality Indicator (Development) */}
+        {/* Debug Info (Development) */}
         {process.env.NODE_ENV === 'development' && (
-          <div className="absolute top-2 right-2 bg-black/90 text-white text-xs p-3 rounded-lg border border-white/20">
-            <div className="font-bold text-green-400">🎬 Video Debug Info</div>
-            <div>Device: {isIOS ? 'iOS' : isMobile ? 'Mobile' : 'Desktop'}</div>
-            <div>Connection: {connectionSpeed}</div>
+          <div className="absolute top-2 right-2 bg-black/90 text-white text-xs p-3 rounded-lg border border-white/20 z-40">
+            <div className="font-bold text-green-400">🎬 React Player Debug</div>
+            <div>Device: {isMobile ? 'Mobile' : 'Desktop'}</div>
             <div>Screen: {window.innerWidth}px</div>
-            <div>Quality: {currentQuality} ({videoInfo.size})</div>
-            <div>Status: {userConsentToLoad ? 'Loaded' : 'Waiting for consent'}</div>
-            <div>State: {isLoaded ? 'Ready' : isVideoLoading ? 'Loading' : hasError ? 'Error' : 'Pending'}</div>
+            <div>Video: {getVideoUrl().includes('HD') ? 'HD' : getVideoUrl().includes('SD') ? 'SD' : 'Mobile'}</div>
+            <div>Status: {!isReady ? 'Loading' : hasError ? 'Error' : playing ? 'Playing' : 'Ready'}</div>
             <div>OnScreen: {isOnScreen ? '✅' : '❌'}</div>
-            {videoRef.current && (
-              <div>
-                <div>ReadyState: {videoRef.current.readyState}</div>
-                <div>NetworkState: {videoRef.current.networkState}</div>
-                <div>Duration: {videoRef.current.duration?.toFixed(1)}s</div>
-              </div>
-            )}
+            <div>Muted: {isMuted ? '🔇' : '🔊'}</div>
           </div>
         )}
       </div>
