@@ -19,12 +19,11 @@ const HeroVideoSection = () => {
   const [playing, setPlaying] = useState(false);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
-  // Get video URL with automatic fallback
+  // Fixed video URL selection - only use existing files
   const getVideoUrl = () => {
+    // Only Mobile (7.3MB) and Desktop (29.2MB) versions exist
     if (isMobile || window.innerWidth < 768) {
       return "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoMobile.mp4";
-    } else if (window.innerWidth >= 1920) {
-      return "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoHD.mp4";  
     } else {
       return "https://abcojhdnhxatbmdmyiav.supabase.co/storage/v1/object/public/video/HomePageVideoSD.mp4";
     }
@@ -60,27 +59,36 @@ const HeroVideoSection = () => {
 
   const handleUserPlay = () => {
     if (videoRef.current) {
-      videoRef.current.play();
+      videoRef.current.play().catch(console.error);
     }
   };
 
-  // Loading timeout - prevent infinite loading
+  // Optimized loading timeout - 8 seconds for better UX
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!isReady && !hasError) {
         console.warn('⏰ [HeroVideo] Loading timeout - showing fallback');
         setLoadingTimeout(true);
       }
-    }, 10000); // 10 second timeout
+    }, 8000);
 
     return () => clearTimeout(timer);
   }, [isReady, hasError]);
 
-  // Control playing state based on visibility
+  // Improved visibility-based autoplay
   useEffect(() => {
-    if (videoRef.current && isReady) {
-      if (isOnScreen && !hasError) {
-        videoRef.current.play().catch(console.error);
+    if (videoRef.current && isReady && !hasError) {
+      if (isOnScreen) {
+        // Use a small delay to ensure smooth loading
+        const playTimer = setTimeout(() => {
+          if (videoRef.current) {
+            videoRef.current.play().catch((error) => {
+              console.log('Autoplay prevented:', error);
+              // Don't set as error, just show play button
+            });
+          }
+        }, 100);
+        return () => clearTimeout(playTimer);
       } else {
         videoRef.current.pause();
       }
@@ -122,15 +130,17 @@ const HeroVideoSection = () => {
           ref={videoRef}
           src={getVideoUrl()}
           className="absolute inset-0 w-full h-full object-cover"
-          autoPlay={isOnScreen}
           muted={isMuted}
           loop
           playsInline
-          preload="metadata"
-          onLoadedData={handleReady}
+          preload={isMobile ? "none" : "metadata"}
+          poster="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyMCIgaGVpZ2h0PSIxMDgwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMxMTExMTEiLz48L3N2Zz4="
+          onCanPlay={handleReady}
           onError={handleError}
           onPlay={handlePlay}
           onPause={handlePause}
+          onLoadStart={() => console.log('🎬 [HeroVideo] Load started')}
+          onLoadedMetadata={() => console.log('🎬 [HeroVideo] Metadata loaded')}
         />
 
         {/* Overlay for text content */}
@@ -199,13 +209,14 @@ const HeroVideoSection = () => {
         {/* Debug Info (Development) */}
         {process.env.NODE_ENV === 'development' && (
           <div className="absolute top-2 right-2 bg-black/90 text-white text-xs p-3 rounded-lg border border-white/20 z-40">
-            <div className="font-bold text-green-400">🎬 React Player Debug</div>
+            <div className="font-bold text-green-400">🎬 Video Debug</div>
             <div>Device: {isMobile ? 'Mobile' : 'Desktop'}</div>
             <div>Screen: {window.innerWidth}px</div>
-            <div>Video: {getVideoUrl().includes('HD') ? 'HD' : getVideoUrl().includes('SD') ? 'SD' : 'Mobile'}</div>
+            <div>Video: {getVideoUrl().includes('Mobile') ? 'Mobile (7.3MB)' : 'Desktop (29.2MB)'}</div>
             <div>Status: {!isReady ? 'Loading' : hasError ? 'Error' : playing ? 'Playing' : 'Ready'}</div>
             <div>OnScreen: {isOnScreen ? '✅' : '❌'}</div>
             <div>Muted: {isMuted ? '🔇' : '🔊'}</div>
+            <div>URL: {getVideoUrl().split('/').pop()}</div>
           </div>
         )}
       </div>
