@@ -16,7 +16,7 @@ import {
 // --- Type Definitions ---
 interface Message {
   id: number;
-  role: "ai" | "user" | "feedback" | "transition"; // Added 'transition' role
+  role: "ai" | "user" | "feedback" | "transition";
   content: string;
   suggestions?: string[];
 }
@@ -163,6 +163,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
         },
         authToken!
       );
+      console.log("AI Response received by Frontend:", aiResponse);
 
       let newHistory = [...conversationState.answers.history, userMessage];
       let tempState = JSON.parse(JSON.stringify(conversationState));
@@ -207,7 +208,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
         const feedbackMessage: Message = {
           id: Date.now() + 1,
           role: "feedback",
-          content: aiResponse.feedback!,
+          content: aiResponse.feedback || "Please try rephrasing your answer.", // Fallback text
           suggestions: aiResponse.suggestions || [],
         };
         newHistory.push(feedbackMessage);
@@ -296,7 +297,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
                       ? "bg-gradient-to-br from-purple-500 to-purple-600 text-white"
                       : msg.role === "transition"
                       ? "bg-gradient-to-br from-gray-400 to-gray-500 text-white"
-                      : "bg-gradient-to-br from-red-500 to-red-600 text-white" // feedback
+                      : "bg-red-500 text-white" // Feedback icon color
                   )}
                 >
                   {msg.role === "ai" ? "✨" : <Bot className="h-6 w-6" />}
@@ -311,7 +312,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
                     ? "bg-gray-100 text-gray-800"
                     : msg.role === "transition"
                     ? "bg-gray-700 text-gray-200 italic"
-                    : "bg-red-100 border border-red-200 text-red-800"
+                    : "bg-red-100 border border-red-200 text-red-800" // Feedback bubble color
                 )}
               >
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">
