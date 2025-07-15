@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import TextareaAutosize from "react-textarea-autosize"; // --- MODIFICATION: Using the auto-sizing component ---
 import { Send, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Pillar } from "@/components/priority-ranking/types";
@@ -47,7 +47,6 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
 }) => {
   const { authToken } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  // --- MODIFICATION 1 of 3: Create a ref for the textarea input ---
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -63,7 +62,6 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     ...priorities.maintenance,
   ];
 
-  // --- Initial Data Loading & Resuming Progress ---
   useEffect(() => {
     const loadState = async () => {
       if (!authToken) return;
@@ -108,14 +106,12 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authToken]);
 
-  // --- Auto-saving progress ---
   useEffect(() => {
     if (conversationState && !isLoading && authToken) {
-      saveQuestionnaireProgress(conversationState, authToken);
+      saveQuestionnaireProgress(conversationState, authToken!);
     }
   }, [conversationState, isLoading, authToken]);
 
-  // --- Handling User Submission ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userInput.trim() || isProcessing || !conversationState) return;
@@ -128,9 +124,9 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     ).length;
 
     let pillarIndex = 0;
-    if (aiQuestionCount > 2) pillarIndex = 1;
-    if (aiQuestionCount > 4) pillarIndex = 2;
-    if (aiQuestionCount > 5) pillarIndex = 3;
+    if (aiQuestionCount >= 2) pillarIndex = 1;
+    if (aiQuestionCount >= 4) pillarIndex = 2;
+    if (aiQuestionCount >= 5) pillarIndex = 3;
     const currentPillar = orderedPillars[pillarIndex];
 
     const userMessage: Message = {
@@ -191,14 +187,11 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     }
   };
 
-  // --- MODIFICATION 2 of 3: Update the useEffect for scrolling and focusing ---
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    // Set focus back to the input field after messages update
     inputRef.current?.focus();
   }, [messages]);
 
-  // --- Progress Calculation for UI ---
   const getPillarInfo = () => {
     if (!conversationState)
       return { name: orderedPillars[0], type: "Main Focus" };
@@ -210,14 +203,14 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     if (aiQuestionCount <= 4)
       return { name: priorities.secondaryFocus, type: "Secondary Focus" };
     return {
-      name: orderedPillars[Math.min(aiQuestionCount - 3, 3)],
+      name: orderedPillars[Math.min(aiQuestionCount - 1, 3)],
       type: "Maintenance",
     };
   };
 
   const pillarInfo = getPillarInfo();
   const questionsInPillar = pillarInfo.type === "Maintenance" ? 1 : 2;
-  const currentQuestionNum =
+  const currentQuestionNumInPillar =
     conversationState?.answers.questionCount[pillarInfo.name] || 0;
   const overallCompleted = conversationState
     ? Object.values(conversationState.answers.questionCount).reduce(
@@ -227,7 +220,6 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     : 0;
   const progressPercentage = Math.round((overallCompleted / 6) * 100);
 
-  // --- Render Logic ---
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -249,7 +241,8 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
           </div>
           <div className="flex flex-col sm:items-end gap-1">
             <span className="text-gray-300 font-medium">
-              Question {Math.min(currentQuestionNum + 1, questionsInPillar)} of{" "}
+              Question{" "}
+              {Math.min(currentQuestionNumInPillar + 1, questionsInPillar)} of{" "}
               {questionsInPillar}
             </span>
             <span className="text-xs text-gray-400">
@@ -313,29 +306,34 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSubmit} className="flex items-center gap-3">
-        {/* --- MODIFICATION 3 of 3: Attach the ref to the Textarea --- */}
-        <Textarea
+      <form onSubmit={handleSubmit} className="flex items-end gap-2">
+        {/* --- MODIFICATION: Using TextareaAutosize instead of the standard Textarea --- */}
+        <TextareaAutosize
           ref={inputRef}
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
           placeholder="Share your thoughts..."
-          className="flex-1 min-h-[50px] resize-none bg-card border-border text-foreground"
-          disabled={isProcessing}
+          className="flex-1 bg-gray-800 border-gray-700 text-white rounded-2xl p-3 resize-none shadow-sm focus-visible:ring-1 focus-visible:ring-purple-500"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
               handleSubmit(e);
             }
           }}
+          maxRows={5}
+          disabled={isProcessing}
         />
         <Button
           type="submit"
           disabled={!userInput.trim() || isProcessing}
-          size="lg"
-          className="h-[50px]"
+          size="icon"
+          className="h-11 w-11 rounded-full flex-shrink-0 bg-purple-600 hover:bg-purple-700"
         >
-          <Send className="h-5 w-5" />
+          {isProcessing ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Send className="h-5 w-5" />
+          )}
         </Button>
       </form>
     </div>
