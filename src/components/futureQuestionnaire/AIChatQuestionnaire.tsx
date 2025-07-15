@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import TextareaAutosize from "react-textarea-autosize"; // --- MODIFICATION: Using the auto-sizing component ---
-import { Send, Loader2 } from "lucide-react";
+import TextareaAutosize from "react-textarea-autosize";
+import { Send, Loader2, ChevronDown, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Pillar } from "@/components/priority-ranking/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,26 +10,24 @@ import {
   saveQuestionnaireProgress,
   processChatAnswer,
   QuestionnaireStatePayload,
+  AIResponse,
 } from "@/services/apiService";
 
 // --- Type Definitions ---
-type Priorities = {
-  mainFocus: Pillar;
-  secondaryFocus: Pillar;
-  maintenance: Pillar[];
-};
-
 interface Message {
   id: number;
-  role: "ai" | "user" | "feedback";
+  role: "ai" | "user" | "feedback" | "transition"; // Added 'transition' role
   content: string;
+  suggestions?: string[];
 }
-
 interface AIChatQuestionnaireProps {
-  priorities: Priorities;
+  priorities: {
+    mainFocus: Pillar;
+    secondaryFocus: Pillar;
+    maintenance: Pillar[];
+  };
   onComplete: (finalState: QuestionnaireStatePayload) => void;
 }
-
 const initialQuestions: Record<Pillar, string> = {
   Career:
     "When you picture yourself thriving in your dream career 5 years from now, what work are you doing that makes you lose track of time?",
@@ -48,13 +46,15 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
   const { authToken } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [userInput, setUserInput] = useState("");
   const [conversationState, setConversationState] =
     useState<QuestionnaireStatePayload | null>(null);
+  const [expandedMessageId, setExpandedMessageId] = useState<number | null>(
+    null
+  );
 
   const orderedPillars = [
     priorities.mainFocus,
@@ -93,17 +93,15 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
           role: "ai",
           content: firstQuestion,
         } as Message;
-        const stateWithFirstMessage = {
+        setConversationState({
           ...initialState,
           answers: { ...initialState.answers, history: [firstMessage] },
-        };
-        setConversationState(stateWithFirstMessage);
+        });
         setMessages([firstMessage]);
       }
       setIsLoading(false);
     };
     loadState();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authToken]);
 
   useEffect(() => {
@@ -112,22 +110,25 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     }
   }, [conversationState, isLoading, authToken]);
 
+  const getPillarInfo = (
+    state: QuestionnaireStatePayload | null = conversationState
+  ) => {
+    if (!state || !priorities)
+      return { name: "Loading..." as Pillar, type: "Main Focus" };
+    const questionsAnswered = Object.values(state.answers.questionCount).reduce(
+      (a, b) => a + b,
+      0
+    );
+    if (questionsAnswered < 1)
+      return { name: priorities.mainFocus, type: "Main Focus" };
+    if (questionsAnswered < 2)
+      return { name: priorities.secondaryFocus, type: "Secondary Focus" };
+    return { name: priorities.maintenance[0], type: "Maintenance" };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userInput.trim() || isProcessing || !conversationState) return;
-
-    const currentHistory = conversationState.answers.history;
-    const lastQuestion =
-      currentHistory.findLast((m) => m.role === "ai")?.content || "";
-    const aiQuestionCount = currentHistory.filter(
-      (m) => m.role === "ai"
-    ).length;
-
-    let pillarIndex = 0;
-    if (aiQuestionCount >= 2) pillarIndex = 1;
-    if (aiQuestionCount >= 4) pillarIndex = 2;
-    if (aiQuestionCount >= 5) pillarIndex = 3;
-    const currentPillar = orderedPillars[pillarIndex];
 
     const userMessage: Message = {
       id: Date.now(),
@@ -138,52 +139,88 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     setUserInput("");
     setIsProcessing(true);
 
-    const aiResponse = await processChatAnswer(
-      {
-        pillarName: currentPillar,
-        previousQuestion: lastQuestion,
-        userAnswer: userMessage.content,
-      },
-      authToken!
-    );
+    const { name: currentPillar } = getPillarInfo();
+    const lastQuestion =
+      conversationState.answers.history.findLast((m) => m.role === "ai")
+        ?.content || "";
+    const currentQuestionNum =
+      (conversationState.answers.questionCount[currentPillar] || 0) + 1;
+    const questionsNeededForPillar = 1;
+    const isTransition = currentQuestionNum >= questionsNeededForPillar;
+    const currentPillarIndex = orderedPillars.indexOf(currentPillar);
+    const nextPillar = isTransition
+      ? orderedPillars[currentPillarIndex + 1]
+      : undefined;
 
-    const newHistory = [...currentHistory, userMessage];
+    try {
+      const aiResponse = await processChatAnswer(
+        {
+          pillarName: currentPillar,
+          previousQuestion: lastQuestion,
+          userAnswer: userMessage.content,
+          isTransition: isTransition,
+          nextPillarName: nextPillar,
+        },
+        authToken!
+      );
 
-    if (aiResponse.isRelevant && aiResponse.nextQuestion) {
-      const aiMessage: Message = {
-        id: Date.now() + 1,
-        role: "ai",
-        content: aiResponse.nextQuestion,
-      };
-      newHistory.push(aiMessage);
+      let newHistory = [...conversationState.answers.history, userMessage];
+      let tempState = JSON.parse(JSON.stringify(conversationState));
 
-      setConversationState((prev) => {
-        const newState = { ...prev! };
-        newState.answers.history = newHistory;
-        newState.answers.scores[currentPillar] =
-          (newState.answers.scores[currentPillar] || 0) + aiResponse.score;
-        newState.answers.questionCount[currentPillar] =
-          (newState.answers.questionCount[currentPillar] || 0) + 1;
-        return newState;
-      });
-    } else {
-      const feedbackMessage: Message = {
-        id: Date.now() + 1,
-        role: "feedback",
-        content: aiResponse.feedback!,
-      };
-      newHistory.push(feedbackMessage);
-      setConversationState((prev) => ({
-        ...prev!,
-        answers: { ...prev!.answers, history: newHistory },
-      }));
-    }
-    setMessages(newHistory);
-    setIsProcessing(false);
+      if (aiResponse.isRelevant) {
+        tempState.answers.scores[currentPillar] =
+          (tempState.answers.scores[currentPillar] || 0) + aiResponse.score;
+        tempState.answers.questionCount[currentPillar] = currentQuestionNum;
 
-    const totalAIQuestions = newHistory.filter((m) => m.role === "ai").length;
-    if (totalAIQuestions >= 6) {
-      onComplete(conversationState!);
+        if (isTransition && aiResponse.transitionMessage) {
+          newHistory.push({
+            id: Date.now() + 1,
+            role: "transition",
+            content: aiResponse.transitionMessage,
+          });
+          if (nextPillar) {
+            const nextQuestionContent = initialQuestions[nextPillar];
+            newHistory.push({
+              id: Date.now() + 2,
+              role: "ai",
+              content: nextQuestionContent,
+            });
+          }
+        } else if (aiResponse.nextQuestion) {
+          newHistory.push({
+            id: Date.now() + 1,
+            role: "ai",
+            content: aiResponse.nextQuestion,
+          });
+        }
+
+        const totalPillarsCompleted = Object.keys(
+          tempState.answers.questionCount
+        ).filter(
+          (p) => tempState.answers.questionCount[p as Pillar] > 0
+        ).length;
+        if (isTransition && totalPillarsCompleted >= 3) {
+          tempState.answers.history = newHistory;
+          onComplete(tempState);
+        }
+      } else {
+        const feedbackMessage: Message = {
+          id: Date.now() + 1,
+          role: "feedback",
+          content: aiResponse.feedback!,
+          suggestions: aiResponse.suggestions || [],
+        };
+        newHistory.push(feedbackMessage);
+      }
+
+      tempState.answers.history = newHistory;
+      setConversationState(tempState);
+      setMessages(newHistory);
+    } catch (error) {
+      console.error("Chat submission failed:", error);
+      setMessages((prev) => prev.slice(0, -1));
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -192,24 +229,8 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     inputRef.current?.focus();
   }, [messages]);
 
-  const getPillarInfo = () => {
-    if (!conversationState)
-      return { name: orderedPillars[0], type: "Main Focus" };
-    const aiQuestionCount = conversationState.answers.history.filter(
-      (m) => m.role === "ai"
-    ).length;
-    if (aiQuestionCount <= 2)
-      return { name: priorities.mainFocus, type: "Main Focus" };
-    if (aiQuestionCount <= 4)
-      return { name: priorities.secondaryFocus, type: "Secondary Focus" };
-    return {
-      name: orderedPillars[Math.min(aiQuestionCount - 1, 3)],
-      type: "Maintenance",
-    };
-  };
-
   const pillarInfo = getPillarInfo();
-  const questionsInPillar = pillarInfo.type === "Maintenance" ? 1 : 2;
+  const questionsInPillar = 1;
   const currentQuestionNumInPillar =
     conversationState?.answers.questionCount[pillarInfo.name] || 0;
   const overallCompleted = conversationState
@@ -218,7 +239,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
         0
       )
     : 0;
-  const progressPercentage = Math.round((overallCompleted / 6) * 100);
+  const progressPercentage = Math.round((overallCompleted / 3) * 100);
 
   if (isLoading) {
     return (
@@ -246,7 +267,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
               {questionsInPillar}
             </span>
             <span className="text-xs text-gray-400">
-              Overall: {overallCompleted} of 6 ({progressPercentage}%)
+              Overall: {overallCompleted} of 3 ({progressPercentage}%)
             </span>
           </div>
         </div>
@@ -258,56 +279,92 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-6 mb-6 pr-2">
+      <div className="flex-1 overflow-y-auto space-y-2 mb-4 pr-2">
         {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={cn(
-              "flex items-start gap-4",
-              msg.role === "user" ? "flex-row-reverse" : "flex-row"
-            )}
-          >
-            {msg.role !== "user" && (
-              <div
-                className={cn(
-                  "w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold shadow-lg",
-                  msg.role === "ai"
-                    ? "bg-gradient-to-br from-purple-500 to-purple-600 text-white"
-                    : "bg-gradient-to-br from-gray-600 to-gray-700 text-white"
-                )}
-              >
-                {msg.role === "ai" ? "✨" : "😰"}
-              </div>
-            )}
+          <div key={msg.id} className="flex flex-col">
             <div
               className={cn(
-                "px-4 py-3 rounded-2xl shadow-sm max-w-[80%]",
-                msg.role === "user"
-                  ? "bg-primary text-primary-foreground ml-auto"
-                  : msg.role === "ai"
-                  ? "bg-gray-100 text-gray-800"
-                  : "bg-red-100 border border-red-200 text-red-800"
+                "flex items-start gap-4",
+                msg.role === "user" ? "flex-row-reverse" : "flex-row"
               )}
             >
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                {msg.content}
-              </p>
+              {msg.role !== "user" && (
+                <div
+                  className={cn(
+                    "w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold shadow-lg",
+                    msg.role === "ai"
+                      ? "bg-gradient-to-br from-purple-500 to-purple-600 text-white"
+                      : msg.role === "transition"
+                      ? "bg-gradient-to-br from-gray-400 to-gray-500 text-white"
+                      : "bg-gradient-to-br from-red-500 to-red-600 text-white" // feedback
+                  )}
+                >
+                  {msg.role === "ai" ? "✨" : <Bot className="h-6 w-6" />}
+                </div>
+              )}
+              <div
+                className={cn(
+                  "px-4 py-3 rounded-2xl shadow-sm max-w-[80%]",
+                  msg.role === "user"
+                    ? "bg-primary text-primary-foreground ml-auto"
+                    : msg.role === "ai"
+                    ? "bg-gray-100 text-gray-800"
+                    : msg.role === "transition"
+                    ? "bg-gray-700 text-gray-200 italic"
+                    : "bg-red-100 border border-red-200 text-red-800"
+                )}
+              >
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                  {msg.content}
+                </p>
+              </div>
+              {msg.role === "user" && (
+                <div className="w-10 h-10 rounded-full flex-shrink-0" />
+              )}
             </div>
-            {msg.role === "user" && (
-              <div className="w-10 h-10 rounded-full flex-shrink-0" />
-            )}
+
+            {msg.role === "feedback" &&
+              msg.suggestions &&
+              msg.suggestions.length > 0 && (
+                <div className="flex justify-start pl-14 mt-1">
+                  {expandedMessageId === msg.id ? (
+                    <div className="w-full max-w-[80%] space-y-2 mt-2">
+                      {msg.suggestions.map((suggestion, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setUserInput(suggestion)}
+                          className="w-full text-left p-3 bg-purple-500/10 text-purple-300 rounded-lg border border-purple-500/20 hover:bg-purple-500/20 transition-all text-sm"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <Button
+                      variant="link"
+                      className="text-purple-400 hover:text-purple-300 px-1 h-auto py-1 text-xs"
+                      onClick={() =>
+                        setExpandedMessageId(
+                          msg.id === expandedMessageId ? null : msg.id
+                        )
+                      }
+                    >
+                      Show examples <ChevronDown className="h-4 w-4 ml-1" />
+                    </Button>
+                  )}
+                </div>
+              )}
           </div>
         ))}
         {isProcessing && (
-          <div className="flex justify-center">
+          <div className="flex justify-center py-2">
             <Loader2 className="h-6 w-6 animate-spin text-purple-300" />
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSubmit} className="flex items-end gap-2">
-        {/* --- MODIFICATION: Using TextareaAutosize instead of the standard Textarea --- */}
+      <form onSubmit={handleSubmit} className="flex items-end gap-2 mt-auto">
         <TextareaAutosize
           ref={inputRef}
           value={userInput}
