@@ -30,13 +30,13 @@ interface AIChatQuestionnaireProps {
 }
 const initialQuestions: Record<Pillar, string> = {
   Career:
-    "When you picture yourself thriving in your dream career 5 years from now, what work are you doing that makes you lose track of time?",
+    "Think ahead 5 years — what kind of work or projects would you be excited to wake up for? What sounds interesting or meaningful to you?",
   Financials:
-    "Describe your ideal financial situation in 5 years. What does financial freedom look and feel like to you?",
+    "If you felt financially stress-free in 5 years, what would that look like? What kind of lifestyle would you be living?",
   Health:
-    "Imagine it's 5 years from now and you are in peak health. What does your daily routine look like, and how do you feel?",
+    "Imagine you're feeling your best — energised, confident, and healthy. What does a regular day look like for you?",
   Connections:
-    "Envision your relationships in 5 years. How are you connecting with the most important people in your life?",
+    "Who are the people you want to feel closest to in 5 years, and what kind of relationships do you want to have with them?",
 };
 
 export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({

@@ -99,16 +99,6 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
       <div className="flex flex-col md:flex-row md:justify-between items-center gap-4 pt-4">
         <Button
           size="lg"
-          variant="outline"
-          className="w-full md:w-auto bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700"
-          onClick={onPrevious}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Previous
-        </Button>
-        {/* --- MODIFICATION: Button text updated, now just navigates --- */}
-        <Button
-          size="lg"
           onClick={onConfirm}
           disabled={!blueprint} // Disable until blueprint is loaded
           className="w-full md:w-auto"

@@ -7,35 +7,24 @@ import {
 } from "@/services/apiService";
 import { useAuth } from "@/contexts/AuthContext";
 
-// --- Type Definitions ---
 interface User {
   sub: string;
-  name?: string;
-  email?: string;
-  exp: number;
 }
-
 type Priorities = {
   mainFocus: Pillar;
   secondaryFocus: Pillar;
   maintenance: Pillar[];
 };
-type Answers = { [key in Pillar]?: PillarAnswers };
-
+type Answers = any; // Use 'any' to accommodate history, scores, blueprint etc.
 const LOCAL_STORAGE_KEY = "futureQuestionnaireGuestProgress";
 
-/**
- * Manages the state of the Future Self Questionnaire.
- * @param user - The user object from useAuth(), or null for guests.
- */
-export const useQuestionnaireState = (user: User | null) => {
-  const { authToken } = useAuth();
+export const useQuestionnaireState = () => {
+  const { user, authToken } = useAuth();
   const [priorities, setPriorities] = useState<Priorities | null>(null);
   const [answers, setAnswers] = useState<Answers>({});
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Effect to load initial data
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
@@ -44,9 +33,7 @@ export const useQuestionnaireState = (user: User | null) => {
         if (savedState) {
           setPriorities(savedState.priorities || null);
           setAnswers(savedState.answers || {});
-          if (savedState.step && savedState.step > 0) {
-            setStep(savedState.step);
-          }
+          if (savedState.step && savedState.step > 0) setStep(savedState.step);
         }
       } else {
         const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -57,7 +44,7 @@ export const useQuestionnaireState = (user: User | null) => {
             setAnswers(parsedData.answers || {});
             setStep(parsedData.step || 1);
           } catch (error) {
-            console.error("Failed to parse progress from localStorage", error);
+            console.error("Failed to parse localStorage", error);
           }
         }
       }
@@ -66,7 +53,6 @@ export const useQuestionnaireState = (user: User | null) => {
     loadData();
   }, [user, authToken]);
 
-  // Effect to save progress for GUESTS
   useEffect(() => {
     if (!user && !isLoading) {
       const dataToSave: QuestionnaireStatePayload = {
@@ -82,16 +68,6 @@ export const useQuestionnaireState = (user: User | null) => {
     setPriorities(newPriorities);
   };
 
-  const handlePillarAnswersUpdate = (
-    pillarName: Pillar,
-    pillarAnswers: PillarAnswers
-  ) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [pillarName]: pillarAnswers,
-    }));
-  };
-
   return {
     isLoading,
     priorities,
@@ -99,8 +75,7 @@ export const useQuestionnaireState = (user: User | null) => {
     step,
     setStep,
     handlePrioritiesComplete,
-    handlePillarAnswersUpdate,
-    // --- MODIFICATION: Expose the setAnswers function ---
+    // --- MODIFICATION: Expose setAnswers to update the hook's state directly ---
     setAnswers,
   };
 };
