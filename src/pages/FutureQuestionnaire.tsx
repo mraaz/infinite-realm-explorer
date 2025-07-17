@@ -7,7 +7,6 @@ import { QuestionnaireSteps } from "@/components/futureQuestionnaire/Questionnai
 import { QuestionnaireNavigation } from "@/components/futureQuestionnaire/QuestionnaireNavigation";
 import { AIChatQuestionnaire } from "@/components/futureQuestionnaire/AIChatQuestionnaire";
 import { Pillar, Priorities } from "@/components/priority-ranking/types";
-import SocialLoginModal from "@/components/SocialLoginModal"; // --- MODIFICATION: Import the modal ---
 import { useQuestionnaireState } from "@/hooks/useQuestionnaireState";
 import {
   saveQuestionnaireProgress,
@@ -19,18 +18,12 @@ import { useAuth } from "@/contexts/AuthContext";
 const FutureQuestionnaire: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isArchitect } = (location.state || { isArchitect: false }) as {
-    isArchitect: boolean;
-  };
 
   const { user, authToken } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isChatComplete, setIsChatComplete] = useState(false);
   const [blueprint, setBlueprint] = useState<Blueprint | null>(null);
-
-  // --- MODIFICATION: Add state to control the login modal ---
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const {
     isLoading,
@@ -44,7 +37,47 @@ const FutureQuestionnaire: React.FC = () => {
 
   const totalSteps = 3;
 
+  useEffect(() => {
+    if (answers?.blueprint) {
+      setBlueprint(answers.blueprint);
+    }
+  }, [answers]);
+
+  // --- MODIFICATION: The handlePrevious function now contains the reset logic ---
   const handlePrevious = async () => {
+    // If we are on Step 2 (AI Chat) and click previous, reset everything.
+    if (step === 2) {
+      if (user && authToken) {
+        setIsSaving(true);
+        try {
+          console.log("Resetting questionnaire progress...");
+          const emptyAnswers = {
+            history: [],
+            scores: {},
+            questionCount: {},
+          };
+          // Save a blank slate to the DB for answers, and set the step back to 1
+          await saveQuestionnaireProgress(
+            { priorities, answers: emptyAnswers, step: 1 },
+            authToken
+          );
+          // Clear local storage to be safe
+          localStorage.removeItem("futureQuestionnaireGuestProgress");
+          // Force a reload to re-trigger all loading hooks from a clean state
+          window.location.reload();
+        } catch (error) {
+          setSaveError("Failed to reset progress. Please try again.");
+          setIsSaving(false);
+        }
+      } else {
+        // For guests, just clear local storage and reload
+        localStorage.removeItem("futureQuestionnaireGuestProgress");
+        window.location.reload();
+      }
+      return;
+    }
+
+    // Standard "go back" logic for other steps (e.g., from step 3 to 2)
     const targetStep = Math.max(step - 1, 1);
     if (user && authToken) {
       await saveQuestionnaireProgress(
@@ -55,30 +88,26 @@ const FutureQuestionnaire: React.FC = () => {
     setStep(targetStep);
   };
 
-  // --- MODIFICATION: handleNext now checks if the user is a guest ---
   const handleNext = async () => {
-    // If user is a guest and trying to proceed past step 1, show the login modal.
-    if (!user && step === 1) {
-      setIsLoginModalOpen(true);
-      return; // Stop the function here
-    }
-
     setSaveError(null);
     const targetStep = step + 1;
 
     if (user && authToken) {
       setIsSaving(true);
       try {
-        if (step === 2) {
-          const finalPayload = { priorities, answers, step: 2 };
+        let currentAnswers = answers;
+        if (step === 2 && !answers.blueprint) {
+          const payloadForBlueprint = { priorities, answers };
           const generatedBlueprint = await generateBlueprint(
-            finalPayload,
+            payloadForBlueprint,
             authToken
           );
           setBlueprint(generatedBlueprint);
+          currentAnswers = { ...answers, blueprint: generatedBlueprint };
+          setAnswers(currentAnswers);
         }
         await saveQuestionnaireProgress(
-          { priorities, answers, step: targetStep },
+          { priorities, answers: currentAnswers, step: targetStep },
           authToken
         );
         setStep(targetStep);
@@ -88,13 +117,17 @@ const FutureQuestionnaire: React.FC = () => {
         setIsSaving(false);
       }
     } else {
-      // This path is for guests moving between non-gated steps, if any.
       setStep(targetStep);
     }
   };
 
   const handleConfirm = () => {
-    navigate("/results");
+    navigate("/results", {
+      state: {
+        ...location.state,
+        blueprint: answers.blueprint,
+      },
+    });
   };
 
   const isNextDisabled = (): boolean => {
@@ -140,6 +173,7 @@ const FutureQuestionnaire: React.FC = () => {
             blueprint={blueprint}
             onConfirm={handleConfirm}
             onPrevious={handlePrevious}
+            isConfirming={isSaving}
           />
         );
       default:
@@ -162,7 +196,7 @@ const FutureQuestionnaire: React.FC = () => {
                 for the next five years.
               </p>
             </div>
-            <QuestionnaireSteps step={step} isArchitect={isArchitect} />
+            <QuestionnaireSteps step={step} />
             <div className="mt-10 min-h-[400px]">{renderCurrentStep()}</div>
             {step < totalSteps && (
               <>
@@ -173,7 +207,6 @@ const FutureQuestionnaire: React.FC = () => {
                 )}
                 <QuestionnaireNavigation
                   step={step}
-                  isArchitect={isArchitect}
                   onPrevious={step > 1 ? handlePrevious : undefined}
                   onNext={handleNext}
                   nextDisabled={isNextDisabled()}
@@ -183,12 +216,6 @@ const FutureQuestionnaire: React.FC = () => {
           </div>
         </div>
       </main>
-
-      {/* --- MODIFICATION: Add the modal to the page's JSX --- */}
-      <SocialLoginModal
-        open={isLoginModalOpen}
-        onOpenChange={setIsLoginModalOpen}
-      />
     </div>
   );
 };
