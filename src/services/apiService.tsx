@@ -36,6 +36,21 @@ export interface Blueprint {
   };
 }
 
+// NEW: Type for the data returned from the PulseCheckData table
+export interface PulseCheckStatePayload {
+  userId: string;
+  publicId: string;
+  careerScore: number;
+  financesScore: number;
+  healthScore: number;
+  connectionsScore: number;
+  careerInsight: string;
+  financesInsight: string;
+  healthInsight: string;
+  connectionsInsight: string;
+  createdAt: string;
+}
+
 const API_BASE_URL =
   "https://ffwkwcix01.execute-api.us-east-1.amazonaws.com/prod";
 
@@ -125,5 +140,33 @@ export const generateBlueprint = async (
   } catch (error) {
     console.error("An error occurred while generating the blueprint:", error);
     throw error;
+  }
+};
+
+// NEW: Function to fetch the "Current Self" data from PulseCheckData table
+export const getPulseCheckState = async (
+  token: string
+): Promise<PulseCheckStatePayload | null> => {
+  // The endpoint path matches the routing logic in the provided lambda_function.py
+  const url = `${API_BASE_URL}/pulse-check-data/user/state`;
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    if (response.status === 404) {
+      console.log("No Pulse Check data found for the user.");
+      return null;
+    }
+    if (!response.ok) {
+      throw new Error("Failed to fetch Pulse Check state.");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching Pulse Check state:", error);
+    throw error; // Rethrow to be caught by the component
   }
 };
