@@ -196,7 +196,7 @@ const FutureQuestionnaire: React.FC = () => {
                 for the next five years.
               </p>
             </div>
-            <QuestionnaireSteps step={step} />
+            <QuestionnaireSteps step={step} isArchitect={false} />
             <div className="mt-10 min-h-[400px]">{renderCurrentStep()}</div>
             {step < totalSteps && (
               <>
@@ -207,6 +207,7 @@ const FutureQuestionnaire: React.FC = () => {
                 )}
                 <QuestionnaireNavigation
                   step={step}
+                  isArchitect={false}
                   onPrevious={step > 1 ? handlePrevious : undefined}
                   onNext={handleNext}
                   nextDisabled={isNextDisabled()}

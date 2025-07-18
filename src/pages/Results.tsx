@@ -57,35 +57,35 @@ const formatScoresForChart = (
 ) => {
   // Default structure for the charts
   const progress = {
-    current: { Health: 0, Career: 0, Finance: 0, Connections: 0 },
-    future: { Health: 0, Career: 0, Finance: 0, Connections: 0 },
+    current: { basics: 0, health: 0, career: 0, finances: 0, connections: 0 },
+    future: { basics: 0, health: 0, career: 0, finances: 0, connections: 0 },
   };
 
   // Populate "Current Self" from Pulse Check data
   if (pulseState) {
-    progress.current.Health = pulseState.healthScore ?? 0;
-    progress.current.Career = pulseState.careerScore ?? 0;
-    progress.current.Finance = pulseState.financesScore ?? 0;
-    progress.current.Connections = pulseState.connectionsScore ?? 0;
+    progress.current.health = pulseState.healthScore ?? 0;
+    progress.current.career = pulseState.careerScore ?? 0;
+    progress.current.finances = pulseState.financesScore ?? 0;
+    progress.current.connections = pulseState.connectionsScore ?? 0;
   }
 
   // Populate "Future Self" from Questionnaire data
   const futureScores = questionnaireState?.answers?.scores;
   if (futureScores) {
     // Assuming max score per pillar is 200, normalizing to 100 for the chart
-    progress.future.Health = Math.min(
+    progress.future.health = Math.min(
       Math.round((futureScores.Health || 0) / 2),
       100
     );
-    progress.future.Career = Math.min(
+    progress.future.career = Math.min(
       Math.round((futureScores.Career || 0) / 2),
       100
     );
-    progress.future.Finance = Math.min(
+    progress.future.finances = Math.min(
       Math.round((futureScores.Finance || 0) / 2),
       100
     );
-    progress.future.Connections = Math.min(
+    progress.future.connections = Math.min(
       Math.round((futureScores.Connections || 0) / 2),
       100
     );
@@ -146,7 +146,7 @@ const Results = () => {
     fetchAllData();
   }, [authToken, isLoggedIn, navigate, toast]);
 
-  const { currentProgress, futureProgress } = useMemo(() => {
+  const chartData = useMemo(() => {
     return formatScoresForChart(pulseCheckState, questionnaireState);
   }, [pulseCheckState, questionnaireState]);
 
@@ -170,8 +170,8 @@ const Results = () => {
         <ResultsHeader />
         <main>
           <ChartsSection
-            currentProgress={currentProgress}
-            futureProgress={futureProgress}
+            currentProgress={chartData.current}
+            futureProgress={chartData.future}
             answers={{}} // Pass empty or relevant data if needed by child components
             onPillarClick={handlePillarClick}
             activePillar={activePillar}

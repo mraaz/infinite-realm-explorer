@@ -244,11 +244,11 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
   // --- MODIFICATION: Update overall progress calculation for a total of 3 questions ---
   const overallCompleted = conversationState
     ? Object.values(conversationState.answers.questionCount).reduce(
-        (a, b) => a + b,
+        (a: number, b: number) => a + b,
         0
       )
     : 0;
-  const progressPercentage = Math.round((overallCompleted / 3) * 100);
+  const progressPercentage = Math.round(((overallCompleted as number) / 3) * 100);
 
   if (isLoading) {
     return (
@@ -277,7 +277,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
             </span>
             {/* --- MODIFICATION: Updated total in the UI --- */}
             <span className="text-xs text-gray-400">
-              Overall: {overallCompleted} of 3 ({progressPercentage}%)
+              Overall: {overallCompleted as number} of 3 ({progressPercentage}%)
             </span>
           </div>
         </div>

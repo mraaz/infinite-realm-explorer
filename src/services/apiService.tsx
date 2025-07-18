@@ -17,6 +17,8 @@ export interface ProcessAnswerPayload {
   pillarName: Pillar;
   previousQuestion: string;
   userAnswer: string;
+  isTransition?: boolean;
+  nextPillarName?: Pillar;
 }
 export interface AIResponse {
   isRelevant: boolean;
@@ -24,6 +26,7 @@ export interface AIResponse {
   nextQuestion: string | null;
   feedback: string | null;
   suggestions?: string[];
+  transitionMessage?: string;
 }
 export interface Blueprint {
   title: string;
