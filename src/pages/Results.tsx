@@ -12,6 +12,7 @@ import {
 } from "@/services/apiService";
 
 // --- Component Imports ---
+import Header from "@/components/Header";
 import ResultsHeader from "@/components/results/ResultsHeader";
 import ChartsSection from "@/components/results/ChartsSection";
 import InsightSynthesis from "@/components/results/InsightSynthesis";
@@ -70,23 +71,26 @@ const formatScoresForChart = (
   }
 
   // Populate "Future Self" from Questionnaire data
+  // Populate "Future Self" from Questionnaire data
+  // Populate "Future Self" from Questionnaire data
   const futureScores = questionnaireState?.answers?.scores;
   if (futureScores) {
-    // Assuming max score per pillar is 200, normalizing to 100 for the chart
+    // FIX: Using Capitalized keys to match the data now coming from the backend
     progress.future.health = Math.min(
-      Math.round((futureScores.Health || 0) / 2),
+      Math.round(futureScores.Health || 0),
       100
     );
     progress.future.career = Math.min(
-      Math.round((futureScores.Career || 0) / 2),
+      Math.round(futureScores.Career || 0),
       100
     );
+    // Note: The key from your screenshot is "Financials"
     progress.future.finances = Math.min(
-      Math.round((futureScores.Finance || 0) / 2),
+      Math.round(futureScores.Financials || 0),
       100
     );
     progress.future.connections = Math.min(
-      Math.round((futureScores.Connections || 0) / 2),
+      Math.round(futureScores.Connections || 0),
       100
     );
   }
@@ -166,6 +170,7 @@ const Results = () => {
 
   return (
     <div className="bg-[#18181b] min-h-screen text-white">
+      <Header />
       <div className="container mx-auto px-4 py-8">
         <ResultsHeader />
         <main>

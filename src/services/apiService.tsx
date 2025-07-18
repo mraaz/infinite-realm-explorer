@@ -173,3 +173,29 @@ export const getPulseCheckState = async (
     throw error; // Rethrow to be caught by the component
   }
 };
+
+// Add this function to your apiService.tsx file
+
+/**
+ * Fetches the data completion status for the current user.
+ * @param {string} token - The user's JWT token.
+ * @returns {Promise<{ hasPulseCheckData: boolean, hasFutureSelfData: boolean }>}
+ */
+export const getUserDataStatus = async (token: string) => {
+  const url = `${API_BASE_URL}/user-data-status`;
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error("Failed to fetch user data status");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching user data status:", error);
+    return { hasPulseCheckData: false, hasFutureSelfData: false };
+  }
+};
