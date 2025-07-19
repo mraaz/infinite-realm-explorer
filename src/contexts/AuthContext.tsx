@@ -1,6 +1,8 @@
+// src/contexts/AuthContext.tsx
+
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
-import { getUserDataStatus } from "@/services/apiService"; // Import the new service
+import PageLoading from "@/components/ui/page-loading"; // Import the loading component
 
 interface User {
   sub: string;
@@ -13,8 +15,6 @@ interface AuthContextType {
   user: User | null;
   authToken: string | null;
   isLoggedIn: boolean;
-  hasPulseCheckData: boolean;
-  hasFutureSelfData: boolean;
   login: (token: string) => void;
   logout: () => void;
 }
@@ -24,36 +24,39 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
-  const [hasPulseCheckData, setHasPulseCheckData] = useState(false);
-  const [hasFutureSelfData, setHasFutureSelfData] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // 1. ADD a loading state, default to true
 
   useEffect(() => {
-    const checkTokenAndFetchStatus = async (token: string) => {
+    const validateToken = (token: string) => {
       try {
         const decodedUser = jwtDecode<User>(token);
         if (decodedUser.exp * 1000 > Date.now()) {
           setUser(decodedUser);
           setAuthToken(token);
-          const status = await getUserDataStatus(token);
-          setHasPulseCheckData(status.hasPulseCheckData);
-          setHasFutureSelfData(status.hasFutureSelfData);
         } else {
+          // Token is expired
           localStorage.removeItem("infinitelife_jwt");
         }
       } catch (error) {
+        // Token is invalid
         localStorage.removeItem("infinitelife_jwt");
+      } finally {
+        // 2. SET loading to false after checking is done
+        setIsLoading(false);
       }
     };
 
     const storedToken = localStorage.getItem("infinitelife_jwt");
     if (storedToken) {
-      checkTokenAndFetchStatus(storedToken);
+      validateToken(storedToken);
+    } else {
+      // No token found, so we are done loading
+      setIsLoading(false);
     }
   }, []);
 
   const login = (newToken: string) => {
     localStorage.setItem("infinitelife_jwt", newToken);
-    // Reloading to re-trigger the useEffect is a simple way to ensure status is fetched
     window.location.reload();
   };
 
@@ -64,12 +67,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     window.location.href = "/";
   };
 
+  // 3. RENDER a loading screen for the whole app until auth is checked
+  if (isLoading) {
+    return <PageLoading />;
+  }
+
   const value = {
     user,
     authToken,
     isLoggedIn: !!user,
-    hasPulseCheckData,
-    hasFutureSelfData,
     login,
     logout,
   };
