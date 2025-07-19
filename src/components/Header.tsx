@@ -1,183 +1,183 @@
-// src/pages/Results.tsx
+// src/components/Header.tsx
 
-import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { User } from "lucide-react";
+import SocialLoginModal from "@/components/SocialLoginModal";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast"; // Correct hook is used
+import { useToast } from "@/hooks/use-toast";
+import { branding } from "@/config/branding";
 import {
-  getQuestionnaireState,
-  QuestionnaireStatePayload,
-  getPulseCheckState,
-  PulseCheckStatePayload,
-} from "@/services/apiService";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-// --- Component Imports ---
-import Header from "@/components/Header";
-import ResultsHeader from "@/components/results/ResultsHeader";
-import ChartsSection from "@/components/results/ChartsSection";
-import InsightSynthesis from "@/components/results/InsightSynthesis";
-import ResultsFooter from "@/components/results/ResultsFooter";
-import PdfFooter from "@/components/results/PdfFooter";
-import PageLoading from "@/components/ui/page-loading";
-
-// --- Type Imports ---
-import { PillarProgress } from "@/components/NewQuadrantChart";
-import { Insight } from "@/types/insights";
-
-// Mock data for InsightSynthesis
-const mockInsights: Insight[] = [
-  {
-    title: "Emphasis on Growth",
-    description:
-      "Your answers indicate a strong desire for personal and professional development.",
-    icon: "TrendingUp",
-    color: "purple",
-    backContent: {
-      title: "Actionable Insight",
-      content: "Consider setting SMART goals to channel this motivation.",
-    },
-  },
-  {
-    title: "Connection Oriented",
-    description:
-      "You frequently mention the importance of relationships and community.",
-    icon: "Users",
-    color: "orange",
-    backContent: {
-      title: "Actionable Insight",
-      content:
-        "Schedule regular time for networking or strengthening personal bonds.",
-    },
-  },
-];
-
-// --- Helper to format scores for the charts ---
-const formatScoresForChart = (
-  pulseState: PulseCheckStatePayload | null,
-  questionnaireState: QuestionnaireStatePayload | null
-) => {
-  const progress = {
-    current: { Health: 0, Career: 0, Finance: 0, Connections: 0 },
-    future: { Health: 0, Career: 0, Finance: 0, Connections: 0 },
-  };
-
-  if (pulseState) {
-    progress.current.Health = pulseState.healthScore ?? 0;
-    progress.current.Career = pulseState.careerScore ?? 0;
-    progress.current.Finance = pulseState.financesScore ?? 0;
-    progress.current.Connections = pulseState.connectionsScore ?? 0;
-  }
-
-  const futureScores = questionnaireState?.answers?.scores;
-  if (futureScores) {
-    progress.future.Health = Math.min(
-      Math.round((futureScores.Health || 0) / 2),
-      100
-    );
-    progress.future.Career = Math.min(
-      Math.round((futureScores.Career || 0) / 2),
-      100
-    );
-    progress.future.finances = Math.min(
-      Math.round((futureScores.Financials || 0) / 2),
-      100
-    );
-    progress.future.connections = Math.min(
-      Math.round((futureScores.Connections || 0) / 2),
-      100
-    );
-  }
-
-  return progress;
-};
-
-const Results = () => {
-  const [questionnaireState, setQuestionnaireState] =
-    useState<QuestionnaireStatePayload | null>(null);
-  const [pulseCheckState, setPulseCheckState] =
-    useState<PulseCheckStatePayload | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [activePillar, setActivePillar] = useState<string | undefined>();
-
-  const { authToken, isLoggedIn } = useAuth();
+const Header = () => {
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, isLoggedIn, logout, hasPulseCheckData, hasFutureSelfData } =
+    useAuth();
 
-  useEffect(() => {
-    if (!isLoggedIn) {
-      navigate("/");
-      return;
+  // --- STYLES: Define styles for the navigation buttons ---
+  const baseButtonStyle =
+    "text-sm rounded-md py-2 px-4 transition-all duration-200";
+  const primaryButtonStyle = cn(
+    baseButtonStyle,
+    "font-semibold text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90"
+  );
+  const secondaryButtonStyle = cn(
+    baseButtonStyle,
+    "font-medium text-gray-300 border border-gray-700 hover:border-purple-500 hover:text-white"
+  );
+  const disabledButtonStyle = cn(
+    baseButtonStyle,
+    "font-medium text-gray-500 border border-gray-800 bg-gray-800/50 cursor-pointer hover:border-gray-700 hover:text-gray-400"
+  );
+
+  // --- LOGIC: Handlers for guided navigation ---
+  const handleFutureSelfClick = () => {
+    if (hasPulseCheckData) {
+      navigate("/future-questionnaire");
+    } else {
+      toast({
+        title: "First things first!",
+        description:
+          "Please complete your Pulse Check before starting your Future Self journey.",
+      });
+      navigate("/pulse-check");
     }
-
-    const fetchAllData = async () => {
-      if (authToken) {
-        try {
-          const [questionnaireRes, pulseRes] = await Promise.all([
-            getQuestionnaireState(authToken),
-            getPulseCheckState(authToken),
-          ]);
-
-          setQuestionnaireState(questionnaireRes);
-          setPulseCheckState(pulseRes);
-        } catch (err) {
-          setError("Failed to load your results. Please try again later.");
-          // Correct toast usage
-          toast({
-            title: "Error Loading Data",
-            description:
-              "There was a problem fetching your results. Please refresh the page.",
-            variant: "destructive",
-          });
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchAllData();
-  }, [authToken, isLoggedIn, navigate, toast]);
-
-  const chartData = useMemo(() => {
-    return formatScoresForChart(pulseCheckState, questionnaireState);
-  }, [pulseCheckState, questionnaireState]);
-
-  const handlePillarClick = (pillar: string) => {
-    setActivePillar(pillar === activePillar ? undefined : pillar);
   };
 
-  const handleRetake = (type: "current" | "future") => {
-    const path = type === "current" ? "/pulse-check" : "/future-questionnaire";
-    navigate(path);
+  const handleResultsClick = () => {
+    if (hasPulseCheckData && hasFutureSelfData) {
+      navigate("/results");
+    } else if (!hasPulseCheckData) {
+      toast({
+        title: "First things first!",
+        description: "Please complete your Pulse Check to see your results.",
+      });
+      navigate("/pulse-check");
+    } else {
+      toast({
+        title: "Almost there!",
+        description:
+          "Please complete your Future Self journey to see your results.",
+      });
+      navigate("/future-questionnaire");
+    }
   };
-
-  if (isLoading) return <PageLoading />;
-
-  if (error)
-    return <div className="text-center py-20 text-red-500">{error}</div>;
 
   return (
-    <div className="bg-[#18181b] min-h-screen text-white">
-      <Header />
-      <div className="container mx-auto px-4 py-8">
-        <ResultsHeader />
-        <main>
-          <ChartsSection
-            currentProgress={chartData.current}
-            futureProgress={chartData.future}
-            answers={{}}
-            onPillarClick={handlePillarClick}
-            activePillar={activePillar}
-            onRetakeCurrent={() => handleRetake("current")}
-            onStartFutureQuestionnaire={() => handleRetake("future")}
-          />
-          <InsightSynthesis insights={mockInsights} />
-        </main>
-        <ResultsFooter />
-        <PdfFooter />
-      </div>
-    </div>
+    <>
+      <header className="py-6 px-6 md:px-10 flex justify-between items-center">
+        <div className="flex items-center space-x-8">
+          <Link
+            to="/"
+            className="flex items-center space-x-2 text-xl font-bold text-white hover:text-purple-400 transition-colors duration-200"
+          >
+            <img
+              src={branding.logo.url}
+              alt={branding.logo.alt}
+              className="w-6 h-6"
+            />
+            <span>{branding.name}</span>
+          </Link>
+
+          <nav className="hidden md:flex items-center space-x-4">
+            {isLoggedIn && (
+              <>
+                {/* Pulse Check Button - Always links directly */}
+                <Link
+                  to="/pulse-check"
+                  className={cn(
+                    hasPulseCheckData
+                      ? secondaryButtonStyle
+                      : primaryButtonStyle
+                  )}
+                >
+                  {hasPulseCheckData ? "Pulse Check" : "Start Pulse Check"}
+                </Link>
+
+                {/* Future Self Button - Uses guided logic */}
+                <button
+                  onClick={handleFutureSelfClick}
+                  className={cn({
+                    [primaryButtonStyle]:
+                      hasPulseCheckData && !hasFutureSelfData,
+                    [secondaryButtonStyle]:
+                      hasPulseCheckData && hasFutureSelfData,
+                    [disabledButtonStyle]: !hasPulseCheckData,
+                  })}
+                >
+                  {hasFutureSelfData ? "Future Self" : "Start Future Self"}
+                </button>
+
+                {/* Results Button - Uses guided logic */}
+                <button
+                  onClick={handleResultsClick}
+                  className={cn({
+                    [secondaryButtonStyle]:
+                      hasPulseCheckData && hasFutureSelfData,
+                    [disabledButtonStyle]:
+                      !hasPulseCheckData || !hasFutureSelfData,
+                  })}
+                >
+                  Results
+                </button>
+              </>
+            )}
+          </nav>
+        </div>
+
+        {/* User profile dropdown or Login button */}
+        {isLoggedIn ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="h-10 w-10 rounded-full border border-gray-600 hover:border-purple-500 text-white hover:bg-gray-800 transition-colors duration-200"
+              >
+                <User className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="w-56 bg-gray-900 border-gray-700"
+            >
+              <DropdownMenuLabel className="text-gray-300">
+                {user?.name || user?.email || "User"}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-gray-700" />
+              <DropdownMenuItem
+                onClick={logout}
+                className="text-gray-300 hover:bg-gray-800 hover:text-red-400 cursor-pointer"
+              >
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <button
+            onClick={() => setLoginModalOpen(true)}
+            className="border border-gray-600 hover:border-purple-500 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+          >
+            Login
+          </button>
+        )}
+      </header>
+      <SocialLoginModal
+        open={loginModalOpen}
+        onOpenChange={setLoginModalOpen}
+      />
+    </>
   );
 };
 
-export default Results;
+export default Header;
