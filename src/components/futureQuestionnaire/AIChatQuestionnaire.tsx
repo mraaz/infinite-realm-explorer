@@ -62,7 +62,6 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     ...priorities.maintenance,
   ];
 
-  // This hook for loading initial state remains the same
   useEffect(() => {
     const loadState = async () => {
       if (!authToken) return;
@@ -105,14 +104,24 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     loadState();
   }, [authToken]);
 
-  // This hook for auto-saving progress remains the same
   useEffect(() => {
     if (conversationState && !isLoading && authToken) {
       saveQuestionnaireProgress(conversationState, authToken!);
     }
   }, [conversationState, isLoading, authToken]);
 
-  // --- MODIFICATION: The handleSubmit function is updated with the new logic ---
+  const getPillarInfo = (
+    state: QuestionnaireStatePayload | null = conversationState
+  ) => {
+    if (!state || !priorities)
+      return { name: "Loading..." as Pillar, type: "Main Focus" };
+    const mainFocusCount =
+      state.answers.questionCount[priorities.mainFocus] || 0;
+    if (mainFocusCount < 2)
+      return { name: priorities.mainFocus, type: "Main Focus" };
+    return { name: priorities.secondaryFocus, type: "Secondary Focus" };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userInput.trim() || isProcessing || !conversationState) return;
@@ -132,38 +141,39 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
         ?.content || "";
     const currentQuestionNumForPillar =
       (conversationState.answers.questionCount[currentPillar] || 0) + 1;
-
-    // --- MODIFICATION: The number of questions needed for each pillar type ---
     const questionsNeededForPillar = pillarType === "Main Focus" ? 2 : 1;
-    const isTransition =
-      currentQuestionNumForPillar >= questionsNeededForPillar;
-    const currentPillarIndex = orderedPillars.indexOf(currentPillar);
-    const nextPillar = isTransition
-      ? orderedPillars[currentPillarIndex + 1]
-      : undefined;
+    const nextPillarIndex = orderedPillars.indexOf(currentPillar) + 1;
+    const nextPillar = orderedPillars[nextPillarIndex] || null;
 
     try {
-      const aiResponse = await processChatAnswer(
-        {
-          pillarName: currentPillar,
-          previousQuestion: lastQuestion,
-          userAnswer: userMessage.content,
-          isTransition: isTransition,
-          nextPillarName: nextPillar,
-        },
-        authToken!
-      );
+      const payload = {
+        pillarName: currentPillar,
+        previousQuestion: lastQuestion,
+        userAnswer: userMessage.content,
+        isTransition: false, // initially false
+        nextPillarName: nextPillar,
+      };
+
+      const aiResponse = await processChatAnswer(payload, authToken!);
+
+      //console.log("AI Response Received:", aiResponse);
 
       let newHistory = [...conversationState.answers.history, userMessage];
       let tempState = JSON.parse(JSON.stringify(conversationState));
+      let isActuallyTransition = false;
 
       if (aiResponse.isRelevant) {
+        // Update score and question count
         tempState.answers.scores[currentPillar] =
           (tempState.answers.scores[currentPillar] || 0) + aiResponse.score;
         tempState.answers.questionCount[currentPillar] =
           currentQuestionNumForPillar;
 
-        if (isTransition && aiResponse.transitionMessage) {
+        // Recalculate transition condition *after* AI accepts it
+        const updatedCount = tempState.answers.questionCount[currentPillar];
+        isActuallyTransition = updatedCount >= questionsNeededForPillar;
+
+        if (isActuallyTransition && aiResponse.transitionMessage) {
           newHistory.push({
             id: Date.now() + 1,
             role: "transition",
@@ -184,22 +194,26 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
           });
         }
 
-        // --- MODIFICATION: The questionnaire is now complete after the secondary focus is done ---
         const totalPillarsCompleted = Object.keys(
           tempState.answers.questionCount
         ).filter(
           (p) => tempState.answers.questionCount[p as Pillar] > 0
         ).length;
-        if (isTransition && totalPillarsCompleted >= 2) {
-          // Main + Secondary = 2 pillars
+
+        if (isActuallyTransition && totalPillarsCompleted >= 2) {
           tempState.answers.history = newHistory;
           onComplete(tempState);
         }
       } else {
+        // Handle irrelevant input
+        const feedbackText =
+          aiResponse.feedback ||
+          aiResponse.transitionMessage ||
+          "Please try rephrasing your answer.";
         const feedbackMessage: Message = {
           id: Date.now() + 1,
           role: "feedback",
-          content: aiResponse.feedback!,
+          content: feedbackText,
           suggestions: aiResponse.suggestions || [],
         };
         newHistory.push(feedbackMessage);
@@ -221,34 +235,20 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     inputRef.current?.focus();
   }, [messages]);
 
-  // --- MODIFICATION: Updated pillar info logic for the 2+1 structure ---
-  const getPillarInfo = (
-    state: QuestionnaireStatePayload | null = conversationState
-  ) => {
-    if (!state || !priorities)
-      return { name: "Loading..." as Pillar, type: "Main Focus" };
-    const mainFocusCount =
-      state.answers.questionCount[priorities.mainFocus] || 0;
-
-    if (mainFocusCount < 2) {
-      return { name: priorities.mainFocus, type: "Main Focus" };
-    }
-    return { name: priorities.secondaryFocus, type: "Secondary Focus" };
-  };
-
   const pillarInfo = getPillarInfo();
   const questionsInPillar = pillarInfo.type === "Main Focus" ? 2 : 1;
   const currentQuestionNumInPillar =
     conversationState?.answers.questionCount[pillarInfo.name] || 0;
 
-  // --- MODIFICATION: Update overall progress calculation for a total of 3 questions ---
   const overallCompleted = conversationState
     ? Object.values(conversationState.answers.questionCount).reduce(
         (a: number, b: number) => a + b,
         0
       )
     : 0;
-  const progressPercentage = Math.round(((overallCompleted as number) / 3) * 100);
+  const progressPercentage = Math.round(
+    ((overallCompleted as number) / 3) * 100
+  );
 
   if (isLoading) {
     return (
@@ -275,7 +275,6 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
               {Math.min(currentQuestionNumInPillar + 1, questionsInPillar)} of{" "}
               {questionsInPillar}
             </span>
-            {/* --- MODIFICATION: Updated total in the UI --- */}
             <span className="text-xs text-gray-400">
               Overall: {overallCompleted as number} of 3 ({progressPercentage}%)
             </span>
