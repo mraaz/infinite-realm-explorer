@@ -37,6 +37,21 @@ const FutureQuestionnaire: React.FC = () => {
 
   const totalSteps = 3;
 
+  // --- MODIFICATION: This new useEffect checks for completion on page load ---
+  useEffect(() => {
+    // After data is loaded from the DB, check if the chat was already completed.
+    if (!isLoading && answers?.questionCount) {
+      const totalQuestionsAnswered = Object.values(
+        answers.questionCount
+      ).reduce((sum: number, count: number) => sum + count, 0);
+
+      // Check if 3 or more questions have been answered.
+      if (totalQuestionsAnswered >= 3) {
+        setIsChatComplete(true);
+      }
+    }
+  }, [isLoading, answers]); // Re-run this check when data finishes loading.
+
   useEffect(() => {
     if (answers?.blueprint) {
       setBlueprint(answers.blueprint);
@@ -50,7 +65,6 @@ const FutureQuestionnaire: React.FC = () => {
       if (user && authToken) {
         setIsSaving(true);
         try {
-          console.log("Resetting questionnaire progress...");
           const emptyAnswers = {
             history: [],
             scores: {},

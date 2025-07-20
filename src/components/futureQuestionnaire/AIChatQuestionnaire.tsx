@@ -145,18 +145,28 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     const nextPillarIndex = orderedPillars.indexOf(currentPillar) + 1;
     const nextPillar = orderedPillars[nextPillarIndex] || null;
 
+    const overallCompleted = Object.values(
+      conversationState.answers.questionCount
+    ).reduce((a, b) => a + b, 0);
+    const isFinalAnswer = overallCompleted === 2; // Is it the 3rd question (index 2)?
+    const shouldAttemptTransition =
+      currentQuestionNumForPillar >= questionsNeededForPillar;
+
     try {
       const payload = {
         pillarName: currentPillar,
         previousQuestion: lastQuestion,
         userAnswer: userMessage.content,
-        isTransition: false, // initially false
+        isTransition: shouldAttemptTransition && !isFinalAnswer,
         nextPillarName: nextPillar,
+        isFinalAnswer: isFinalAnswer,
       };
+
+      console.log("Sending payload to backend:", payload);
 
       const aiResponse = await processChatAnswer(payload, authToken!);
 
-      //console.log("AI Response Received:", aiResponse);
+      console.log("AI Response Received:", aiResponse);
 
       let newHistory = [...conversationState.answers.history, userMessage];
       let tempState = JSON.parse(JSON.stringify(conversationState));
@@ -173,7 +183,18 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
         const updatedCount = tempState.answers.questionCount[currentPillar];
         isActuallyTransition = updatedCount >= questionsNeededForPillar;
 
-        if (isActuallyTransition && aiResponse.transitionMessage) {
+        if (isFinalAnswer) {
+          // Add the hardcoded completion message instead of an AI question
+          const completionMessage: Message = {
+            id: Date.now() + 1,
+            role: "transition", // Use 'transition' style for the message
+            content:
+              "You've completed the chat! Your blueprint can take 1-2 minutes to generate. Please be patient on the next screen. Click 'Next' to continue.",
+          };
+          newHistory.push(completionMessage);
+          tempState.answers.history = newHistory;
+          onComplete(tempState); // Signal completion to enable the 'Next' button
+        } else if (isActuallyTransition && aiResponse.transitionMessage) {
           newHistory.push({
             id: Date.now() + 1,
             role: "transition",
@@ -193,6 +214,10 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
             content: aiResponse.nextQuestion,
           });
         }
+
+        tempState.answers.history = newHistory;
+        setConversationState(tempState);
+        setMessages(newHistory);
 
         const totalPillarsCompleted = Object.keys(
           tempState.answers.questionCount

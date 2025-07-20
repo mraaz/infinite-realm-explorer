@@ -19,6 +19,7 @@ export interface ProcessAnswerPayload {
   userAnswer: string;
   isTransition?: boolean;
   nextPillarName?: Pillar;
+  isFinalAnswer?: boolean;
 }
 export interface AIResponse {
   isRelevant: boolean;
