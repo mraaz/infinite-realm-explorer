@@ -1,18 +1,11 @@
+// src/components/Header.tsx
 
-/*
-================================================================================
-File: /components/Header.tsx
-================================================================================
-- Updated to show profile icon dropdown for logged-in users
-- Kept Login button for logged-out users
-- Added dropdown menu with user email and logout option
-- Updated to use centralized logo configuration
-*/
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { User } from "lucide-react";
 import SocialLoginModal from "@/components/SocialLoginModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { branding } from "@/config/branding";
 import {
   DropdownMenu,
@@ -23,26 +16,127 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const Header = () => {
   const [loginModalOpen, setLoginModalOpen] = useState(false);
-  const { user, isLoggedIn, logout } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user, isLoggedIn, logout, hasPulseCheckData, hasFutureSelfData } =
+    useAuth();
+
+  // --- STYLES: Define styles for the navigation buttons ---
+  const baseButtonStyle =
+    "text-sm rounded-md py-2 px-4 transition-all duration-200";
+  const primaryButtonStyle = cn(
+    baseButtonStyle,
+    "font-semibold text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90"
+  );
+  const secondaryButtonStyle = cn(
+    baseButtonStyle,
+    "font-medium text-gray-300 border border-gray-700 hover:border-purple-500 hover:text-white"
+  );
+  const disabledButtonStyle = cn(
+    baseButtonStyle,
+    "font-medium text-gray-500 border border-gray-800 bg-gray-800/50 cursor-pointer hover:border-gray-700 hover:text-gray-400"
+  );
+
+  // --- LOGIC: Handlers for guided navigation ---
+  const handleFutureSelfClick = () => {
+    if (hasPulseCheckData) {
+      navigate("/future-questionnaire");
+    } else {
+      toast({
+        title: "First things first!",
+        description:
+          "Please complete your Pulse Check before starting your Future Self journey.",
+      });
+      navigate("/pulse-check");
+    }
+  };
+
+  const handleResultsClick = () => {
+    if (hasPulseCheckData && hasFutureSelfData) {
+      navigate("/results");
+    } else if (!hasPulseCheckData) {
+      toast({
+        title: "First things first!",
+        description: "Please complete your Pulse Check to see your results.",
+      });
+      navigate("/pulse-check");
+    } else {
+      toast({
+        title: "Almost there!",
+        description:
+          "Please complete your Future Self journey to see your results.",
+      });
+      navigate("/future-questionnaire");
+    }
+  };
 
   return (
     <>
       <header className="py-6 px-6 md:px-10 flex justify-between items-center">
-        <Link
-          to="/"
-          className="flex items-center space-x-2 text-xl font-bold text-white hover:text-purple-400 transition-colors duration-200"
-        >
-          <img 
-            src={branding.logo.url} 
-            alt={branding.logo.alt} 
-            className="w-6 h-6"
-          />
-          <span>{branding.name}</span>
-        </Link>
+        <div className="flex items-center space-x-8">
+          <Link
+            to="/"
+            className="flex items-center space-x-2 text-xl font-bold text-white hover:text-purple-400 transition-colors duration-200"
+          >
+            <img
+              src={branding.logo.url}
+              alt={branding.logo.alt}
+              className="w-6 h-6"
+            />
+            <span>{branding.name}</span>
+          </Link>
 
+          <nav className="hidden md:flex items-center space-x-4">
+            {isLoggedIn && (
+              <>
+                {/* Pulse Check Button - Always links directly */}
+                <Link
+                  to="/pulse-check"
+                  className={cn(
+                    hasPulseCheckData
+                      ? secondaryButtonStyle
+                      : primaryButtonStyle
+                  )}
+                >
+                  {hasPulseCheckData ? "Pulse Check" : "Start Pulse Check"}
+                </Link>
+
+                {/* Future Self Button - Uses guided logic */}
+                <button
+                  onClick={handleFutureSelfClick}
+                  className={cn({
+                    [primaryButtonStyle]:
+                      hasPulseCheckData && !hasFutureSelfData,
+                    [secondaryButtonStyle]:
+                      hasPulseCheckData && hasFutureSelfData,
+                    [disabledButtonStyle]: !hasPulseCheckData,
+                  })}
+                >
+                  {hasFutureSelfData ? "Future Self" : "Start Future Self"}
+                </button>
+
+                {/* Results Button - Uses guided logic */}
+                <button
+                  onClick={handleResultsClick}
+                  className={cn({
+                    [secondaryButtonStyle]:
+                      hasPulseCheckData && hasFutureSelfData,
+                    [disabledButtonStyle]:
+                      !hasPulseCheckData || !hasFutureSelfData,
+                  })}
+                >
+                  Results
+                </button>
+              </>
+            )}
+          </nav>
+        </div>
+
+        {/* User profile dropdown or Login button */}
         {isLoggedIn ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -72,30 +166,12 @@ const Header = () => {
         ) : (
           <button
             onClick={() => setLoginModalOpen(true)}
-            className="border border-gray-600 hover:border-purple-500 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+            className="border border-gray-600 hover:border-purple-500 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              viewBox="0 0 16 16"
-            >
-              <path
-                fillRule="evenodd"
-                d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0v-2z"
-              />
-              <path
-                fillRule="evenodd"
-                d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"
-              />
-            </svg>
-            <span>Login</span>
+            Login
           </button>
         )}
       </header>
-
-      {/* The modal is now a sibling to the header, not a child */}
       <SocialLoginModal
         open={loginModalOpen}
         onOpenChange={setLoginModalOpen}

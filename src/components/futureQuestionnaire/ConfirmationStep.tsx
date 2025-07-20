@@ -11,6 +11,7 @@ interface ConfirmationStepProps {
   blueprint: Blueprint | null;
   onConfirm: () => void;
   onPrevious: () => void;
+  isConfirming?: boolean;
 }
 
 // --- MODIFICATION: New component to display a single part of the blueprint ---

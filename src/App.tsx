@@ -1,14 +1,17 @@
 // src/App.tsx
 import { Suspense, lazy } from "react";
-// REMOVE THIS LINE: import { Toaster } from "@/components/ui/sonner"; // <--- REMOVE THIS
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import PageLoading from "./components/ui/page-loading";
+import { Toaster } from "@/components/ui/toaster";
+
+// --- DEBUGGING: Import Index directly to find hidden errors ---
+import Index from "./pages/Index";
 
 // Lazy load all pages for better performance
-const Index = lazy(() => import("./pages/Index"));
+// const Index = lazy(() => import("./pages/Index")); // Temporarily commented out
 const OnboardingQuestionnaire = lazy(
   () => import("./pages/OnboardingQuestionnaire")
 );
@@ -22,20 +25,16 @@ const Changelog = lazy(() => import("./pages/Changelog"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-// NEW: Lazy load PulseCheckResults page
 const PulseCheckResults = lazy(
   () => import("./components/pulse-check/PulseCheckResults")
 );
-
-// ADD THIS LINE:
-import { Toaster } from "@/components/ui/toaster"; // <--- ADD THIS LINE (assuming toaster.tsx is at this path)
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster /> {/* This will now correctly render your custom Toaster */}
+      <Toaster />
       <AuthProvider>
         <BrowserRouter>
           <Suspense fallback={<PageLoading />}>
@@ -52,7 +51,6 @@ const App = () => (
               />
               <Route path="/habit-builder" element={<HabitBuilder />} />
               <Route path="/pulse-check" element={<PulseCheck />} />
-              {/* NEW: Route for PulseCheckResults */}
               <Route
                 path="/pulse-check-results"
                 element={<PulseCheckResults />}

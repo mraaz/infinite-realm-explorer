@@ -17,6 +17,9 @@ export interface ProcessAnswerPayload {
   pillarName: Pillar;
   previousQuestion: string;
   userAnswer: string;
+  isTransition?: boolean;
+  nextPillarName?: Pillar;
+  isFinalAnswer?: boolean;
 }
 export interface AIResponse {
   isRelevant: boolean;
@@ -24,6 +27,7 @@ export interface AIResponse {
   nextQuestion: string | null;
   feedback: string | null;
   suggestions?: string[];
+  transitionMessage?: string;
 }
 export interface Blueprint {
   title: string;
@@ -34,6 +38,21 @@ export interface Blueprint {
     summary: string;
     actionableSteps: string[];
   };
+}
+
+// NEW: Type for the data returned from the PulseCheckData table
+export interface PulseCheckStatePayload {
+  userId: string;
+  publicId: string;
+  careerScore: number;
+  financesScore: number;
+  healthScore: number;
+  connectionsScore: number;
+  careerInsight: string;
+  financesInsight: string;
+  healthInsight: string;
+  connectionsInsight: string;
+  createdAt: string;
 }
 
 const API_BASE_URL =
@@ -125,5 +144,59 @@ export const generateBlueprint = async (
   } catch (error) {
     console.error("An error occurred while generating the blueprint:", error);
     throw error;
+  }
+};
+
+// NEW: Function to fetch the "Current Self" data from PulseCheckData table
+export const getPulseCheckState = async (
+  token: string
+): Promise<PulseCheckStatePayload | null> => {
+  // The endpoint path matches the routing logic in the provided lambda_function.py
+  const url = `${API_BASE_URL}/pulse-check-data/user/state`;
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    if (response.status === 404) {
+      console.log("No Pulse Check data found for the user.");
+      return null;
+    }
+    if (!response.ok) {
+      throw new Error("Failed to fetch Pulse Check state.");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching Pulse Check state:", error);
+    throw error; // Rethrow to be caught by the component
+  }
+};
+
+// Add this function to your apiService.tsx file
+
+/**
+ * Fetches the data completion status for the current user.
+ * @param {string} token - The user's JWT token.
+ * @returns {Promise<{ hasPulseCheckData: boolean, hasFutureSelfData: boolean }>}
+ */
+export const getUserDataStatus = async (token: string) => {
+  const url = `${API_BASE_URL}/user-data-status`;
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error("Failed to fetch user data status");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching user data status:", error);
+    return { hasPulseCheckData: false, hasFutureSelfData: false };
   }
 };

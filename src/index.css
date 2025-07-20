@@ -45,6 +45,26 @@
   -webkit-backface-visibility: hidden;
 }
 
+/* Peek animation for insight cards */
+.animate-peek {
+  animation: peek 0.8s ease-out forwards;
+}
+
+@keyframes peek {
+  0% {
+    transform: rotateY(0deg);
+  }
+  25% {
+    transform: rotateY(15deg);
+  }
+  75% {
+    transform: rotateY(15deg);
+  }
+  100% {
+    transform: rotateY(0deg);
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
