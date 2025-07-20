@@ -15,6 +15,7 @@ import careerIcon from "/lovable-uploads/17c46b5d-39d7-4366-a2b1-0ca119060118.pn
 import financeIcon from "/lovable-uploads/093d4b1c-b1c4-428b-8c8e-304488447147.png";
 import healthIcon from "/lovable-uploads/80bdf94e-e50a-400d-a2aa-1923772a5201.png";
 import connectionsIcon from "/lovable-uploads/3167f89f-9cfc-4372-8b99-7c2474932863.png";
+import VideoCenterpiece from "@/components/VideoCenterpiece";
 
 const pillars = [
   {
@@ -150,19 +151,26 @@ const Index = () => {
       <Header />
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
-        {/* Hero Section */}
         <section className="text-center mb-16 md:mb-24">
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight mb-6">
-            Discover Your{" "}
-            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              5-Year Future
-            </span>
-          </h2>
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-            Get a personalised snapshot of where your life is heading. Our AI
-            analyses your current situation across four key pillars to project
-            your path forward.
-          </p>
+          {/* Text is now here, ABOVE the video */}
+          <div className="mb-8">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight mb-4">
+              Discover Your{" "}
+              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                5-Year Future
+              </span>
+            </h1>
+            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+              Get a personalised snapshot of where your life is heading. Our AI
+              analyses your current situation across four key pillars to project
+              your path forward.
+            </p>
+          </div>
+
+          {/* Video is now below the text */}
+          <div className="flex justify-center">
+            <VideoCenterpiece />
+          </div>
         </section>
 
         {/* Pillar Cards Section */}

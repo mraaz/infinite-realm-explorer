@@ -24,7 +24,7 @@ import PageLoading from "@/components/ui/page-loading";
 import { PillarProgress } from "@/components/NewQuadrantChart";
 import { Insight } from "@/types/insights";
 
-// Mock data for InsightSynthesis since its data source is not specified.
+// Mock data for InsightSynthesis
 const mockInsights: Insight[] = [
   {
     title: "Emphasis on Growth",
@@ -51,15 +51,16 @@ const mockInsights: Insight[] = [
   },
 ];
 
-// --- Helper to format scores for the charts ---
+// --- CORRECTED HELPER FUNCTION ---
+// FIX: This function is now correctly defined before the Results component.
 const formatScoresForChart = (
   pulseState: PulseCheckStatePayload | null,
   questionnaireState: QuestionnaireStatePayload | null
 ) => {
-  // Default structure for the charts
+  // FIX: Changed 'finance' (singular) to 'finances' (plural) to match the chart component's expected props.
   const progress = {
-    current: { basics: 0, health: 0, career: 0, finances: 0, connections: 0 },
-    future: { basics: 0, health: 0, career: 0, finances: 0, connections: 0 },
+    current: { health: 0, career: 0, finances: 0, connections: 0 },
+    future: { health: 0, career: 0, finances: 0, connections: 0 },
   };
 
   // Populate "Current Self" from Pulse Check data
@@ -70,27 +71,54 @@ const formatScoresForChart = (
     progress.current.connections = pulseState.connectionsScore ?? 0;
   }
 
-  // Populate "Future Self" from Questionnaire data
-  // Populate "Future Self" from Questionnaire data
-  // Populate "Future Self" from Questionnaire data
+  // Populate "Future Self" with combined logic
   const futureScores = questionnaireState?.answers?.scores;
-  if (futureScores) {
-    // FIX: Using Capitalized keys to match the data now coming from the backend
+  const priorities = questionnaireState?.priorities;
+
+  if (futureScores && pulseState && priorities?.maintenance) {
+    const allPillars: (keyof typeof progress.future)[] = [
+      "health",
+      "career",
+      "connections",
+      "finances",
+    ];
+
+    allPillars.forEach((pillar) => {
+      // The name used in the priorities array is Capitalized and plural 'Finances'
+      const priorityPillarName =
+        pillar.charAt(0).toUpperCase() + pillar.slice(1);
+
+      if (priorities.maintenance.includes(priorityPillarName as any)) {
+        // MAINTENANCE: Use Pulse Check score
+        const pulseKey = `${pillar}Score` as keyof PulseCheckStatePayload;
+        progress.future[pillar] = (pulseState[pulseKey] as number) ?? 0;
+      } else {
+        // MAIN/SECONDARY FOCUS: Use Future Self score
+        // The name in the scores object is Capitalized and 'Financials'
+        const scorePillarName =
+          pillar === "finances" ? "Financials" : priorityPillarName;
+        progress.future[pillar] = Math.min(
+          Math.round((futureScores[scorePillarName] || 0) / 2),
+          100
+        );
+      }
+    });
+  } else if (futureScores) {
+    // Fallback logic
     progress.future.health = Math.min(
-      Math.round(futureScores.Health || 0),
+      Math.round((futureScores.Health || 0) / 2),
       100
     );
     progress.future.career = Math.min(
-      Math.round(futureScores.Career || 0),
+      Math.round((futureScores.Career || 0) / 2),
       100
     );
-    // Note: The key from your screenshot is "Financials"
     progress.future.finances = Math.min(
-      Math.round(futureScores.Financials || 0),
+      Math.round((futureScores.Financials || 0) / 2),
       100
     );
     progress.future.connections = Math.min(
-      Math.round(futureScores.Connections || 0),
+      Math.round((futureScores.Connections || 0) / 2),
       100
     );
   }
@@ -120,16 +148,9 @@ const Results = () => {
     const fetchAllData = async () => {
       if (authToken) {
         try {
-          // Fetch both data sources in parallel
           const [questionnaireRes, pulseRes] = await Promise.all([
-            getQuestionnaireState(authToken).catch((e) => {
-              console.error("Questionnaire fetch failed:", e);
-              return null;
-            }),
-            getPulseCheckState(authToken).catch((e) => {
-              console.error("Pulse Check fetch failed:", e);
-              return null;
-            }),
+            getQuestionnaireState(authToken),
+            getPulseCheckState(authToken),
           ]);
 
           setQuestionnaireState(questionnaireRes);
@@ -137,8 +158,9 @@ const Results = () => {
         } catch (err) {
           setError("Failed to load your results. Please try again later.");
           toast({
-            title: "Error",
-            description: "Could not fetch your data.",
+            title: "Error Loading Data",
+            description:
+              "There was a problem fetching your results. Please refresh the page.",
             variant: "destructive",
           });
         } finally {
@@ -175,16 +197,15 @@ const Results = () => {
         <ResultsHeader />
         <main>
           <ChartsSection
-            currentProgress={chartData.current}
-            futureProgress={chartData.future}
-            answers={{}} // Pass empty or relevant data if needed by child components
+            currentProgress={chartData.current as PillarProgress}
+            futureProgress={chartData.future as PillarProgress}
+            answers={{}}
             onPillarClick={handlePillarClick}
             activePillar={activePillar}
             onRetakeCurrent={() => handleRetake("current")}
             onStartFutureQuestionnaire={() => handleRetake("future")}
           />
           <InsightSynthesis insights={mockInsights} />
-          {/* HabitArchitectSection, HabitsTimeline, and ResultsActions have been removed */}
         </main>
         <ResultsFooter />
         <PdfFooter />
