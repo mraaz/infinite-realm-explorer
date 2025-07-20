@@ -7,6 +7,7 @@ import { QuestionnaireSteps } from "@/components/futureQuestionnaire/Questionnai
 import { QuestionnaireNavigation } from "@/components/futureQuestionnaire/QuestionnaireNavigation";
 import { AIChatQuestionnaire } from "@/components/futureQuestionnaire/AIChatQuestionnaire";
 import { Pillar, Priorities } from "@/components/priority-ranking/types";
+import SocialLoginModal from "@/components/SocialLoginModal";
 import { useQuestionnaireState } from "@/hooks/useQuestionnaireState";
 import {
   saveQuestionnaireProgress,
@@ -24,6 +25,8 @@ const FutureQuestionnaire: React.FC = () => {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isChatComplete, setIsChatComplete] = useState(false);
   const [blueprint, setBlueprint] = useState<Blueprint | null>(null);
+
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const {
     isLoading,
@@ -103,6 +106,11 @@ const FutureQuestionnaire: React.FC = () => {
   };
 
   const handleNext = async () => {
+    if (!user && step === 1) {
+      setIsLoginModalOpen(true);
+      return; // Stop the function here
+    }
+
     setSaveError(null);
     const targetStep = step + 1;
 
@@ -231,6 +239,11 @@ const FutureQuestionnaire: React.FC = () => {
           </div>
         </div>
       </main>
+
+      <SocialLoginModal
+        open={isLoginModalOpen}
+        onOpenChange={setIsLoginModalOpen}
+      />
     </div>
   );
 };
