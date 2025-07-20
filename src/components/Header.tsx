@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { User, Menu } from "lucide-react"; // --- MODIFIED: Imported Menu icon
+import { User, Menu } from "lucide-react";
 import SocialLoginModal from "@/components/SocialLoginModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -20,13 +20,12 @@ import { cn } from "@/lib/utils";
 
 const Header = () => {
   const [loginModalOpen, setLoginModalOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // --- ADDED: State for mobile menu
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isLoggedIn, logout, hasPulseCheckData, hasFutureSelfData } =
     useAuth();
 
-  // --- STYLES: Define styles for the navigation buttons ---
   const baseButtonStyle =
     "text-sm rounded-md py-2 px-4 transition-all duration-200";
   const primaryButtonStyle = cn(
@@ -42,15 +41,18 @@ const Header = () => {
     "font-medium text-gray-500 border border-gray-800 bg-gray-800/50 cursor-pointer hover:border-gray-700 hover:text-gray-400"
   );
 
-  // --- START: Mobile-specific styles ---
   const mobileBaseStyle = "w-full text-left justify-start py-3 text-base";
   const mobilePrimaryStyle = cn(mobileBaseStyle, primaryButtonStyle);
   const mobileSecondaryStyle = cn(mobileBaseStyle, secondaryButtonStyle);
   const mobileDisabledStyle = cn(mobileBaseStyle, disabledButtonStyle);
-  // --- END: Mobile-specific styles ---
 
-  // --- LOGIC: Handlers for guided navigation ---
+  const handleGuestClick = () => {
+    setLoginModalOpen(true);
+    setIsMobileMenuOpen(false);
+  };
+
   const handleFutureSelfClick = () => {
+    if (!isLoggedIn) return handleGuestClick();
     if (hasPulseCheckData) {
       navigate("/future-questionnaire");
     } else {
@@ -61,10 +63,11 @@ const Header = () => {
       });
       navigate("/pulse-check");
     }
-    setIsMobileMenuOpen(false); // Close mobile menu on navigate
+    setIsMobileMenuOpen(false);
   };
 
   const handleResultsClick = () => {
+    if (!isLoggedIn) return handleGuestClick();
     if (hasPulseCheckData && hasFutureSelfData) {
       navigate("/results");
     } else if (!hasPulseCheckData) {
@@ -81,24 +84,21 @@ const Header = () => {
       });
       navigate("/future-questionnaire");
     }
-    setIsMobileMenuOpen(false); // Close mobile menu on navigate
+    setIsMobileMenuOpen(false);
   };
 
-  const handlePulseCheckClick = () => {
-    navigate("/pulse-check");
-    setIsMobileMenuOpen(false); // Close mobile menu on navigate
-  };
+  // --- REMOVED: The handlePulseCheckClick function is no longer needed. ---
 
-  // --- ADDED: Reusable navigation links component for DRY code ---
   const NavLinks = ({ isMobile = false }) => (
     <>
-      {/* Pulse Check Button */}
+      {/* --- MODIFIED: This is now a <Link> component instead of a <button> --- */}
       <Link
         to="/pulse-check"
-        onClick={isMobile ? handlePulseCheckClick : undefined}
+        onClick={() => setIsMobileMenuOpen(false)} // Closes menu on mobile
         className={cn(
+          "inline-flex items-center justify-center", // Added for proper alignment
           isMobile ? mobileBaseStyle : baseButtonStyle,
-          hasPulseCheckData
+          isLoggedIn && hasPulseCheckData
             ? isMobile
               ? mobileSecondaryStyle
               : secondaryButtonStyle
@@ -107,32 +107,30 @@ const Header = () => {
             : primaryButtonStyle
         )}
       >
-        {hasPulseCheckData ? "Pulse Check" : "Start Pulse Check"}
+        {isLoggedIn && hasPulseCheckData ? "Pulse Check" : "Start Pulse Check"}
       </Link>
 
-      {/* Future Self Button */}
       <button
         onClick={handleFutureSelfClick}
         className={cn(isMobile ? mobileBaseStyle : baseButtonStyle, {
           [isMobile ? mobilePrimaryStyle : primaryButtonStyle]:
-            hasPulseCheckData && !hasFutureSelfData,
+            isLoggedIn && hasPulseCheckData && !hasFutureSelfData,
           [isMobile ? mobileSecondaryStyle : secondaryButtonStyle]:
-            hasPulseCheckData && hasFutureSelfData,
+            isLoggedIn && hasPulseCheckData && hasFutureSelfData,
           [isMobile ? mobileDisabledStyle : disabledButtonStyle]:
-            !hasPulseCheckData,
+            !isLoggedIn || !hasPulseCheckData,
         })}
       >
-        {hasFutureSelfData ? "Future Self" : "Start Future Self"}
+        {isLoggedIn && hasFutureSelfData ? "Future Self" : "Start Future Self"}
       </button>
 
-      {/* Results Button */}
       <button
         onClick={handleResultsClick}
         className={cn(isMobile ? mobileBaseStyle : baseButtonStyle, {
           [isMobile ? mobileSecondaryStyle : secondaryButtonStyle]:
-            hasPulseCheckData && hasFutureSelfData,
+            isLoggedIn && hasPulseCheckData && hasFutureSelfData,
           [isMobile ? mobileDisabledStyle : disabledButtonStyle]:
-            !hasPulseCheckData || !hasFutureSelfData,
+            !isLoggedIn || !hasPulseCheckData || !hasFutureSelfData,
         })}
       >
         Results
@@ -157,14 +155,12 @@ const Header = () => {
             <span>{branding.name}</span>
           </Link>
 
-          {/* --- MODIFIED: Desktop Navigation --- */}
           <nav className="hidden md:flex items-center space-x-4">
-            {isLoggedIn && <NavLinks />}
+            <NavLinks />
           </nav>
         </div>
 
         <div className="flex items-center space-x-4">
-          {/* User profile dropdown or Login button */}
           {isLoggedIn ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -203,24 +199,20 @@ const Header = () => {
             </button>
           )}
 
-          {/* --- ADDED: Hamburger Menu Button for mobile --- */}
-          {isLoggedIn && (
-            <div className="md:hidden">
-              <Button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                variant="ghost"
-                className="h-10 w-10 p-0 text-white hover:text-purple-400"
-              >
-                <Menu className="h-6 w-6" />
-              </Button>
-            </div>
-          )}
+          <div className="md:hidden">
+            <Button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              variant="ghost"
+              className="h-10 w-10 p-0 text-white hover:text-purple-400"
+            >
+              <Menu className="h-6 w-6" />
+            </Button>
+          </div>
         </div>
       </header>
 
-      {/* --- ADDED: Mobile Menu Container --- */}
-      {isMobileMenuOpen && isLoggedIn && (
-        <nav className="absolute top-[92px] left-0 right-0 w-full bg-gray-950 p-4 pb-6 flex flex-col space-y-4 md:hidden z-10 border-b border-gray-800 shadow-lg">
+      {isMobileMenuOpen && (
+        <nav className="absolute top-[92px] left-0 right-0 w-full bg-[#16161a] p-4 pb-6 flex flex-col space-y-4 md:hidden z-10 border-b border-gray-800 shadow-lg">
           <NavLinks isMobile={true} />
         </nav>
       )}
