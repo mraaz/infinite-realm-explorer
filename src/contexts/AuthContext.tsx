@@ -1,3 +1,4 @@
+
 // src/contexts/AuthContext.tsx
 
 import React, { createContext, useState, useContext, useEffect } from "react";
@@ -31,6 +32,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [hasPulseCheckData, setHasPulseCheckData] = useState(false); // ADDED
   const [hasFutureSelfData, setHasFutureSelfData] = useState(false); // ADDED
 
+  const fetchUserStatus = async (token: string, decodedUser: User) => {
+    try {
+      const status = await getUserDataStatus(token);
+      setHasPulseCheckData(status.hasPulseCheckData);
+      setHasFutureSelfData(status.hasFutureSelfData);
+    } catch (error) {
+      console.error("[AuthContext] Failed to fetch user status:", error);
+      // Don't fail the entire auth process if status fetch fails
+      setHasPulseCheckData(false);
+      setHasFutureSelfData(false);
+    }
+  };
+
   useEffect(() => {
     const checkTokenAndFetchStatus = async (token: string) => {
       try {
@@ -39,13 +53,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(decodedUser);
           setAuthToken(token);
           // ADDED: Fetch user status
-          const status = await getUserDataStatus(token);
-          setHasPulseCheckData(status.hasPulseCheckData);
-          setHasFutureSelfData(status.hasFutureSelfData);
+          await fetchUserStatus(token, decodedUser);
         } else {
+          console.log("[AuthContext] Token expired, removing from storage");
           localStorage.removeItem("infinitelife_jwt");
         }
       } catch (error) {
+        console.error("[AuthContext] Error decoding token:", error);
         localStorage.removeItem("infinitelife_jwt");
       } finally {
         setIsLoading(false);
@@ -54,21 +68,56 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const storedToken = localStorage.getItem("infinitelife_jwt");
     if (storedToken) {
+      console.log("[AuthContext] Found stored token, validating...");
       checkTokenAndFetchStatus(storedToken);
     } else {
+      console.log("[AuthContext] No stored token found");
       setIsLoading(false);
     }
   }, []);
 
-  const login = (newToken: string) => {
-    localStorage.setItem("infinitelife_jwt", newToken);
-    window.location.reload();
+  const login = async (newToken: string) => {
+    console.log("[AuthContext] Processing login with new token");
+    
+    try {
+      // Decode and validate the token
+      const decodedUser = jwtDecode<User>(newToken);
+      
+      if (decodedUser.exp * 1000 <= Date.now()) {
+        console.error("[AuthContext] Token is expired");
+        throw new Error("Token is expired");
+      }
+
+      // Store the token
+      localStorage.setItem("infinitelife_jwt", newToken);
+      
+      // Update state immediately
+      setUser(decodedUser);
+      setAuthToken(newToken);
+      
+      // Fetch user status in background
+      await fetchUserStatus(newToken, decodedUser);
+      
+      console.log("[AuthContext] Login successful");
+    } catch (error) {
+      console.error("[AuthContext] Login failed:", error);
+      // Clean up on error
+      localStorage.removeItem("infinitelife_jwt");
+      setUser(null);
+      setAuthToken(null);
+      setHasPulseCheckData(false);
+      setHasFutureSelfData(false);
+      throw error;
+    }
   };
 
   const logout = () => {
+    console.log("[AuthContext] Logging out user");
     localStorage.removeItem("infinitelife_jwt");
     setUser(null);
     setAuthToken(null);
+    setHasPulseCheckData(false);
+    setHasFutureSelfData(false);
     window.location.href = "/";
   };
 

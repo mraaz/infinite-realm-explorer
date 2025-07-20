@@ -1,3 +1,4 @@
+
 // src/components/VideoCenterpiece.tsx
 
 import React, { useState, useEffect, useRef } from "react";
@@ -11,7 +12,8 @@ const VideoCenterpiece = () => {
   const [videoSrc, setVideoSrc] = useState(videoSD);
 
   useEffect(() => {
-    const connection = navigator.connection;
+    // Fix TypeScript error by properly typing the connection
+    const connection = (navigator as any).connection;
     if (connection) {
       const isSlowConnection =
         connection.saveData ||
@@ -23,7 +25,7 @@ const VideoCenterpiece = () => {
   }, []);
 
   // --- New logic for pausing the video when it's not visible ---
-  const videoRef = useRef(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const video = videoRef.current;
