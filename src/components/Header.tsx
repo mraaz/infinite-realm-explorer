@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { User } from "lucide-react";
+import { User, Menu } from "lucide-react"; // --- MODIFIED: Imported Menu icon
 import SocialLoginModal from "@/components/SocialLoginModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 
 const Header = () => {
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // --- ADDED: State for mobile menu
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isLoggedIn, logout, hasPulseCheckData, hasFutureSelfData } =
@@ -41,6 +42,13 @@ const Header = () => {
     "font-medium text-gray-500 border border-gray-800 bg-gray-800/50 cursor-pointer hover:border-gray-700 hover:text-gray-400"
   );
 
+  // --- START: Mobile-specific styles ---
+  const mobileBaseStyle = "w-full text-left justify-start py-3 text-base";
+  const mobilePrimaryStyle = cn(mobileBaseStyle, primaryButtonStyle);
+  const mobileSecondaryStyle = cn(mobileBaseStyle, secondaryButtonStyle);
+  const mobileDisabledStyle = cn(mobileBaseStyle, disabledButtonStyle);
+  // --- END: Mobile-specific styles ---
+
   // --- LOGIC: Handlers for guided navigation ---
   const handleFutureSelfClick = () => {
     if (hasPulseCheckData) {
@@ -53,6 +61,7 @@ const Header = () => {
       });
       navigate("/pulse-check");
     }
+    setIsMobileMenuOpen(false); // Close mobile menu on navigate
   };
 
   const handleResultsClick = () => {
@@ -72,14 +81,72 @@ const Header = () => {
       });
       navigate("/future-questionnaire");
     }
+    setIsMobileMenuOpen(false); // Close mobile menu on navigate
   };
+
+  const handlePulseCheckClick = () => {
+    navigate("/pulse-check");
+    setIsMobileMenuOpen(false); // Close mobile menu on navigate
+  };
+
+  // --- ADDED: Reusable navigation links component for DRY code ---
+  const NavLinks = ({ isMobile = false }) => (
+    <>
+      {/* Pulse Check Button */}
+      <Link
+        to="/pulse-check"
+        onClick={isMobile ? handlePulseCheckClick : undefined}
+        className={cn(
+          isMobile ? mobileBaseStyle : baseButtonStyle,
+          hasPulseCheckData
+            ? isMobile
+              ? mobileSecondaryStyle
+              : secondaryButtonStyle
+            : isMobile
+            ? mobilePrimaryStyle
+            : primaryButtonStyle
+        )}
+      >
+        {hasPulseCheckData ? "Pulse Check" : "Start Pulse Check"}
+      </Link>
+
+      {/* Future Self Button */}
+      <button
+        onClick={handleFutureSelfClick}
+        className={cn(isMobile ? mobileBaseStyle : baseButtonStyle, {
+          [isMobile ? mobilePrimaryStyle : primaryButtonStyle]:
+            hasPulseCheckData && !hasFutureSelfData,
+          [isMobile ? mobileSecondaryStyle : secondaryButtonStyle]:
+            hasPulseCheckData && hasFutureSelfData,
+          [isMobile ? mobileDisabledStyle : disabledButtonStyle]:
+            !hasPulseCheckData,
+        })}
+      >
+        {hasFutureSelfData ? "Future Self" : "Start Future Self"}
+      </button>
+
+      {/* Results Button */}
+      <button
+        onClick={handleResultsClick}
+        className={cn(isMobile ? mobileBaseStyle : baseButtonStyle, {
+          [isMobile ? mobileSecondaryStyle : secondaryButtonStyle]:
+            hasPulseCheckData && hasFutureSelfData,
+          [isMobile ? mobileDisabledStyle : disabledButtonStyle]:
+            !hasPulseCheckData || !hasFutureSelfData,
+        })}
+      >
+        Results
+      </button>
+    </>
+  );
 
   return (
     <>
-      <header className="py-6 px-6 md:px-10 flex justify-between items-center">
+      <header className="relative py-6 px-6 md:px-10 flex justify-between items-center z-20 bg-gray-950">
         <div className="flex items-center space-x-8">
           <Link
             to="/"
+            onClick={() => setIsMobileMenuOpen(false)}
             className="flex items-center space-x-2 text-xl font-bold text-white hover:text-purple-400 transition-colors duration-200"
           >
             <img
@@ -90,88 +157,74 @@ const Header = () => {
             <span>{branding.name}</span>
           </Link>
 
+          {/* --- MODIFIED: Desktop Navigation --- */}
           <nav className="hidden md:flex items-center space-x-4">
-            {isLoggedIn && (
-              <>
-                {/* Pulse Check Button - Always links directly */}
-                <Link
-                  to="/pulse-check"
-                  className={cn(
-                    hasPulseCheckData
-                      ? secondaryButtonStyle
-                      : primaryButtonStyle
-                  )}
-                >
-                  {hasPulseCheckData ? "Pulse Check" : "Start Pulse Check"}
-                </Link>
-
-                {/* Future Self Button - Uses guided logic */}
-                <button
-                  onClick={handleFutureSelfClick}
-                  className={cn({
-                    [primaryButtonStyle]:
-                      hasPulseCheckData && !hasFutureSelfData,
-                    [secondaryButtonStyle]:
-                      hasPulseCheckData && hasFutureSelfData,
-                    [disabledButtonStyle]: !hasPulseCheckData,
-                  })}
-                >
-                  {hasFutureSelfData ? "Future Self" : "Start Future Self"}
-                </button>
-
-                {/* Results Button - Uses guided logic */}
-                <button
-                  onClick={handleResultsClick}
-                  className={cn({
-                    [secondaryButtonStyle]:
-                      hasPulseCheckData && hasFutureSelfData,
-                    [disabledButtonStyle]:
-                      !hasPulseCheckData || !hasFutureSelfData,
-                  })}
-                >
-                  Results
-                </button>
-              </>
-            )}
+            {isLoggedIn && <NavLinks />}
           </nav>
         </div>
 
-        {/* User profile dropdown or Login button */}
-        {isLoggedIn ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="h-10 w-10 rounded-full border border-gray-600 hover:border-purple-500 text-white hover:bg-gray-800 transition-colors duration-200"
+        <div className="flex items-center space-x-4">
+          {/* User profile dropdown or Login button */}
+          {isLoggedIn ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="h-10 w-10 rounded-full border border-gray-600 hover:border-purple-500 text-white hover:bg-gray-800 transition-colors duration-200"
+                >
+                  <User className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-56 bg-gray-900 border-gray-700"
               >
-                <User className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="w-56 bg-gray-900 border-gray-700"
+                <DropdownMenuLabel className="text-gray-300">
+                  {user?.name || user?.email || "User"}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-gray-700" />
+                <DropdownMenuItem
+                  onClick={() => {
+                    logout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="text-gray-300 hover:bg-gray-800 hover:text-red-400 cursor-pointer"
+                >
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <button
+              onClick={() => setLoginModalOpen(true)}
+              className="border border-gray-600 hover:border-purple-500 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
             >
-              <DropdownMenuLabel className="text-gray-300">
-                {user?.name || user?.email || "User"}
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-gray-700" />
-              <DropdownMenuItem
-                onClick={logout}
-                className="text-gray-300 hover:bg-gray-800 hover:text-red-400 cursor-pointer"
+              Login
+            </button>
+          )}
+
+          {/* --- ADDED: Hamburger Menu Button for mobile --- */}
+          {isLoggedIn && (
+            <div className="md:hidden">
+              <Button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                variant="ghost"
+                className="h-10 w-10 p-0 text-white hover:text-purple-400"
               >
-                Logout
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <button
-            onClick={() => setLoginModalOpen(true)}
-            className="border border-gray-600 hover:border-purple-500 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
-          >
-            Login
-          </button>
-        )}
+                <Menu className="h-6 w-6" />
+              </Button>
+            </div>
+          )}
+        </div>
       </header>
+
+      {/* --- ADDED: Mobile Menu Container --- */}
+      {isMobileMenuOpen && isLoggedIn && (
+        <nav className="absolute top-[92px] left-0 right-0 w-full bg-gray-950 p-4 pb-6 flex flex-col space-y-4 md:hidden z-10 border-b border-gray-800 shadow-lg">
+          <NavLinks isMobile={true} />
+        </nav>
+      )}
+
       <SocialLoginModal
         open={loginModalOpen}
         onOpenChange={setLoginModalOpen}
