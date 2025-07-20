@@ -61,7 +61,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const login = (newToken: string) => {
-    localStorage.setItem("infinitelife_jwt", newToken);    
+    localStorage.setItem("infinitelife_jwt", newToken);
+    window.location.reload();
   };
 
   const logout = () => {
