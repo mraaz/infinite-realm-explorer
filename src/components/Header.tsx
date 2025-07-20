@@ -142,7 +142,7 @@ const Header = () => {
 
   return (
     <>
-      <header className="relative py-6 px-6 md:px-10 flex justify-between items-center z-20 bg-gray-950">
+      <header className="relative py-6 px-6 md:px-10 flex justify-between items-center z-20 bg-[#16161a]">
         <div className="flex items-center space-x-8">
           <Link
             to="/"
