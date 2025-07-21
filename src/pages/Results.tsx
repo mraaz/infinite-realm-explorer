@@ -51,31 +51,37 @@ const mockInsights: Insight[] = [
   },
 ];
 
-// --- CORRECTED HELPER FUNCTION ---
-// FIX: This function is now correctly defined before the Results component.
+// --- REFACTORED HELPER FUNCTION ---
 const formatScoresForChart = (
   pulseState: PulseCheckStatePayload | null,
   questionnaireState: QuestionnaireStatePayload | null
 ) => {
-  // FIX: Changed 'finance' (singular) to 'finances' (plural) to match the chart component's expected props.
   const progress = {
     current: { health: 0, career: 0, finances: 0, connections: 0 },
     future: { health: 0, career: 0, finances: 0, connections: 0 },
   };
 
-  // Populate "Current Self" from Pulse Check data
-  if (pulseState) {
-    progress.current.health = pulseState.healthScore ?? 0;
-    progress.current.career = pulseState.careerScore ?? 0;
-    progress.current.finances = pulseState.financesScore ?? 0;
-    progress.current.connections = pulseState.connectionsScore ?? 0;
-  }
+  // --- 1. Data Normalization ---
+  const cleanPulseScores = {
+    health: pulseState?.healthScore ?? 0,
+    career: pulseState?.careerScore ?? 0,
+    finances: pulseState?.financesScore ?? 0,
+    connections: pulseState?.connectionsScore ?? 0,
+  };
 
-  // Populate "Future Self" with combined logic
-  const futureScores = questionnaireState?.answers?.scores;
+  const cleanFutureScores = {
+    health: questionnaireState?.answers?.scores?.Health ?? 0,
+    career: questionnaireState?.answers?.scores?.Career ?? 0,
+    finances: questionnaireState?.answers?.scores?.Financials ?? 0,
+    connections: questionnaireState?.answers?.scores?.Connections ?? 0,
+  };
+
+  // --- 2. Main Logic (using only clean data) ---
+
+  progress.current = cleanPulseScores;
+
   const priorities = questionnaireState?.priorities;
-
-  if (futureScores && pulseState && priorities?.maintenance) {
+  if (priorities?.maintenance) {
     const allPillars: (keyof typeof progress.future)[] = [
       "health",
       "career",
@@ -84,43 +90,31 @@ const formatScoresForChart = (
     ];
 
     allPillars.forEach((pillar) => {
-      // The name used in the priorities array is Capitalized and plural 'Finances'
-      const priorityPillarName =
-        pillar.charAt(0).toUpperCase() + pillar.slice(1);
+      const isMaintenance = priorities.maintenance.some(
+        (p) =>
+          p.toLowerCase() === pillar ||
+          (p === "Financials" && pillar === "finances")
+      );
 
-      if (priorities.maintenance.includes(priorityPillarName as any)) {
-        // MAINTENANCE: Use Pulse Check score
-        const pulseKey = `${pillar}Score` as keyof PulseCheckStatePayload;
-        progress.future[pillar] = (pulseState[pulseKey] as number) ?? 0;
+      if (isMaintenance) {
+        progress.future[pillar] = cleanPulseScores[pillar];
       } else {
-        // MAIN/SECONDARY FOCUS: Use Future Self score
-        // The name in the scores object is Capitalized and 'Financials'
-        const scorePillarName =
-          pillar === "finances" ? "Financials" : priorityPillarName;
+        // FIX: Removed the division by 2 to use the actual score
         progress.future[pillar] = Math.min(
-          Math.round((futureScores[scorePillarName] || 0) / 2),
+          Math.round(cleanFutureScores[pillar]),
           100
         );
       }
     });
-  } else if (futureScores) {
-    // Fallback logic
-    progress.future.health = Math.min(
-      Math.round((futureScores.Health || 0) / 2),
-      100
-    );
-    progress.future.career = Math.min(
-      Math.round((futureScores.Career || 0) / 2),
-      100
-    );
-    progress.future.finances = Math.min(
-      Math.round((futureScores.Financials || 0) / 2),
-      100
-    );
-    progress.future.connections = Math.min(
-      Math.round((futureScores.Connections || 0) / 2),
-      100
-    );
+  } else {
+    // Fallback if priorities object is missing
+    progress.future = {
+      // FIX: Removed the division by 2 to use the actual score
+      health: Math.min(Math.round(cleanFutureScores.health), 100),
+      career: Math.min(Math.round(cleanFutureScores.career), 100),
+      finances: Math.min(Math.round(cleanFutureScores.finances), 100),
+      connections: Math.min(Math.round(cleanFutureScores.connections), 100),
+    };
   }
 
   return progress;
@@ -191,7 +185,7 @@ const Results = () => {
     return <div className="text-center py-20 text-red-500">{error}</div>;
 
   return (
-    <div className="bg-[#18181b] min-h-screen text-white">
+    <div className="bg-[#1818b] min-h-screen text-white">
       <Header />
       <div className="container mx-auto px-4 py-8">
         <ResultsHeader />
