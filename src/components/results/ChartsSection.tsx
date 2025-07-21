@@ -1,48 +1,46 @@
-
-import ChartCard from './ChartCard';
-import { PillarProgress } from '@/components/NewQuadrantChart';
+import {
+  PulsingRadarChart,
+  PillarProgress,
+} from "@/components/PulsingRadarChart";
+import { Button } from "@/components/ui/button"; // Assuming you have a shadcn/ui Button component
 
 interface ChartsSectionProps {
   currentProgress: PillarProgress;
   futureProgress: PillarProgress;
-  answers: Record<string, any>;
   onPillarClick: (pillar: string) => void;
   activePillar?: string;
-  onRetakeCurrent: () => void;
   onStartFutureQuestionnaire: () => void;
 }
 
 const ChartsSection = ({
   currentProgress,
   futureProgress,
-  answers,
   onPillarClick,
   activePillar,
-  onRetakeCurrent,
-  onStartFutureQuestionnaire,
 }: ChartsSectionProps) => {
   return (
     <section className="grid grid-cols-1 xl:grid-cols-2 gap-6 sm:gap-8 mb-12 sm:mb-16">
-      <ChartCard
-        title="Your Current Self"
-        progress={currentProgress}
-        answers={answers}
-        onPillarClick={onPillarClick}
-        activePillar={activePillar}
-        onRetake={onRetakeCurrent}
-        retakeLabel="Retake"
-        isFuture={false}
-      />
-      <ChartCard
-        title="Your Future Self"
-        progress={futureProgress}
-        answers={answers}
-        onPillarClick={onPillarClick}
-        activePillar={activePillar}
-        isFuture={true}
-        onRetake={onStartFutureQuestionnaire}
-        retakeLabel="Retake"
-      />
+      {/* Chart for "Current Self" */}
+      <div className="flex flex-col items-center gap-4">
+        <PulsingRadarChart
+          title="Your Current Self"
+          progress={currentProgress}
+          onPillarClick={onPillarClick}
+          activePillar={activePillar}
+          className="w-full"
+        />
+      </div>
+
+      {/* Chart for "Future Self" */}
+      <div className="flex flex-col items-center gap-4">
+        <PulsingRadarChart
+          title="Your Future Self"
+          progress={futureProgress}
+          onPillarClick={onPillarClick}
+          activePillar={activePillar}
+          className="w-full"
+        />
+      </div>
     </section>
   );
 };
