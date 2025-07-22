@@ -1,5 +1,9 @@
 import { create } from "zustand";
-import { generateSummary, SummaryResponse } from "@/services/apiService";
+import {
+  generateSummary,
+  getSummary,
+  SummaryResponse,
+} from "@/services/apiService";
 
 // Define the shape of a single question
 export interface Question {
@@ -37,11 +41,9 @@ interface QuestionnaireState {
   finalScores: Record<string, any> | null;
   pillarProgress: PillarProgress;
   currentQuestionIndex: number;
-  // --- NEW STATE PROPERTIES ---
   isGeneratingSummary: boolean;
   summary: SummaryResponse | null;
   summaryError: string | null;
-  // --- ACTIONS ---
   initializeQuestionnaire: (authToken?: string) => Promise<void>;
   submitAnswer: (
     questionId: string,
@@ -50,6 +52,7 @@ interface QuestionnaireState {
   ) => Promise<void>;
   previousQuestion: (authToken?: string) => Promise<void>;
   saveGuestProgressAfterLogin: (authToken: string) => Promise<void>;
+  fetchSummary: (authToken: string) => Promise<void>;
 }
 
 // Use the API Gateway URL
@@ -58,7 +61,7 @@ const API_BASE_URL =
 
 export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
   (set, get) => ({
-    // --- Initial State ---
+    // Initial State
     currentQuestion: null,
     answers: {},
     isLoading: true,
@@ -66,15 +69,13 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
     finalScores: null,
     pillarProgress: { career: 0, finances: 0, health: 0, connections: 0 },
     currentQuestionIndex: 0,
-    // --- NEW INITIAL STATE ---
     isGeneratingSummary: false,
     summary: null,
     summaryError: null,
 
-    // --- ACTIONS ---
+    // ACTIONS
 
     initializeQuestionnaire: async (authToken) => {
-      // This function remains unchanged from your original file
       if (authToken) {
         set({ isLoading: true });
         try {
@@ -138,16 +139,14 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
         const data = await response.json();
 
         if (data.status === "completed") {
-          // --- MODIFIED COMPLETION LOGIC ---
           set({
             pillarProgress: data.pillarProgress,
             finalScores: data.finalScores,
-            isLoading: false, // Stop the question loading indicator
-            isGeneratingSummary: true, // Start the summary loading indicator
-            summaryError: null, // Reset previous errors
+            isLoading: false,
+            isGeneratingSummary: true,
+            summaryError: null,
           });
 
-          // Now, call the summary generation endpoint. This requires a token.
           if (authToken) {
             try {
               const summaryData = await generateSummary(
@@ -156,7 +155,7 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
               );
               set({
                 summary: summaryData,
-                isCompleted: true, // Mark as fully completed
+                isCompleted: true,
                 isGeneratingSummary: false,
               });
             } catch (summaryError) {
@@ -167,8 +166,6 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
               });
             }
           } else {
-            // This case handles if a guest somehow completes the flow.
-            // We can't generate a summary without being logged in.
             set({
               summaryError:
                 "You must be logged in to generate a personalized summary.",
@@ -176,7 +173,6 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
             });
           }
         } else {
-          // This is the normal flow for non-final questions
           set({
             currentQuestion: data.nextQuestion,
             pillarProgress: data.pillarProgress,
@@ -191,7 +187,6 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
     },
 
     previousQuestion: async (authToken) => {
-      // This function remains unchanged from your original file
       const { currentQuestion, answers, currentQuestionIndex } = get();
       if (!currentQuestion || currentQuestionIndex === 0) return;
 
@@ -232,7 +227,6 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
     },
 
     saveGuestProgressAfterLogin: async (authToken: string) => {
-      // This function remains unchanged from your original file
       const answers = get().answers;
       if (Object.keys(answers).length === 0) return;
 
@@ -248,6 +242,19 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
         get().initializeQuestionnaire(authToken);
       } catch (error) {
         console.error("Failed to save guest progress:", error);
+      }
+    },
+
+    fetchSummary: async (authToken: string) => {
+      if (get().summary) {
+        return;
+      }
+      set({ isLoading: true, summaryError: null });
+      try {
+        const summaryData = await getSummary(authToken);
+        set({ summary: summaryData, isLoading: false });
+      } catch (error) {
+        set({ summaryError: (error as Error).message, isLoading: false });
       }
     },
   })

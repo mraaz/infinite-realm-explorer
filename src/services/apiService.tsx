@@ -250,7 +250,7 @@ export const generateSummary = async (
   answers: Record<string, any>,
   token: string
 ): Promise<SummaryResponse> => {
-  console.log("Sending these answers to the backend:", { answers });
+  // ... function body is unchanged
   const response = await fetch(`${API_BASE_URL}/generate-summary`, {
     method: "POST",
     headers: {
@@ -259,12 +259,34 @@ export const generateSummary = async (
     },
     body: JSON.stringify({ answers }),
   });
+  if (!response.ok) {
+    throw new Error("Failed to generate summary.");
+  }
+  return response.json();
+};
+
+/**
+ * --- NEW FUNCTION ---
+ * Fetches an existing self-discovery summary from the database.
+ * @param token - The user's JWT authorization token.
+ * @returns A promise that resolves to the saved summary object.
+ */
+export const getSummary = async (token: string): Promise<SummaryResponse> => {
+  const response = await fetch(`${API_BASE_URL}/generate-summary`, {
+    method: "GET", // This is a GET request
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({
-      message: "Failed to generate summary. The server returned an error.",
-    }));
-    throw new Error(errorData.message || "Failed to generate summary.");
+    if (response.status === 404) {
+      throw new Error(
+        "No summary found. Please complete the questionnaire first."
+      );
+    }
+    throw new Error("Failed to fetch summary.");
   }
 
   return response.json();

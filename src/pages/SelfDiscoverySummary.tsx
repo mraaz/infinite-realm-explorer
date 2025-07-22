@@ -1,8 +1,7 @@
-// src/pages/SelfDiscoverySummary.tsx
-
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOnboardingQuestionnaireStore } from "@/store/onboardingQuestionnaireStore";
+import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +14,6 @@ import {
   Users,
 } from "lucide-react";
 
-// Helper to get an icon for each pillar
 const pillarIcons: { [key: string]: React.ReactNode } = {
   Career: <Target className="h-6 w-6 text-purple-400" />,
   Finances: <TrendingUp className="h-6 w-6 text-blue-400" />,
@@ -25,27 +23,44 @@ const pillarIcons: { [key: string]: React.ReactNode } = {
 
 const SelfDiscoverySummary = () => {
   const navigate = useNavigate();
-  const { summary, isGeneratingSummary, summaryError } =
-    useOnboardingQuestionnaireStore();
+  const { authToken } = useAuth();
+
+  const {
+    summary,
+    isLoading,
+    isGeneratingSummary,
+    summaryError,
+    fetchSummary,
+  } = useOnboardingQuestionnaireStore();
+
+  useEffect(() => {
+    if (!summary && authToken) {
+      fetchSummary(authToken);
+    }
+  }, [authToken, summary, fetchSummary]);
 
   const handleDone = () => {
-    navigate("/results"); // Navigate to the main results page after viewing the summary
+    navigate("/results");
   };
 
-  // Loading State
-  if (isGeneratingSummary) {
+  if (isLoading || isGeneratingSummary) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#16161a] text-white p-4">
         <Loader2 className="h-12 w-12 animate-spin text-purple-500 mb-6" />
-        <h1 className="text-3xl font-bold mb-2">Crafting your summary...</h1>
+        <h1 className="text-3xl font-bold mb-2">
+          {isGeneratingSummary
+            ? "Crafting your summary..."
+            : "Loading your summary..."}
+        </h1>
         <p className="text-lg text-gray-400">
-          Analysing your responses to create personalised insights.
+          {isGeneratingSummary
+            ? "Analysing your responses..."
+            : "Please wait a moment."}
         </p>
       </div>
     );
   }
 
-  // Error State
   if (summaryError) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#16161a] text-white p-4 text-center">
@@ -53,13 +68,12 @@ const SelfDiscoverySummary = () => {
         <h1 className="text-3xl font-bold mb-2">Something went wrong</h1>
         <p className="text-lg text-gray-400 mb-8 max-w-md">{summaryError}</p>
         <Button onClick={() => navigate("/onboarding-questionnaire")}>
-          Try Again
+          Start Questionnaire
         </Button>
       </div>
     );
   }
 
-  // Success State
   if (summary) {
     return (
       <div className="bg-[#16161a] min-h-screen text-white">
@@ -73,7 +87,6 @@ const SelfDiscoverySummary = () => {
               {summary.overallSummary}
             </p>
 
-            {/* Key Insights */}
             <div className="mb-12">
               <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
                 <Sparkles className="h-8 w-8 text-yellow-400" /> Key Insights
@@ -93,7 +106,6 @@ const SelfDiscoverySummary = () => {
               </div>
             </div>
 
-            {/* Actionable Steps */}
             <div>
               <h2 className="text-3xl font-bold mb-6">Your Actionable Steps</h2>
               <div className="grid md:grid-cols-2 gap-6">
@@ -139,7 +151,6 @@ const SelfDiscoverySummary = () => {
     );
   }
 
-  // Fallback if the user lands here directly
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#16161a] text-white p-4">
       <h1 className="text-2xl">No summary to display.</h1>
