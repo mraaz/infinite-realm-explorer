@@ -2,7 +2,7 @@
 
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
-import { getUserDataStatus } from "@/services/apiService"; // RE-ADDED: Import the service
+import { getUserDataStatus, getUserSettings } from "@/services/apiService";
 import PageLoading from "@/components/ui/page-loading";
 
 interface User {
@@ -16,8 +16,9 @@ interface AuthContextType {
   user: User | null;
   authToken: string | null;
   isLoggedIn: boolean;
-  hasPulseCheckData: boolean; // ADDED: Pulse Check status
-  hasFutureSelfData: boolean; // ADDED: Future Self status
+  hasPulseCheckData: boolean;
+  hasFutureSelfData: boolean;
+  completedFutureQuestionnaire: boolean;
   login: (token: string) => void;
   logout: () => void;
 }
@@ -28,8 +29,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasPulseCheckData, setHasPulseCheckData] = useState(false); // ADDED
-  const [hasFutureSelfData, setHasFutureSelfData] = useState(false); // ADDED
+  const [hasPulseCheckData, setHasPulseCheckData] = useState(false);
+  const [hasFutureSelfData, setHasFutureSelfData] = useState(false);
+  const [completedFutureQuestionnaire, setCompletedFutureQuestionnaire] =
+    useState(false);
 
   useEffect(() => {
     const checkTokenAndFetchStatus = async (token: string) => {
@@ -38,14 +41,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (decodedUser.exp * 1000 > Date.now()) {
           setUser(decodedUser);
           setAuthToken(token);
-          // ADDED: Fetch user status
-          const status = await getUserDataStatus(token);
-          setHasPulseCheckData(status.hasPulseCheckData);
-          setHasFutureSelfData(status.hasFutureSelfData);
+
+          const [statusRes, settingsRes] = await Promise.all([
+            getUserDataStatus(token),
+            getUserSettings(token),
+          ]);
+
+          setHasPulseCheckData(statusRes.hasPulseCheckData);
+          setHasFutureSelfData(statusRes.hasFutureSelfData);
+          setCompletedFutureQuestionnaire(
+            settingsRes.completedFutureQuestionnaire
+          );
         } else {
           localStorage.removeItem("infinitelife_jwt");
         }
       } catch (error) {
+        console.error("Auth context initialization failed:", error);
         localStorage.removeItem("infinitelife_jwt");
       } finally {
         setIsLoading(false);
@@ -80,8 +91,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     user,
     authToken,
     isLoggedIn: !!user,
-    hasPulseCheckData, // ADDED
-    hasFutureSelfData, // ADDED
+    hasPulseCheckData,
+    hasFutureSelfData,
+    completedFutureQuestionnaire,
     login,
     logout,
   };

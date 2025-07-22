@@ -17,8 +17,8 @@ import ResultsHeader from "@/components/results/ResultsHeader";
 import ChartsSection from "@/components/results/ChartsSection";
 import InsightSynthesis from "@/components/results/InsightSynthesis";
 import ResultsFooter from "@/components/results/ResultsFooter";
-import PdfFooter from "@/components/results/PdfFooter";
 import PageLoading from "@/components/ui/page-loading";
+import { X } from "lucide-react"; // For the modal close icon
 
 // --- Type Imports ---
 import { PillarProgress } from "@/components/NewQuadrantChart";
@@ -51,7 +51,7 @@ const mockInsights: Insight[] = [
   },
 ];
 
-// --- REFACTORED HELPER FUNCTION ---
+// --- Helper function for chart data ---
 const formatScoresForChart = (
   pulseState: PulseCheckStatePayload | null,
   questionnaireState: QuestionnaireStatePayload | null
@@ -61,7 +61,6 @@ const formatScoresForChart = (
     future: { health: 0, career: 0, finances: 0, connections: 0 },
   };
 
-  // --- 1. Data Normalization ---
   const cleanPulseScores = {
     health: pulseState?.healthScore ?? 0,
     career: pulseState?.careerScore ?? 0,
@@ -75,8 +74,6 @@ const formatScoresForChart = (
     finances: questionnaireState?.answers?.scores?.Financials ?? 0,
     connections: questionnaireState?.answers?.scores?.Connections ?? 0,
   };
-
-  // --- 2. Main Logic (using only clean data) ---
 
   progress.current = cleanPulseScores;
 
@@ -99,7 +96,6 @@ const formatScoresForChart = (
       if (isMaintenance) {
         progress.future[pillar] = cleanPulseScores[pillar];
       } else {
-        // FIX: Removed the division by 2 to use the actual score
         progress.future[pillar] = Math.min(
           Math.round(cleanFutureScores[pillar]),
           100
@@ -107,9 +103,7 @@ const formatScoresForChart = (
       }
     });
   } else {
-    // Fallback if priorities object is missing
     progress.future = {
-      // FIX: Removed the division by 2 to use the actual score
       health: Math.min(Math.round(cleanFutureScores.health), 100),
       career: Math.min(Math.round(cleanFutureScores.career), 100),
       finances: Math.min(Math.round(cleanFutureScores.finances), 100),
@@ -118,6 +112,72 @@ const formatScoresForChart = (
   }
 
   return progress;
+};
+
+// --- MERGED: SelfDiscoverySurvey Component with your text and my responsive classes ---
+const SelfDiscoverySurvey = ({
+  onStartClick,
+}: {
+  onStartClick: () => void;
+}) => (
+  <section className="mb-16 text-center bg-gray-800/20 border border-gray-700 rounded-lg p-4 sm:p-8">
+    <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+      Self-discovery survey within 10 mins
+    </h2>
+    <p className="text-base sm:text-lg text-gray-400 mb-6">
+      Answer a meaningful questions about your goals and values.
+      <br /> We’ll use it to create a tailored path forward — just for you.
+    </p>
+    <button
+      onClick={onStartClick}
+      className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-5 sm:py-3 sm:px-6 rounded-lg transition-colors duration-300 text-base sm:text-lg"
+    >
+      Start your journey!
+    </button>
+  </section>
+);
+
+// --- MERGED: SurveyModal Component with your text and my responsive classes ---
+const SurveyModal = ({
+  isOpen,
+  onClose,
+  onEngage,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onEngage: () => void;
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 px-4">
+      <div className="bg-[#1a1a1a] border border-gray-700 rounded-lg shadow-xl p-6 sm:p-8 max-w-md w-full relative">
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 text-gray-400 hover:text-white"
+        >
+          <X size={24} />
+        </button>
+        <h3 className="text-xl sm:text-2xl font-bold text-white mb-4">
+          Settle in, we're about to start....
+        </h3>
+        <p className="text-gray-300 mb-6 sm:mb-8 text-sm sm:text-base">
+          Each step auto-saves.
+          <br />
+          Try not to overthink the questions, your first response is often your
+          truest.
+          <br />
+          Good luck!
+        </p>
+        <button
+          onClick={onEngage}
+          className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-300 text-base"
+        >
+          Engage
+        </button>
+      </div>
+    </div>
+  );
 };
 
 const Results = () => {
@@ -129,7 +189,9 @@ const Results = () => {
   const [error, setError] = useState<string | null>(null);
   const [activePillar, setActivePillar] = useState<string | undefined>();
 
-  const { authToken, isLoggedIn } = useAuth();
+  const [isSurveyModalOpen, setSurveyModalOpen] = useState(false);
+
+  const { authToken, isLoggedIn, completedFutureQuestionnaire } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -175,8 +237,13 @@ const Results = () => {
   };
 
   const handleRetake = (type: "current" | "future") => {
-    const path = type === "current" ? "/pulse-check" : "/future-questionnaire";
+    const path =
+      type === "current" ? "/pulse-check" : "/onboarding-questionnaire";
     navigate(path);
+  };
+
+  const handleEngageClick = () => {
+    navigate("/onboarding-questionnaire");
   };
 
   if (isLoading) return <PageLoading />;
@@ -185,11 +252,11 @@ const Results = () => {
     return <div className="text-center py-20 text-red-500">{error}</div>;
 
   return (
-    <div className="bg-[#1818b] min-h-screen text-white">
+    <div className="bg-[#18181b] min-h-screen text-white">
       <Header />
       <div className="container mx-auto px-4 py-8">
-        <ResultsHeader />
         <main>
+          <ResultsHeader />
           <ChartsSection
             currentProgress={chartData.current as PillarProgress}
             futureProgress={chartData.future as PillarProgress}
@@ -199,11 +266,23 @@ const Results = () => {
             onRetakeCurrent={() => handleRetake("current")}
             onStartFutureQuestionnaire={() => handleRetake("future")}
           />
-          <InsightSynthesis insights={mockInsights} />
+
+          {completedFutureQuestionnaire ? (
+            <InsightSynthesis insights={mockInsights} />
+          ) : (
+            <SelfDiscoverySurvey
+              onStartClick={() => setSurveyModalOpen(true)}
+            />
+          )}
         </main>
         <ResultsFooter />
-        <PdfFooter />
       </div>
+
+      <SurveyModal
+        isOpen={isSurveyModalOpen}
+        onClose={() => setSurveyModalOpen(false)}
+        onEngage={handleEngageClick}
+      />
     </div>
   );
 };

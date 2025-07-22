@@ -55,6 +55,20 @@ export interface PulseCheckStatePayload {
   createdAt: string;
 }
 
+export interface SummaryResponse {
+  title: string;
+  overallSummary: string;
+  keyInsights: {
+    title: string;
+    description: string;
+  }[];
+  actionableSteps: {
+    pillar: string;
+    recommendation: string;
+    firstStep: string;
+  }[];
+}
+
 const API_BASE_URL =
   "https://ffwkwcix01.execute-api.us-east-1.amazonaws.com/prod";
 
@@ -199,4 +213,59 @@ export const getUserDataStatus = async (token: string) => {
     console.error("Error fetching user data status:", error);
     return { hasPulseCheckData: false, hasFutureSelfData: false };
   }
+};
+
+/**
+ * Fetches user-specific settings, like whether they have completed the future self questionnaire.
+ * This is an authenticated endpoint.
+ * @param token - The user's JWT authorization token.
+ * @returns An object containing the user's settings.
+ */
+export const getUserSettings = async (
+  token: string
+): Promise<{ completedFutureQuestionnaire: boolean }> => {
+  const response = await fetch(`${API_BASE_URL}/user-settings`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    // Throws an error that can be caught by the calling function
+    throw new Error("Failed to fetch user settings");
+  }
+
+  return response.json();
+};
+
+/**
+ * Sends the completed questionnaire answers to the backend to generate a summary.
+ * @param answers - The user's complete set of answers.
+ * @param token - The user's JWT authorization token.
+ * @returns A promise that resolves to the generated summary object.
+ */
+export const generateSummary = async (
+  answers: Record<string, any>,
+  token: string
+): Promise<SummaryResponse> => {
+  console.log("Sending these answers to the backend:", { answers });
+  const response = await fetch(`${API_BASE_URL}/generate-summary`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ answers }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({
+      message: "Failed to generate summary. The server returned an error.",
+    }));
+    throw new Error(errorData.message || "Failed to generate summary.");
+  }
+
+  return response.json();
 };

@@ -1,3 +1,5 @@
+// src/pages/OnboardingQuestionnaire.tsx
+
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -7,6 +9,7 @@ import OverallProgressBar from "@/components/onboarding-questionnaire/OverallPro
 import { useOnboardingQuestionnaireStore } from "@/store/onboardingQuestionnaireStore";
 import { useMobileRings } from "@/hooks/use-mobile-rings";
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
 const getAuthToken = () => localStorage.getItem("infinitelife_jwt");
 
@@ -14,12 +17,13 @@ const OnboardingQuestionnaire = () => {
   const navigate = useNavigate();
   const { isMobile, isExpanded } = useMobileRings();
 
-  // Select state from the store
+  // Select state from the store, including the new summary-related flags
   const {
     currentQuestion,
     answers,
     isLoading,
     isCompleted,
+    isGeneratingSummary,
     initializeQuestionnaire,
     submitAnswer,
     previousQuestion,
@@ -37,10 +41,7 @@ const OnboardingQuestionnaire = () => {
 
   useEffect(() => {
     if (isCompleted) {
-      const redirectTimeout = setTimeout(() => {
-        navigate("/results");
-      }, 2000);
-      return () => clearTimeout(redirectTimeout);
+      navigate("/self-discovery-summary");
     }
   }, [isCompleted, navigate]);
 
@@ -63,11 +64,10 @@ const OnboardingQuestionnaire = () => {
       pillarProgress.connections) /
     4;
 
-  // Dynamic spacing based on mobile state
   const getQuestionSpacing = () => {
-    if (!isMobile) return "mt-12"; // Desktop: original spacing
-    if (isExpanded) return "mt-4"; // Mobile expanded: moderate spacing
-    return "mt-2"; // Mobile collapsed: minimal spacing
+    if (!isMobile) return "mt-12";
+    if (isExpanded) return "mt-4";
+    return "mt-2";
   };
 
   return (
@@ -86,34 +86,46 @@ const OnboardingQuestionnaire = () => {
 
           <ClarityRings progress={pillarProgress} threshold={80} />
 
-          <div className={cn("transition-all duration-300", getQuestionSpacing())}>
-            {isLoading && (
+          <div
+            className={cn("transition-all duration-300", getQuestionSpacing())}
+          >
+            {/* Show loading for regular questions */}
+            {isLoading && !isGeneratingSummary && (
               <div className="text-center text-white py-10">
-                <h2 className="text-2xl font-bold">Loading...</h2>
+                <Loader2 className="h-8 w-8 animate-spin mx-auto" />
               </div>
             )}
-            {isCompleted && (
+
+            {/* UPDATED: Show a specific message while the summary is being generated */}
+            {isGeneratingSummary && (
               <div className="text-center text-white py-10">
-                <h2 className="text-2xl font-bold">Questionnaire Complete!</h2>
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <h2 className="text-2xl font-bold">Crafting your summary...</h2>
                 <p className="text-gray-400 mt-2">
-                  Taking you to your results...
+                  Analysing your responses to create personalised insights.
                 </p>
               </div>
             )}
-            {!isLoading && !isCompleted && currentQuestion && (
-              <QuestionBox
-                key={currentQuestion.id}
-                question={currentQuestion}
-                value={answers[currentQuestion.id]}
-                onSubmit={handleSubmitAnswer}
-                isSubmitting={isLoading}
-                onPrevious={handlePrevious}
-                isFirstQuestion={currentQuestionIndex === 0}
-              />
-            )}
+
+            {/* Show the question box only when appropriate */}
+            {!isLoading &&
+              !isCompleted &&
+              !isGeneratingSummary &&
+              currentQuestion && (
+                <QuestionBox
+                  key={currentQuestion.id}
+                  question={currentQuestion}
+                  value={answers[currentQuestion.id]}
+                  onSubmit={handleSubmitAnswer}
+                  isSubmitting={isLoading}
+                  onPrevious={handlePrevious}
+                  isFirstQuestion={currentQuestionIndex === 0}
+                />
+              )}
           </div>
 
-          {!isCompleted && !isLoading && (
+          {/* Hide progress bar during the final summary generation step */}
+          {!isCompleted && !isGeneratingSummary && (
             <OverallProgressBar value={overallPercentage} />
           )}
         </div>
