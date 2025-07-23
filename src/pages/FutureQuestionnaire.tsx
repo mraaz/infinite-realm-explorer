@@ -40,7 +40,7 @@ const FutureQuestionnaire: React.FC = () => {
     setStep,
     setAnswers,
     handlePrioritiesComplete,
-  } = useQuestionnaireState();
+  } = useQuestionnaireState(user);
 
   const totalSteps = 3;
 

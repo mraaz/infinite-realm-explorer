@@ -4,6 +4,7 @@ import { PillarAnswers } from "@/components/futureQuestionnaire/PillarQuestions"
 import {
   getQuestionnaireState,
   QuestionnaireStatePayload,
+  AnswersState,
 } from "@/services/apiService";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -20,7 +21,7 @@ type Priorities = {
   secondaryFocus: Pillar;
   maintenance: Pillar[];
 };
-type Answers = { [key in Pillar]?: PillarAnswers };
+type Answers = AnswersState;
 
 const LOCAL_STORAGE_KEY = "futureQuestionnaireGuestProgress";
 
@@ -31,7 +32,11 @@ const LOCAL_STORAGE_KEY = "futureQuestionnaireGuestProgress";
 export const useQuestionnaireState = (user: User | null) => {
   const { authToken } = useAuth();
   const [priorities, setPriorities] = useState<Priorities | null>(null);
-  const [answers, setAnswers] = useState<Answers>({});
+  const [answers, setAnswers] = useState<Answers>({
+    history: [],
+    scores: { Career: 0, Financials: 0, Health: 0, Connections: 0 },
+    questionCount: { Career: 0, Financials: 0, Health: 0, Connections: 0 }
+  });
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,7 +48,11 @@ export const useQuestionnaireState = (user: User | null) => {
         const savedState = await getQuestionnaireState(authToken);
         if (savedState) {
           setPriorities(savedState.priorities || null);
-          setAnswers(savedState.answers || {});
+          setAnswers(savedState.answers || {
+            history: [],
+            scores: { Career: 0, Financials: 0, Health: 0, Connections: 0 },
+            questionCount: { Career: 0, Financials: 0, Health: 0, Connections: 0 }
+          });
           if (savedState.step && savedState.step > 0) {
             setStep(savedState.step);
           }
@@ -54,7 +63,11 @@ export const useQuestionnaireState = (user: User | null) => {
           try {
             const parsedData: QuestionnaireStatePayload = JSON.parse(savedData);
             setPriorities(parsedData.priorities || null);
-            setAnswers(parsedData.answers || {});
+            setAnswers(parsedData.answers || {
+              history: [],
+              scores: { Career: 0, Financials: 0, Health: 0, Connections: 0 },
+              questionCount: { Career: 0, Financials: 0, Health: 0, Connections: 0 }
+            });
             setStep(parsedData.step || 1);
           } catch (error) {
             console.error("Failed to parse progress from localStorage", error);

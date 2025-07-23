@@ -8,7 +8,15 @@ interface Priorities {
   maintenance: Pillar[];
 }
 
-type AnswersState = any;
+export interface AnswersState {
+  history: Array<{
+    id: number;
+    role: "ai" | "user" | "feedback";
+    content: string;
+  }>;
+  scores: Record<Pillar, number>;
+  questionCount: Record<Pillar, number>;
+}
 
 // This is the shape of the full user record in your 'futureselfquestionnaire' DynamoDB table
 export interface QuestionnaireStatePayload {
@@ -18,7 +26,18 @@ export interface QuestionnaireStatePayload {
   step?: number; // --- MODIFICATION: Added step to the payload ---
 }
 
-// ... the rest of your types like ProcessAnswerPayload and AIResponse would go here ...
+export interface ProcessAnswerPayload {
+  pillarName: string;
+  previousQuestion: string;
+  userAnswer: string;
+}
+
+export interface AIResponse {
+  isRelevant: boolean;
+  nextQuestion?: string;
+  feedback?: string;
+  score: number;
+}
 
 // The base URL of your deployed API Gateway stage
 const API_BASE_URL =
@@ -50,7 +69,11 @@ export const getQuestionnaireState = async (
     console.error("Error fetching questionnaire state:", error);
     return {
       priorities: null,
-      answers: {},
+      answers: {
+        history: [],
+        scores: { Career: 0, Financials: 0, Health: 0, Connections: 0 },
+        questionCount: { Career: 0, Financials: 0, Health: 0, Connections: 0 }
+      },
       step: 1,
     };
   }

@@ -122,7 +122,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
 
     const currentHistory = conversationState.answers.history;
     const lastQuestion =
-      currentHistory.findLast((m) => m.role === "ai")?.content || "";
+      [...currentHistory].reverse().find((m) => m.role === "ai")?.content || "";
     const aiQuestionCount = currentHistory.filter(
       (m) => m.role === "ai"
     ).length;
@@ -221,7 +221,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
     conversationState?.answers.questionCount[pillarInfo.name] || 0;
   const overallCompleted = conversationState
     ? Object.values(conversationState.answers.questionCount).reduce(
-        (a, b) => a + b,
+        (a: number, b: number) => a + b,
         0
       )
     : 0;
