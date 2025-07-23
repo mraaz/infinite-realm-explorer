@@ -1,3 +1,5 @@
+// src/pages/SelfDiscoverySummary.tsx
+
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOnboardingQuestionnaireStore } from "@/store/onboardingQuestionnaireStore";
@@ -23,7 +25,8 @@ const pillarIcons: { [key: string]: React.ReactNode } = {
 
 const SelfDiscoverySummary = () => {
   const navigate = useNavigate();
-  const { authToken } = useAuth();
+  // --- UPDATED: Get the refresh function from useAuth ---
+  const { authToken, refreshAuthStatus } = useAuth();
 
   const {
     summary,
@@ -39,8 +42,10 @@ const SelfDiscoverySummary = () => {
     }
   }, [authToken, summary, fetchSummary]);
 
-  const handleDone = () => {
-    navigate("/results");
+  // --- UPDATED: This handler now refreshes the auth state before navigating ---
+  const handleDone = async () => {
+    await refreshAuthStatus(); // Re-fetch the user status
+    navigate("/results"); // Then navigate to the results page
   };
 
   if (isLoading || isGeneratingSummary) {
