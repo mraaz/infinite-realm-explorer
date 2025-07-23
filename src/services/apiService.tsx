@@ -241,32 +241,34 @@ export const getUserSettings = async (
 };
 
 /**
- * Sends the completed questionnaire answers to the backend to generate a summary.
+ * Kicks off the summary generation process on the backend.
+ * This function will likely time out, which is EXPECTED. We catch the error
+ * and resolve successfully to let the frontend know the process has started.
  * @param answers - The user's complete set of answers.
  * @param token - The user's JWT authorization token.
- * @returns A promise that resolves to the generated summary object.
+ * @returns A promise that resolves when the request is sent.
  */
 export const generateSummary = async (
   answers: Record<string, any>,
   token: string
-): Promise<SummaryResponse> => {
-  // ... function body is unchanged
-  const response = await fetch(`${API_BASE_URL}/generate-summary`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ answers }),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to generate summary.");
+): Promise<void> => {
+  try {
+    await fetch(`${API_BASE_URL}/generate-summary`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ answers }),
+    });
+  } catch (error) {
+    // We EXPECT a network error here because the API Gateway will time out.
+    // We can safely ignore it and proceed, as the Lambda will continue running.
+    console.log("Summary generation started. Ignoring expected timeout error.");
   }
-  return response.json();
 };
 
 /**
- * --- NEW FUNCTION ---
  * Fetches an existing self-discovery summary from the database.
  * @param token - The user's JWT authorization token.
  * @returns A promise that resolves to the saved summary object.

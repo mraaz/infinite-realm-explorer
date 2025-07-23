@@ -1,6 +1,4 @@
-// src/pages/SelfDiscoverySummary.tsx
-
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOnboardingQuestionnaireStore } from "@/store/onboardingQuestionnaireStore";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,6 +13,7 @@ import {
   Heart,
   Users,
 } from "lucide-react";
+import { SummaryResponse } from "@/services/apiService";
 
 const pillarIcons: { [key: string]: React.ReactNode } = {
   Career: <Target className="h-6 w-6 text-purple-400" />,
@@ -23,73 +22,148 @@ const pillarIcons: { [key: string]: React.ReactNode } = {
   Connections: <Users className="h-6 w-6 text-orange-400" />,
 };
 
+const POLLING_INTERVAL = 5000;
+const MAX_ATTEMPTS = 12;
+
 const SelfDiscoverySummary = () => {
   const navigate = useNavigate();
-  // --- UPDATED: Get the refresh function from useAuth ---
-  const { authToken, refreshAuthStatus } = useAuth();
+  // --- UPDATED: Get the completion flag and auth loading status ---
+  const {
+    authToken,
+    refreshAuthStatus,
+    completedFutureQuestionnaire,
+    isLoading: isAuthLoading, // Rename to avoid conflict
+  } = useAuth();
 
   const {
-    summary,
-    isLoading,
-    isGeneratingSummary,
-    summaryError,
+    summary: summaryFromStore,
     fetchSummary,
+    clearSummary,
   } = useOnboardingQuestionnaireStore();
 
-  useEffect(() => {
-    if (!summary && authToken) {
-      fetchSummary(authToken);
-    }
-  }, [authToken, summary, fetchSummary]);
+  const [isLoading, setIsLoading] = useState(true); // Start loading by default
+  const [error, setError] = useState<string | null>(null);
+  const [localSummary, setLocalSummary] = useState<SummaryResponse | null>(
+    summaryFromStore
+  );
+  const attempts = useRef(0);
+  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
 
-  // --- UPDATED: This handler now refreshes the auth state before navigating ---
+  useEffect(() => {
+    // Cleanup function to run when the component unmounts
+    return () => {
+      if (pollingInterval.current) {
+        clearInterval(pollingInterval.current);
+      }
+      clearSummary();
+    };
+  }, [clearSummary]);
+
+  // --- NEW: Effect to guard the page ---
+  useEffect(() => {
+    // Wait until the auth status has been loaded
+    if (isAuthLoading) {
+      return;
+    }
+
+    // If auth is loaded and the user has NOT completed the questionnaire, redirect them.
+    if (!completedFutureQuestionnaire) {
+      console.log("User has not completed questionnaire. Redirecting...");
+      navigate("/onboarding-questionnaire");
+    }
+  }, [isAuthLoading, completedFutureQuestionnaire, navigate]);
+
+  useEffect(() => {
+    // Don't start polling if we already have a summary, there's no token,
+    // or if the user hasn't completed the questionnaire (the guard will redirect them).
+    if (localSummary || !authToken || !completedFutureQuestionnaire) {
+      // If we have the summary, stop showing the main loader.
+      if (localSummary) setIsLoading(false);
+      return;
+    }
+
+    const pollForSummary = async () => {
+      attempts.current += 1;
+      console.log(`Polling for summary, attempt #${attempts.current}`);
+
+      try {
+        const fetchedSummary = await fetchSummary(authToken);
+        if (fetchedSummary) {
+          setLocalSummary(fetchedSummary);
+          setIsLoading(false);
+          if (pollingInterval.current) {
+            clearInterval(pollingInterval.current);
+          }
+        } else if (attempts.current >= MAX_ATTEMPTS) {
+          setError(
+            "It's taking longer than expected to generate your summary. Please check back in a few minutes or try again."
+          );
+          setIsLoading(false);
+          if (pollingInterval.current) {
+            clearInterval(pollingInterval.current);
+          }
+        }
+      } catch (err) {
+        setError((err as Error).message);
+        setIsLoading(false);
+        if (pollingInterval.current) {
+          clearInterval(pollingInterval.current);
+        }
+      }
+    };
+
+    // Start polling
+    pollingInterval.current = setInterval(pollForSummary, POLLING_INTERVAL);
+    pollForSummary(); // Trigger first check immediately
+  }, [authToken, fetchSummary, localSummary, completedFutureQuestionnaire]);
+
   const handleDone = async () => {
-    await refreshAuthStatus(); // Re-fetch the user status
-    navigate("/results"); // Then navigate to the results page
+    await refreshAuthStatus();
+    navigate("/results");
   };
 
-  if (isLoading || isGeneratingSummary) {
+  if (isLoading || isAuthLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#16161a] text-white p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#16161a] text-white p-4 text-center">
         <Loader2 className="h-12 w-12 animate-spin text-purple-500 mb-6" />
-        <h1 className="text-3xl font-bold mb-2">
-          {isGeneratingSummary
-            ? "Crafting your summary..."
-            : "Loading your summary..."}
-        </h1>
-        <p className="text-lg text-gray-400">
-          {isGeneratingSummary
-            ? "Analysing your responses..."
-            : "Please wait a moment."}
+        <h1 className="text-3xl font-bold mb-2">Crafting your summary...</h1>
+        <p className="text-lg text-gray-400 max-w-md">
+          This can take up to a minute. We're analysing your responses to create
+          personalised insights.
         </p>
       </div>
     );
   }
 
-  if (summaryError) {
+  if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#16161a] text-white p-4 text-center">
         <AlertTriangle className="h-12 w-12 text-red-500 mb-6" />
         <h1 className="text-3xl font-bold mb-2">Something went wrong</h1>
-        <p className="text-lg text-gray-400 mb-8 max-w-md">{summaryError}</p>
-        <Button onClick={() => navigate("/onboarding-questionnaire")}>
-          Start Questionnaire
+        <p className="text-lg text-gray-400 mb-8 max-w-md">{error}</p>
+        <Button
+          onClick={() => {
+            clearSummary();
+            navigate("/onboarding-questionnaire");
+          }}
+        >
+          Try Again
         </Button>
       </div>
     );
   }
 
-  if (summary) {
+  if (localSummary) {
     return (
       <div className="bg-[#16161a] min-h-screen text-white">
         <Header />
         <main className="container mx-auto px-4 py-12">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-4xl md:text-5xl font-extrabold text-center mb-4">
-              {summary.title}
+              {localSummary.title}
             </h1>
             <p className="text-lg md:text-xl text-gray-400 text-center mb-12">
-              {summary.overallSummary}
+              {localSummary.overallSummary}
             </p>
 
             <div className="mb-12">
@@ -97,7 +171,7 @@ const SelfDiscoverySummary = () => {
                 <Sparkles className="h-8 w-8 text-yellow-400" /> Key Insights
               </h2>
               <div className="space-y-6">
-                {summary.keyInsights.map((insight, index) => (
+                {localSummary.keyInsights.map((insight, index) => (
                   <div
                     key={index}
                     className="bg-[#1e1e24] p-6 rounded-lg border border-gray-700"
@@ -114,7 +188,7 @@ const SelfDiscoverySummary = () => {
             <div>
               <h2 className="text-3xl font-bold mb-6">Your Actionable Steps</h2>
               <div className="grid md:grid-cols-2 gap-6">
-                {summary.actionableSteps.map((step, index) => (
+                {localSummary.actionableSteps.map((step, index) => (
                   <div
                     key={index}
                     className="bg-[#1e1e24] p-6 rounded-lg border border-gray-700 flex flex-col"
@@ -156,12 +230,10 @@ const SelfDiscoverySummary = () => {
     );
   }
 
+  // This will briefly show while the guard effect checks and redirects.
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#16161a] text-white p-4">
-      <h1 className="text-2xl">No summary to display.</h1>
-      <Button onClick={() => navigate("/")} className="mt-4">
-        Go Home
-      </Button>
+      <Loader2 className="h-12 w-12 animate-spin text-purple-500" />
     </div>
   );
 };

@@ -41,7 +41,6 @@ interface QuestionnaireState {
   finalScores: Record<string, any> | null;
   pillarProgress: PillarProgress;
   currentQuestionIndex: number;
-  isGeneratingSummary: boolean;
   summary: SummaryResponse | null;
   summaryError: string | null;
   initializeQuestionnaire: (authToken?: string) => Promise<void>;
@@ -52,7 +51,8 @@ interface QuestionnaireState {
   ) => Promise<void>;
   previousQuestion: (authToken?: string) => Promise<void>;
   saveGuestProgressAfterLogin: (authToken: string) => Promise<void>;
-  fetchSummary: (authToken: string) => Promise<void>;
+  fetchSummary: (authToken: string) => Promise<SummaryResponse | null>;
+  clearSummary: () => void;
 }
 
 // Use the API Gateway URL
@@ -69,12 +69,10 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
     finalScores: null,
     pillarProgress: { career: 0, finances: 0, health: 0, connections: 0 },
     currentQuestionIndex: 0,
-    isGeneratingSummary: false,
     summary: null,
     summaryError: null,
 
     // ACTIONS
-
     initializeQuestionnaire: async (authToken) => {
       if (authToken) {
         set({ isLoading: true });
@@ -121,7 +119,6 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
     submitAnswer: async (questionId, answer, authToken) => {
       const updatedAnswers = { ...get().answers, [questionId]: answer };
       set({ answers: updatedAnswers, isLoading: true });
-
       const headers: HeadersInit = {
         "Content-Type": "application/json",
         ...(authToken && { Authorization: `Bearer ${authToken}` }),
@@ -143,33 +140,17 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
             pillarProgress: data.pillarProgress,
             finalScores: data.finalScores,
             isLoading: false,
-            isGeneratingSummary: true,
-            summaryError: null,
           });
 
           if (authToken) {
-            try {
-              const summaryData = await generateSummary(
-                updatedAnswers,
-                authToken
-              );
-              set({
-                summary: summaryData,
-                isCompleted: true,
-                isGeneratingSummary: false,
-              });
-            } catch (summaryError) {
-              console.error("Failed to generate summary:", summaryError);
-              set({
-                summaryError: (summaryError as Error).message,
-                isGeneratingSummary: false,
-              });
-            }
+            // Kick off the generation process. We don't need to wait for it.
+            await generateSummary(updatedAnswers, authToken);
+            // Immediately mark as completed to trigger navigation.
+            set({ isCompleted: true });
           } else {
             set({
               summaryError:
                 "You must be logged in to generate a personalized summary.",
-              isGeneratingSummary: false,
             });
           }
         } else {
@@ -246,16 +227,21 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
     },
 
     fetchSummary: async (authToken: string) => {
-      if (get().summary) {
-        return;
-      }
-      set({ isLoading: true, summaryError: null });
+      if (get().summary) return get().summary;
+      // Note: isLoading is handled by the component now, not the store,
+      // to prevent the main questionnaire from showing a loader.
       try {
         const summaryData = await getSummary(authToken);
-        set({ summary: summaryData, isLoading: false });
+        set({ summary: summaryData });
+        return summaryData;
       } catch (error) {
-        set({ summaryError: (error as Error).message, isLoading: false });
+        set({ summaryError: (error as Error).message });
+        return null;
       }
+    },
+
+    clearSummary: () => {
+      set({ summary: null, isCompleted: false });
     },
   })
 );
