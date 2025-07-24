@@ -27,12 +27,13 @@ export const useProgressCalculation = () => {
     }
 
     // Map sections to pillar names for the progress calculation
-    const sectionToPillar: Record<string, keyof PillarProgress> = {
-      basics: 'basics',
-      career: 'career',
-      finances: 'finances',
-      health: 'health',
-      connections: 'connections',
+    const getPillarFromSection = (section: string): keyof PillarProgress | null => {
+      if (section === 'basics') return 'basics';
+      if (section === 'career') return 'career';
+      if (section.startsWith('finances')) return 'finances';
+      if (section.startsWith('health')) return 'health';
+      if (section.startsWith('connections')) return 'connections';
+      return null;
     };
 
     // Start with the backend progress and ensure basics is included
@@ -45,7 +46,7 @@ export const useProgressCalculation = () => {
     
     // Mark completed sections as 100% (this overrides backend progress)
     completedSections.forEach(section => {
-      const pillarKey = sectionToPillar[section];
+      const pillarKey = getPillarFromSection(section);
       if (pillarKey && pillarKey !== 'basics') { // Skip basics as it's not a real section
         console.log(`🔧 Setting ${section} (${pillarKey}) to 100%`);
         progress[pillarKey] = 100;
