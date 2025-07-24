@@ -8,6 +8,7 @@ interface ChartsSectionProps {
   futureProgress: PillarProgress;
   onPillarClick: (pillar: string) => void;
   activePillar?: string;
+  onRetakeCurrent: () => void;
   onStartFutureQuestionnaire: () => void;
 }
 
@@ -16,6 +17,8 @@ const ChartsSection = ({
   futureProgress,
   onPillarClick,
   activePillar,
+  onRetakeCurrent,
+  onStartFutureQuestionnaire,
 }: ChartsSectionProps) => {
   return (
     <section className="grid grid-cols-1 xl:grid-cols-2 gap-6 sm:gap-8 mb-12 sm:mb-16">
