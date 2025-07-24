@@ -113,7 +113,8 @@ const SelfDiscoverySummary = () => {
         <Loader2 className="h-12 w-12 animate-spin text-purple-500 mb-6" />
         <h1 className="text-3xl font-bold mb-2">Crafting your summary...</h1>
         <p className="text-lg text-gray-400 max-w-md">
-          We're analyzing your responses to create personalized insights. This may take a few moments.
+          We're analysing your responses to create personalised insights. This
+          may take a few moments.
         </p>
       </div>
     );
