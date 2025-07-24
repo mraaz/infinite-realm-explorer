@@ -262,8 +262,6 @@ const Results = () => {
             futureProgress={chartData.future as PillarProgress}
             onPillarClick={handlePillarClick}
             activePillar={activePillar}
-            onRetakeCurrent={() => handleRetake("current")}
-            onStartFutureQuestionnaire={() => handleRetake("future")}
           />
 
           {completedFutureQuestionnaire ? (
