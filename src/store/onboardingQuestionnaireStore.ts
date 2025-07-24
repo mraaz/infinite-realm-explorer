@@ -45,8 +45,7 @@ interface QuestionnaireState {
   summary: SummaryResponse | null;
   summaryError: string | null;
   overallProgress: number; // Added for the progress bar fix
-  currentSection: string | null; // Track current section
-  completedSections: Set<string>; // Track completed sections
+  currentSection: string | null; // Track current section for UI purposes
   initializeQuestionnaire: (authToken?: string) => Promise<void>;
   submitAnswer: (
     questionId: string,
@@ -78,7 +77,6 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
     summaryError: null,
     overallProgress: 0,
     currentSection: null,
-    completedSections: new Set(),
 
     // ACTIONS
     initializeQuestionnaire: async (authToken) => {
@@ -119,7 +117,6 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
           pillarProgress: { career: 0, finances: 0, health: 0, connections: 0 },
           currentQuestionIndex: 0,
           currentSection: GUEST_USER_FIRST_QUESTION.section,
-          completedSections: new Set(),
           isLoading: false,
           isCompleted: false,
           finalScores: null,
@@ -129,7 +126,6 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
 
     submitAnswer: async (questionId, answer, authToken) => {
       const updatedAnswers = { ...get().answers, [questionId]: answer };
-      const { currentSection, completedSections } = get();
       set({ answers: updatedAnswers, isLoading: true });
       const headers: HeadersInit = {
         "Content-Type": "application/json",
@@ -182,29 +178,12 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
             });
           }
         } else {
-          // Check if we're moving to a new section
-          const newSection = data.nextQuestion?.section;
-          const newCompletedSections = new Set(completedSections);
-          
-          console.log("🔍 Section transition check:", {
-            currentSection,
-            newSection,
-            isTransition: currentSection && newSection && currentSection !== newSection,
-            completedSectionsBefore: Array.from(completedSections),
-          });
-          
-          if (currentSection && newSection && currentSection !== newSection) {
-            newCompletedSections.add(currentSection);
-            console.log("✅ Added completed section:", currentSection, "New completed sections:", Array.from(newCompletedSections));
-          }
-
           set({
             currentQuestion: data.nextQuestion,
             pillarProgress: data.pillarProgress,
             currentQuestionIndex: data.currentQuestionIndex,
             overallProgress: data.overallProgress,
-            currentSection: newSection,
-            completedSections: newCompletedSections,
+            currentSection: data.nextQuestion?.section,
             isLoading: false,
           });
         }

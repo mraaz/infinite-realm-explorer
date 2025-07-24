@@ -3,14 +3,12 @@ import { useOnboardingQuestionnaireStore } from '@/store/onboardingQuestionnaire
 import { PillarProgress } from '@/components/NewQuadrantChart';
 
 export const useProgressCalculation = () => {
-  const { answers, pillarProgress, completedSections, currentSection } = useOnboardingQuestionnaireStore();
+  const { answers, pillarProgress } = useOnboardingQuestionnaireStore();
 
   const calculateCurrentProgress = (): PillarProgress => {
     const answeredQuestionsCount = Object.keys(answers).length;
     
-    console.log("🎯 Progress calculation started:", {
-      currentSection,
-      completedSections: Array.from(completedSections),
+    console.log("🎯 Progress calculation - using backend progress:", {
       pillarProgress,
       answeredQuestionsCount
     });
@@ -26,34 +24,13 @@ export const useProgressCalculation = () => {
       };
     }
 
-    // Map sections to pillar names for the progress calculation
-    const getPillarFromSection = (section: string): keyof PillarProgress | null => {
-      if (section === 'basics') return 'basics';
-      if (section === 'career') return 'career';
-      if (section.startsWith('finances')) return 'finances';
-      if (section.startsWith('health')) return 'health';
-      if (section.startsWith('connections')) return 'connections';
-      return null;
-    };
-
-    // Start with the backend progress and ensure basics is included
+    // Trust the backend progress calculation and add basics
     const progress: PillarProgress = { 
       basics: 75, // Always set basics to 75 for now (as it's not a real questionnaire section)
       ...pillarProgress 
     };
     
-    console.log("📊 Initial progress from backend:", progress);
-    
-    // Mark completed sections as 100% (this overrides backend progress)
-    completedSections.forEach(section => {
-      const pillarKey = getPillarFromSection(section);
-      if (pillarKey && pillarKey !== 'basics') { // Skip basics as it's not a real section
-        console.log(`🔧 Setting ${section} (${pillarKey}) to 100%`);
-        progress[pillarKey] = 100;
-      }
-    });
-
-    console.log("✨ Final calculated progress:", progress);
+    console.log("✨ Final progress (backend + basics):", progress);
     return progress;
   };
 
