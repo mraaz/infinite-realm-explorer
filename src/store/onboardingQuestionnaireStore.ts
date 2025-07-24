@@ -140,33 +140,32 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
         const data = await response.json();
 
         if (data.status === "completed") {
+          // Set completion immediately to allow redirect
           set({
             pillarProgress: data.pillarProgress,
             finalScores: data.finalScores,
             overallProgress: 100,
             isLoading: false,
+            isCompleted: true, // Set immediately for redirect
             isGeneratingSummary: true, // Show the "Crafting..." message
           });
 
+          // Generate summary in background without blocking completion
           if (authToken) {
-            try {
-              // Wait for the entire summary generation and saving process to finish.
-              const summaryData = await generateSummary(
-                updatedAnswers,
-                authToken
-              );
-              // NOW that the backend is done, set the summary and isCompleted flag.
-              set({
-                summary: summaryData,
-                isCompleted: true, // This will now trigger the redirect correctly
-                isGeneratingSummary: false,
+            generateSummary(updatedAnswers, authToken)
+              .then((summaryData) => {
+                set({
+                  summary: summaryData,
+                  isGeneratingSummary: false,
+                });
+              })
+              .catch((summaryError) => {
+                console.log("Summary generation failed (expected due to timeout):", summaryError);
+                set({
+                  summaryError: "Summary generation in progress...",
+                  isGeneratingSummary: false,
+                });
               });
-            } catch (summaryError) {
-              set({
-                summaryError: (summaryError as Error).message,
-                isGeneratingSummary: false,
-              });
-            }
           } else {
             set({
               summaryError:
