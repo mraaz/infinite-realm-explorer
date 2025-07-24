@@ -186,8 +186,16 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
           const newSection = data.nextQuestion?.section;
           const newCompletedSections = new Set(completedSections);
           
+          console.log("🔍 Section transition check:", {
+            currentSection,
+            newSection,
+            isTransition: currentSection && newSection && currentSection !== newSection,
+            completedSectionsBefore: Array.from(completedSections),
+          });
+          
           if (currentSection && newSection && currentSection !== newSection) {
             newCompletedSections.add(currentSection);
+            console.log("✅ Added completed section:", currentSection, "New completed sections:", Array.from(newCompletedSections));
           }
 
           set({

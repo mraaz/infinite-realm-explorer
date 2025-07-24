@@ -8,6 +8,13 @@ export const useProgressCalculation = () => {
   const calculateCurrentProgress = (): PillarProgress => {
     const answeredQuestionsCount = Object.keys(answers).length;
     
+    console.log("🎯 Progress calculation started:", {
+      currentSection,
+      completedSections: Array.from(completedSections),
+      pillarProgress,
+      answeredQuestionsCount
+    });
+    
     // Return empty progress if no questions answered
     if (answeredQuestionsCount === 0) {
       return {
@@ -34,14 +41,18 @@ export const useProgressCalculation = () => {
       ...pillarProgress 
     };
     
+    console.log("📊 Initial progress from backend:", progress);
+    
     // Mark completed sections as 100% (this overrides backend progress)
     completedSections.forEach(section => {
       const pillarKey = sectionToPillar[section];
       if (pillarKey && pillarKey !== 'basics') { // Skip basics as it's not a real section
+        console.log(`🔧 Setting ${section} (${pillarKey}) to 100%`);
         progress[pillarKey] = 100;
       }
     });
 
+    console.log("✨ Final calculated progress:", progress);
     return progress;
   };
 
