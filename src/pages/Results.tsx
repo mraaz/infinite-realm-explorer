@@ -260,7 +260,6 @@ const Results = () => {
           <ChartsSection
             currentProgress={chartData.current as PillarProgress}
             futureProgress={chartData.future as PillarProgress}
-            answers={{}}
             onPillarClick={handlePillarClick}
             activePillar={activePillar}
             onRetakeCurrent={() => handleRetake("current")}

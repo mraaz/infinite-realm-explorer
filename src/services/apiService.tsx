@@ -251,9 +251,9 @@ export const getUserSettings = async (
 export const generateSummary = async (
   answers: Record<string, any>,
   token: string
-): Promise<void> => {
+): Promise<SummaryResponse> => {
   try {
-    await fetch(`${API_BASE_URL}/generate-summary`, {
+    const response = await fetch(`${API_BASE_URL}/generate-summary`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -261,10 +261,17 @@ export const generateSummary = async (
       },
       body: JSON.stringify({ answers }),
     });
+    
+    if (!response.ok) {
+      throw new Error("Failed to generate summary");
+    }
+    
+    return await response.json();
   } catch (error) {
     // We EXPECT a network error here because the API Gateway will time out.
     // We can safely ignore it and proceed, as the Lambda will continue running.
     console.log("Summary generation started. Ignoring expected timeout error.");
+    throw error;
   }
 };
 

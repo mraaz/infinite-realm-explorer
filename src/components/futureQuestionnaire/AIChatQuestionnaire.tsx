@@ -147,7 +147,7 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
 
     const overallCompleted = Object.values(
       conversationState.answers.questionCount
-    ).reduce((a, b) => a + b, 0);
+    ).reduce((a, b) => (a as number) + (b as number), 0);
     const isFinalAnswer = overallCompleted === 2; // Is it the 3rd question (index 2)?
     const shouldAttemptTransition =
       currentQuestionNumForPillar >= questionsNeededForPillar;

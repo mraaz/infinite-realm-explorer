@@ -11,7 +11,7 @@ const VideoCenterpiece = () => {
   const [videoSrc, setVideoSrc] = useState(videoSD);
 
   useEffect(() => {
-    const connection = navigator.connection;
+    const connection = (navigator as any).connection;
     if (connection) {
       const isSlowConnection =
         connection.saveData ||

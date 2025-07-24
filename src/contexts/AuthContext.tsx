@@ -22,6 +22,7 @@ interface AuthContextType {
   user: User | null;
   authToken: string | null;
   isLoggedIn: boolean;
+  isLoading: boolean;
   hasPulseCheckData: boolean;
   hasFutureSelfData: boolean;
   completedFutureQuestionnaire: boolean;
@@ -113,6 +114,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     user,
     authToken,
     isLoggedIn: !!user,
+    isLoading,
     hasPulseCheckData,
     hasFutureSelfData,
     completedFutureQuestionnaire,
