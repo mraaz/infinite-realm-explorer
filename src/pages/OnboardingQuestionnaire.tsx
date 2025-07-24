@@ -1,5 +1,3 @@
-// src/pages/OnboardingQuestionnaire.tsx
-
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -9,7 +7,8 @@ import OverallProgressBar from "@/components/onboarding-questionnaire/OverallPro
 import { useOnboardingQuestionnaireStore } from "@/store/onboardingQuestionnaireStore";
 import { useMobileRings } from "@/hooks/use-mobile-rings";
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext"; // Import useAuth
+import PageLoading from "@/components/ui/page-loading"; // Import a loader
 
 const getAuthToken = () => localStorage.getItem("infinitelife_jwt");
 
@@ -17,31 +16,48 @@ const OnboardingQuestionnaire = () => {
   const navigate = useNavigate();
   const { isMobile, isExpanded } = useMobileRings();
 
-  // Select state from the store, including the new summary-related flags
+  // --- NEW: Get user's completion status from AuthContext ---
+  const { completedFutureQuestionnaire, isLoading: isAuthLoading } = useAuth();
+
   const {
     currentQuestion,
     answers,
-    isLoading,
+    isLoading: isQuestionLoading,
     isCompleted,
-    isGeneratingSummary,
     initializeQuestionnaire,
     submitAnswer,
     previousQuestion,
     currentQuestionIndex,
+    pillarProgress,
+    overallProgress,
   } = useOnboardingQuestionnaireStore();
 
-  const pillarProgress = useOnboardingQuestionnaireStore(
-    (state) => state.pillarProgress
-  ) || { career: 0, finances: 0, health: 0, connections: 0 };
+  // --- NEW: Guardrail Effect ---
+  useEffect(() => {
+    // Wait for the auth context to finish loading
+    if (isAuthLoading) {
+      return;
+    }
+    // If the user has already completed the survey, redirect them
+    if (completedFutureQuestionnaire) {
+      navigate("/self-discovery-summary");
+    }
+  }, [completedFutureQuestionnaire, isAuthLoading, navigate]);
 
   useEffect(() => {
-    const token = getAuthToken();
-    initializeQuestionnaire(token || undefined);
-  }, [initializeQuestionnaire]);
+    // Only initialize if the user hasn't completed it yet
+    if (!isAuthLoading && !completedFutureQuestionnaire) {
+      const token = getAuthToken();
+      initializeQuestionnaire(token || undefined);
+    }
+  }, [initializeQuestionnaire, isAuthLoading, completedFutureQuestionnaire]);
 
   useEffect(() => {
     if (isCompleted) {
-      navigate("/self-discovery-summary");
+      const redirectTimeout = setTimeout(() => {
+        navigate("/self-discovery-summary");
+      }, 1000); // Shortened timeout
+      return () => clearTimeout(redirectTimeout);
     }
   }, [isCompleted, navigate]);
 
@@ -57,18 +73,16 @@ const OnboardingQuestionnaire = () => {
     previousQuestion(token || undefined);
   };
 
-  const overallPercentage =
-    (pillarProgress.career +
-      pillarProgress.finances +
-      pillarProgress.health +
-      pillarProgress.connections) /
-    4;
-
   const getQuestionSpacing = () => {
     if (!isMobile) return "mt-12";
     if (isExpanded) return "mt-4";
     return "mt-2";
   };
+
+  // --- NEW: Show a loading spinner while auth is checked ---
+  if (isAuthLoading) {
+    return <PageLoading />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#16161a]">
@@ -89,44 +103,32 @@ const OnboardingQuestionnaire = () => {
           <div
             className={cn("transition-all duration-300", getQuestionSpacing())}
           >
-            {/* Show loading for regular questions */}
-            {isLoading && !isGeneratingSummary && (
+            {isQuestionLoading && (
               <div className="text-center text-white py-10">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+                <h2 className="text-2xl font-bold">Loading...</h2>
               </div>
             )}
-
-            {/* UPDATED: Show a specific message while the summary is being generated */}
-            {isGeneratingSummary && (
+            {isCompleted && (
               <div className="text-center text-white py-10">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                <h2 className="text-2xl font-bold">Crafting your summary...</h2>
-                <p className="text-gray-400 mt-2">
-                  Analysing your responses to create personalised insights.
-                </p>
+                <h2 className="text-2xl font-bold">Questionnaire Complete!</h2>
+                <p className="text-gray-400 mt-2">Crafting your summary...</p>
               </div>
             )}
-
-            {/* Show the question box only when appropriate */}
-            {!isLoading &&
-              !isCompleted &&
-              !isGeneratingSummary &&
-              currentQuestion && (
-                <QuestionBox
-                  key={currentQuestion.id}
-                  question={currentQuestion}
-                  value={answers[currentQuestion.id]}
-                  onSubmit={handleSubmitAnswer}
-                  isSubmitting={isLoading}
-                  onPrevious={handlePrevious}
-                  isFirstQuestion={currentQuestionIndex === 0}
-                />
-              )}
+            {!isQuestionLoading && !isCompleted && currentQuestion && (
+              <QuestionBox
+                key={currentQuestion.id}
+                question={currentQuestion}
+                value={answers[currentQuestion.id]}
+                onSubmit={handleSubmitAnswer}
+                isSubmitting={isQuestionLoading}
+                onPrevious={handlePrevious}
+                isFirstQuestion={currentQuestionIndex === 0}
+              />
+            )}
           </div>
 
-          {/* Hide progress bar during the final summary generation step */}
-          {!isCompleted && !isGeneratingSummary && (
-            <OverallProgressBar value={overallPercentage} />
+          {!isCompleted && !isQuestionLoading && (
+            <OverallProgressBar value={overallProgress} />
           )}
         </div>
       </main>

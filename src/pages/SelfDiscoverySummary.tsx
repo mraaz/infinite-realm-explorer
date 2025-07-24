@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOnboardingQuestionnaireStore } from "@/store/onboardingQuestionnaireStore";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,18 +22,9 @@ const pillarIcons: { [key: string]: React.ReactNode } = {
   Connections: <Users className="h-6 w-6 text-orange-400" />,
 };
 
-const POLLING_INTERVAL = 5000;
-const MAX_ATTEMPTS = 12;
-
 const SelfDiscoverySummary = () => {
   const navigate = useNavigate();
-  // --- UPDATED: Get the completion flag and auth loading status ---
-  const {
-    authToken,
-    refreshAuthStatus,
-    completedFutureQuestionnaire,
-    isLoading: isAuthLoading, // Rename to avoid conflict
-  } = useAuth();
+  const { authToken, refreshAuthStatus } = useAuth();
 
   const {
     summary: summaryFromStore,
@@ -41,96 +32,61 @@ const SelfDiscoverySummary = () => {
     clearSummary,
   } = useOnboardingQuestionnaireStore();
 
-  const [isLoading, setIsLoading] = useState(true); // Start loading by default
+  const [isLoading, setIsLoading] = useState(!summaryFromStore);
   const [error, setError] = useState<string | null>(null);
   const [localSummary, setLocalSummary] = useState<SummaryResponse | null>(
     summaryFromStore
   );
-  const attempts = useRef(0);
-  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Cleanup function to run when the component unmounts
+    // When the component unmounts, clear the summary from the global store
     return () => {
-      if (pollingInterval.current) {
-        clearInterval(pollingInterval.current);
-      }
       clearSummary();
     };
   }, [clearSummary]);
 
-  // --- NEW: Effect to guard the page ---
   useEffect(() => {
-    // Wait until the auth status has been loaded
-    if (isAuthLoading) {
+    // If we already have a summary from the store, use it.
+    if (summaryFromStore) {
+      setLocalSummary(summaryFromStore);
+      setIsLoading(false);
       return;
     }
 
-    // If auth is loaded and the user has NOT completed the questionnaire, redirect them.
-    if (!completedFutureQuestionnaire) {
-      console.log("User has not completed questionnaire. Redirecting...");
-      navigate("/onboarding-questionnaire");
-    }
-  }, [isAuthLoading, completedFutureQuestionnaire, navigate]);
-
-  useEffect(() => {
-    // Don't start polling if we already have a summary, there's no token,
-    // or if the user hasn't completed the questionnaire (the guard will redirect them).
-    if (localSummary || !authToken || !completedFutureQuestionnaire) {
-      // If we have the summary, stop showing the main loader.
-      if (localSummary) setIsLoading(false);
-      return;
-    }
-
-    const pollForSummary = async () => {
-      attempts.current += 1;
-      console.log(`Polling for summary, attempt #${attempts.current}`);
-
-      try {
-        const fetchedSummary = await fetchSummary(authToken);
-        if (fetchedSummary) {
-          setLocalSummary(fetchedSummary);
-          setIsLoading(false);
-          if (pollingInterval.current) {
-            clearInterval(pollingInterval.current);
+    // Otherwise, try to fetch it on load (for refresh scenarios)
+    const fetchOnLoad = async () => {
+      if (authToken) {
+        try {
+          const fetchedSummary = await fetchSummary(authToken);
+          if (fetchedSummary) {
+            setLocalSummary(fetchedSummary);
+          } else {
+            // This can happen if fetchSummary returns null due to an error in the store
+            setError(
+              "Could not retrieve your summary. Please try the questionnaire again."
+            );
           }
-        } else if (attempts.current >= MAX_ATTEMPTS) {
-          setError(
-            "It's taking longer than expected to generate your summary. Please check back in a few minutes or try again."
-          );
+        } catch (err) {
+          setError((err as Error).message);
+        } finally {
           setIsLoading(false);
-          if (pollingInterval.current) {
-            clearInterval(pollingInterval.current);
-          }
-        }
-      } catch (err) {
-        setError((err as Error).message);
-        setIsLoading(false);
-        if (pollingInterval.current) {
-          clearInterval(pollingInterval.current);
         }
       }
     };
 
-    // Start polling
-    pollingInterval.current = setInterval(pollForSummary, POLLING_INTERVAL);
-    pollForSummary(); // Trigger first check immediately
-  }, [authToken, fetchSummary, localSummary, completedFutureQuestionnaire]);
+    fetchOnLoad();
+  }, [authToken, summaryFromStore, fetchSummary]);
 
   const handleDone = async () => {
     await refreshAuthStatus();
     navigate("/results");
   };
 
-  if (isLoading || isAuthLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#16161a] text-white p-4 text-center">
         <Loader2 className="h-12 w-12 animate-spin text-purple-500 mb-6" />
-        <h1 className="text-3xl font-bold mb-2">Crafting your summary...</h1>
-        <p className="text-lg text-gray-400 max-w-md">
-          This can take up to a minute. We're analysing your responses to create
-          personalised insights.
-        </p>
+        <h1 className="text-3xl font-bold mb-2">Loading your summary...</h1>
       </div>
     );
   }
@@ -230,10 +186,12 @@ const SelfDiscoverySummary = () => {
     );
   }
 
-  // This will briefly show while the guard effect checks and redirects.
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#16161a] text-white p-4">
-      <Loader2 className="h-12 w-12 animate-spin text-purple-500" />
+      <h1 className="text-2xl">No summary to display.</h1>
+      <Button onClick={() => navigate("/")} className="mt-4">
+        Go Home
+      </Button>
     </div>
   );
 };
