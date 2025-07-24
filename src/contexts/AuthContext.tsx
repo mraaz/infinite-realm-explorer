@@ -26,7 +26,7 @@ interface AuthContextType {
   hasPulseCheckData: boolean;
   hasFutureSelfData: boolean;
   completedFutureQuestionnaire: boolean;
-  login: (token: string) => void;
+  login: (token: string) => Promise<void>;
   logout: () => void;
   // --- NEW: Expose the refresh function ---
   refreshAuthStatus: () => Promise<void>;
@@ -86,9 +86,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     initializeAuth();
   }, [fetchAndSetAuthStatus]);
 
-  const login = (newToken: string) => {
-    localStorage.setItem("infinitelife_jwt", newToken);
-    window.location.reload();
+  const login = async (newToken: string) => {
+    try {
+      localStorage.setItem("infinitelife_jwt", newToken);
+      await fetchAndSetAuthStatus(newToken);
+    } catch (error) {
+      console.error("Login failed:", error);
+      localStorage.removeItem("infinitelife_jwt");
+      throw error;
+    }
   };
 
   const logout = () => {
