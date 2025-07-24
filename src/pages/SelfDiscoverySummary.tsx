@@ -53,28 +53,53 @@ const SelfDiscoverySummary = () => {
       return;
     }
 
-    // Otherwise, try to fetch it on load (for refresh scenarios)
-    const fetchOnLoad = async () => {
-      if (authToken) {
+    // Otherwise, try to fetch it with polling for cases where summary is still being generated
+    const fetchWithPolling = async () => {
+      if (!authToken) {
+        setError("You must be logged in to view your summary.");
+        setIsLoading(false);
+        return;
+      }
+
+      let attempts = 0;
+      const maxAttempts = 30; // Poll for up to 5 minutes (30 attempts * 10 seconds)
+
+      const pollForSummary = async () => {
         try {
           const fetchedSummary = await fetchSummary(authToken);
           if (fetchedSummary) {
             setLocalSummary(fetchedSummary);
+            setIsLoading(false);
+            return;
+          }
+
+          attempts++;
+          if (attempts < maxAttempts) {
+            // Wait 10 seconds before trying again
+            setTimeout(pollForSummary, 10000);
           } else {
-            // This can happen if fetchSummary returns null due to an error in the store
             setError(
-              "Could not retrieve your summary. Please try the questionnaire again."
+              "Your summary is taking longer than expected to generate. Please try refreshing the page in a few moments."
             );
+            setIsLoading(false);
           }
         } catch (err) {
-          setError((err as Error).message);
-        } finally {
-          setIsLoading(false);
+          console.log("Error fetching summary:", err);
+          attempts++;
+          if (attempts < maxAttempts) {
+            // Wait 10 seconds before trying again for temporary errors
+            setTimeout(pollForSummary, 10000);
+          } else {
+            setError((err as Error).message);
+            setIsLoading(false);
+          }
         }
-      }
+      };
+
+      pollForSummary();
     };
 
-    fetchOnLoad();
+    fetchWithPolling();
   }, [authToken, summaryFromStore, fetchSummary]);
 
   const handleDone = async () => {
@@ -86,7 +111,10 @@ const SelfDiscoverySummary = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#16161a] text-white p-4 text-center">
         <Loader2 className="h-12 w-12 animate-spin text-purple-500 mb-6" />
-        <h1 className="text-3xl font-bold mb-2">Loading your summary...</h1>
+        <h1 className="text-3xl font-bold mb-2">Crafting your summary...</h1>
+        <p className="text-lg text-gray-400 max-w-md">
+          We're analyzing your responses to create personalized insights. This may take a few moments.
+        </p>
       </div>
     );
   }
