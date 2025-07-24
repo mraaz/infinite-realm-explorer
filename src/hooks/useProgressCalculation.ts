@@ -8,14 +8,14 @@ export const useProgressCalculation = () => {
   const calculateCurrentProgress = (): PillarProgress => {
     const answeredQuestionsCount = Object.keys(answers).length;
     
-    // Return mock data if no questions answered
+    // Return empty progress if no questions answered
     if (answeredQuestionsCount === 0) {
       return {
-        basics: 75,
-        career: 80,
-        finances: 60,
-        health: 90,
-        connections: 70,
+        basics: 0,
+        career: 0,
+        finances: 0,
+        health: 0,
+        connections: 0,
       };
     }
 
