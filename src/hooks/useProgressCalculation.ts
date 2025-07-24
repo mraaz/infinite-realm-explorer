@@ -28,13 +28,16 @@ export const useProgressCalculation = () => {
       connections: 'connections',
     };
 
-    // Start with the backend progress
-    const progress = { ...pillarProgress, basics: 75 }; // Basics still fixed
+    // Start with the backend progress and ensure basics is included
+    const progress: PillarProgress = { 
+      basics: 75, // Always set basics to 75 for now (as it's not a real questionnaire section)
+      ...pillarProgress 
+    };
     
-    // Mark completed sections as 100%
+    // Mark completed sections as 100% (this overrides backend progress)
     completedSections.forEach(section => {
       const pillarKey = sectionToPillar[section];
-      if (pillarKey) {
+      if (pillarKey && pillarKey !== 'basics') { // Skip basics as it's not a real section
         progress[pillarKey] = 100;
       }
     });
