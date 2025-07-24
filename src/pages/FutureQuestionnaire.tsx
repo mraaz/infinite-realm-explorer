@@ -46,7 +46,7 @@ const FutureQuestionnaire: React.FC = () => {
     if (!isLoading && answers?.questionCount) {
       const totalQuestionsAnswered = Object.values(
         answers.questionCount
-      ).reduce((sum: number, count: number) => sum + count, 0);
+      ).reduce((sum: number, count: number) => sum + count, 0) as number;
 
       // Check if 3 or more questions have been answered.
       if ((totalQuestionsAnswered as number) >= 3) {

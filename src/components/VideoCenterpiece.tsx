@@ -1,3 +1,4 @@
+
 // src/components/VideoCenterpiece.tsx
 
 import React, { useState, useEffect, useRef } from "react";
@@ -23,7 +24,7 @@ const VideoCenterpiece = () => {
   }, []);
 
   // --- New logic for pausing the video when it's not visible ---
-  const videoRef = useRef(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const video = videoRef.current;
