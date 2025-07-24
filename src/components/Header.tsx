@@ -23,8 +23,16 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isLoggedIn, logout, hasPulseCheckData, hasFutureSelfData } =
-    useAuth();
+  // --- UPDATED: Get completedFutureQuestionnaire from the context ---
+  const {
+    user,
+    isLoggedIn,
+    logout,
+    hasPulseCheckData,
+    hasFutureSelfData,
+    completedFutureQuestionnaire, // <-- Get the new flag
+    refreshAuthStatus,
+  } = useAuth();
 
   const baseButtonStyle =
     "text-sm rounded-md py-2 px-4 transition-all duration-200";
@@ -66,8 +74,9 @@ const Header = () => {
     setIsMobileMenuOpen(false);
   };
 
-  const handleResultsClick = () => {
+  const handleResultsClick = async () => {
     if (!isLoggedIn) return handleGuestClick();
+    await refreshAuthStatus();
     if (hasPulseCheckData && hasFutureSelfData) {
       navigate("/results");
     } else if (!hasPulseCheckData) {
@@ -87,16 +96,13 @@ const Header = () => {
     setIsMobileMenuOpen(false);
   };
 
-  // --- REMOVED: The handlePulseCheckClick function is no longer needed. ---
-
   const NavLinks = ({ isMobile = false }) => (
     <>
-      {/* --- MODIFIED: This is now a <Link> component instead of a <button> --- */}
       <Link
         to="/pulse-check"
-        onClick={() => setIsMobileMenuOpen(false)} // Closes menu on mobile
+        onClick={() => setIsMobileMenuOpen(false)}
         className={cn(
-          "inline-flex items-center justify-center", // Added for proper alignment
+          "inline-flex items-center justify-center",
           isMobile ? mobileBaseStyle : baseButtonStyle,
           isLoggedIn && hasPulseCheckData
             ? isMobile
@@ -135,6 +141,20 @@ const Header = () => {
       >
         Results
       </button>
+
+      {/* --- NEW: SDS Button, conditionally rendered --- */}
+      {isLoggedIn && completedFutureQuestionnaire && (
+        <Link
+          to="/self-discovery-summary"
+          onClick={() => setIsMobileMenuOpen(false)}
+          className={cn(
+            "inline-flex items-center justify-center",
+            isMobile ? mobileSecondaryStyle : secondaryButtonStyle
+          )}
+        >
+          SDS
+        </Link>
+      )}
     </>
   );
 

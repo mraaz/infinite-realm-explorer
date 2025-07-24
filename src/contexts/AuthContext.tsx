@@ -1,9 +1,14 @@
-
 // src/contexts/AuthContext.tsx
 
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useEffect,
+  useCallback,
+} from "react";
 import { jwtDecode } from "jwt-decode";
-import { getUserDataStatus } from "@/services/apiService"; // RE-ADDED: Import the service
+import { getUserDataStatus, getUserSettings } from "@/services/apiService";
 import PageLoading from "@/components/ui/page-loading";
 
 interface User {
@@ -17,10 +22,14 @@ interface AuthContextType {
   user: User | null;
   authToken: string | null;
   isLoggedIn: boolean;
-  hasPulseCheckData: boolean; // ADDED: Pulse Check status
-  hasFutureSelfData: boolean; // ADDED: Future Self status
+  isLoading: boolean;
+  hasPulseCheckData: boolean;
+  hasFutureSelfData: boolean;
+  completedFutureQuestionnaire: boolean;
   login: (token: string) => void;
   logout: () => void;
+  // --- NEW: Expose the refresh function ---
+  refreshAuthStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -29,96 +38,72 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasPulseCheckData, setHasPulseCheckData] = useState(false); // ADDED
-  const [hasFutureSelfData, setHasFutureSelfData] = useState(false); // ADDED
+  const [hasPulseCheckData, setHasPulseCheckData] = useState(false);
+  const [hasFutureSelfData, setHasFutureSelfData] = useState(false);
+  const [completedFutureQuestionnaire, setCompletedFutureQuestionnaire] =
+    useState(false);
 
-  const fetchUserStatus = async (token: string, decodedUser: User) => {
+  // --- NEW: Extracted the fetching logic into a reusable function ---
+  const fetchAndSetAuthStatus = useCallback(async (token: string) => {
     try {
-      const status = await getUserDataStatus(token);
-      setHasPulseCheckData(status.hasPulseCheckData);
-      setHasFutureSelfData(status.hasFutureSelfData);
-    } catch (error) {
-      console.error("[AuthContext] Failed to fetch user status:", error);
-      // Don't fail the entire auth process if status fetch fails
-      setHasPulseCheckData(false);
-      setHasFutureSelfData(false);
-    }
-  };
+      const decodedUser = jwtDecode<User>(token);
+      if (decodedUser.exp * 1000 > Date.now()) {
+        setUser(decodedUser);
+        setAuthToken(token);
 
-  useEffect(() => {
-    const checkTokenAndFetchStatus = async (token: string) => {
-      try {
-        const decodedUser = jwtDecode<User>(token);
-        if (decodedUser.exp * 1000 > Date.now()) {
-          setUser(decodedUser);
-          setAuthToken(token);
-          // ADDED: Fetch user status
-          await fetchUserStatus(token, decodedUser);
-        } else {
-          console.log("[AuthContext] Token expired, removing from storage");
-          localStorage.removeItem("infinitelife_jwt");
-        }
-      } catch (error) {
-        console.error("[AuthContext] Error decoding token:", error);
+        const [statusRes, settingsRes] = await Promise.all([
+          getUserDataStatus(token),
+          getUserSettings(token),
+        ]);
+
+        setHasPulseCheckData(statusRes.hasPulseCheckData);
+        setHasFutureSelfData(statusRes.hasFutureSelfData);
+        setCompletedFutureQuestionnaire(
+          settingsRes.completedFutureQuestionnaire
+        );
+      } else {
+        // Token expired, log out
         localStorage.removeItem("infinitelife_jwt");
-      } finally {
-        setIsLoading(false);
+        setUser(null);
+        setAuthToken(null);
       }
-    };
-
-    const storedToken = localStorage.getItem("infinitelife_jwt");
-    if (storedToken) {
-      console.log("[AuthContext] Found stored token, validating...");
-      checkTokenAndFetchStatus(storedToken);
-    } else {
-      console.log("[AuthContext] No stored token found");
-      setIsLoading(false);
-    }
-  }, []);
-
-  const login = async (newToken: string) => {
-    console.log("[AuthContext] Processing login with new token");
-    
-    try {
-      // Decode and validate the token
-      const decodedUser = jwtDecode<User>(newToken);
-      
-      if (decodedUser.exp * 1000 <= Date.now()) {
-        console.error("[AuthContext] Token is expired");
-        throw new Error("Token is expired");
-      }
-
-      // Store the token
-      localStorage.setItem("infinitelife_jwt", newToken);
-      
-      // Update state immediately
-      setUser(decodedUser);
-      setAuthToken(newToken);
-      
-      // Fetch user status in background
-      await fetchUserStatus(newToken, decodedUser);
-      
-      console.log("[AuthContext] Login successful");
     } catch (error) {
-      console.error("[AuthContext] Login failed:", error);
-      // Clean up on error
+      console.error("Auth context initialization/refresh failed:", error);
       localStorage.removeItem("infinitelife_jwt");
       setUser(null);
       setAuthToken(null);
-      setHasPulseCheckData(false);
-      setHasFutureSelfData(false);
-      throw error;
     }
+  }, []);
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const storedToken = localStorage.getItem("infinitelife_jwt");
+      if (storedToken) {
+        await fetchAndSetAuthStatus(storedToken);
+      }
+      setIsLoading(false);
+    };
+    initializeAuth();
+  }, [fetchAndSetAuthStatus]);
+
+  const login = (newToken: string) => {
+    localStorage.setItem("infinitelife_jwt", newToken);
+    window.location.reload();
   };
 
   const logout = () => {
-    console.log("[AuthContext] Logging out user");
     localStorage.removeItem("infinitelife_jwt");
     setUser(null);
     setAuthToken(null);
-    setHasPulseCheckData(false);
-    setHasFutureSelfData(false);
     window.location.href = "/";
+  };
+
+  // --- NEW: The function that will be called from other components ---
+  const refreshAuthStatus = async () => {
+    const token = localStorage.getItem("infinitelife_jwt");
+    if (token) {
+      await fetchAndSetAuthStatus(token);
+    }
   };
 
   if (isLoading) {
@@ -129,10 +114,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     user,
     authToken,
     isLoggedIn: !!user,
-    hasPulseCheckData, // ADDED
-    hasFutureSelfData, // ADDED
+    isLoading,
+    hasPulseCheckData,
+    hasFutureSelfData,
+    completedFutureQuestionnaire,
     login,
     logout,
+    refreshAuthStatus, // Expose the new function
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

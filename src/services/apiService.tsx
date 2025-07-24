@@ -55,6 +55,20 @@ export interface PulseCheckStatePayload {
   createdAt: string;
 }
 
+export interface SummaryResponse {
+  title: string;
+  overallSummary: string;
+  keyInsights: {
+    title: string;
+    description: string;
+  }[];
+  actionableSteps: {
+    pillar: string;
+    recommendation: string;
+    firstStep: string;
+  }[];
+}
+
 const API_BASE_URL =
   "https://ffwkwcix01.execute-api.us-east-1.amazonaws.com/prod";
 
@@ -199,4 +213,90 @@ export const getUserDataStatus = async (token: string) => {
     console.error("Error fetching user data status:", error);
     return { hasPulseCheckData: false, hasFutureSelfData: false };
   }
+};
+
+/**
+ * Fetches user-specific settings, like whether they have completed the future self questionnaire.
+ * This is an authenticated endpoint.
+ * @param token - The user's JWT authorization token.
+ * @returns An object containing the user's settings.
+ */
+export const getUserSettings = async (
+  token: string
+): Promise<{ completedFutureQuestionnaire: boolean }> => {
+  const response = await fetch(`${API_BASE_URL}/user-settings`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    // Throws an error that can be caught by the calling function
+    throw new Error("Failed to fetch user settings");
+  }
+
+  return response.json();
+};
+
+/**
+ * Kicks off the summary generation process on the backend.
+ * This function will likely time out, which is EXPECTED. We catch the error
+ * and resolve successfully to let the frontend know the process has started.
+ * @param answers - The user's complete set of answers.
+ * @param token - The user's JWT authorization token.
+ * @returns A promise that resolves when the request is sent.
+ */
+export const generateSummary = async (
+  answers: Record<string, any>,
+  token: string
+): Promise<SummaryResponse> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/generate-summary`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ answers }),
+    });
+    
+    if (!response.ok) {
+      throw new Error("Failed to generate summary");
+    }
+    
+    return await response.json();
+  } catch (error) {
+    // We EXPECT a network error here because the API Gateway will time out.
+    // We can safely ignore it and proceed, as the Lambda will continue running.
+    console.log("Summary generation started. Ignoring expected timeout error.");
+    throw error;
+  }
+};
+
+/**
+ * Fetches an existing self-discovery summary from the database.
+ * @param token - The user's JWT authorization token.
+ * @returns A promise that resolves to the saved summary object.
+ */
+export const getSummary = async (token: string): Promise<SummaryResponse> => {
+  const response = await fetch(`${API_BASE_URL}/generate-summary`, {
+    method: "GET", // This is a GET request
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error(
+        "No summary found. Please complete the questionnaire first."
+      );
+    }
+    throw new Error("Failed to fetch summary.");
+  }
+
+  return response.json();
 };

@@ -12,7 +12,6 @@ const VideoCenterpiece = () => {
   const [videoSrc, setVideoSrc] = useState(videoSD);
 
   useEffect(() => {
-    // Fix TypeScript error by properly typing the connection
     const connection = (navigator as any).connection;
     if (connection) {
       const isSlowConnection =

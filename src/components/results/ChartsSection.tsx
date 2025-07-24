@@ -2,7 +2,6 @@ import {
   PulsingRadarChart,
   PillarProgress,
 } from "@/components/PulsingRadarChart";
-import { Button } from "@/components/ui/button"; // Assuming you have a shadcn/ui Button component
 
 interface ChartsSectionProps {
   currentProgress: PillarProgress;

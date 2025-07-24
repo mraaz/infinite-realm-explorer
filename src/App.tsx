@@ -11,7 +11,6 @@ import { Toaster } from "@/components/ui/toaster";
 import Index from "./pages/Index";
 
 // Lazy load all pages for better performance
-// const Index = lazy(() => import("./pages/Index")); // Temporarily commented out
 const OnboardingQuestionnaire = lazy(
   () => import("./pages/OnboardingQuestionnaire")
 );
@@ -28,6 +27,8 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const PulseCheckResults = lazy(
   () => import("./components/pulse-check/PulseCheckResults")
 );
+// --- NEW: Import the summary page ---
+const SelfDiscoverySummary = lazy(() => import("./pages/SelfDiscoverySummary"));
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,11 @@ const App = () => (
               <Route
                 path="/onboarding-questionnaire"
                 element={<OnboardingQuestionnaire />}
+              />
+              {/* --- NEW: Add the route for the summary page --- */}
+              <Route
+                path="/self-discovery-summary"
+                element={<SelfDiscoverySummary />}
               />
               <Route path="/results" element={<Results />} />
               <Route

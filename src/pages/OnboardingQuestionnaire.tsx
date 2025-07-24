@@ -7,6 +7,8 @@ import OverallProgressBar from "@/components/onboarding-questionnaire/OverallPro
 import { useOnboardingQuestionnaireStore } from "@/store/onboardingQuestionnaireStore";
 import { useMobileRings } from "@/hooks/use-mobile-rings";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext"; // Import useAuth
+import PageLoading from "@/components/ui/page-loading"; // Import a loader
 
 const getAuthToken = () => localStorage.getItem("infinitelife_jwt");
 
@@ -14,32 +16,47 @@ const OnboardingQuestionnaire = () => {
   const navigate = useNavigate();
   const { isMobile, isExpanded } = useMobileRings();
 
-  // Select state from the store
+  // --- NEW: Get user's completion status from AuthContext ---
+  const { completedFutureQuestionnaire, isLoading: isAuthLoading } = useAuth();
+
   const {
     currentQuestion,
     answers,
-    isLoading,
+    isLoading: isQuestionLoading,
     isCompleted,
     initializeQuestionnaire,
     submitAnswer,
     previousQuestion,
     currentQuestionIndex,
+    pillarProgress,
+    overallProgress,
   } = useOnboardingQuestionnaireStore();
 
-  const pillarProgress = useOnboardingQuestionnaireStore(
-    (state) => state.pillarProgress
-  ) || { career: 0, finances: 0, health: 0, connections: 0 };
+  // --- NEW: Guardrail Effect ---
+  useEffect(() => {
+    // Wait for the auth context to finish loading
+    if (isAuthLoading) {
+      return;
+    }
+    // If the user has already completed the survey, redirect them
+    if (completedFutureQuestionnaire) {
+      navigate("/self-discovery-summary");
+    }
+  }, [completedFutureQuestionnaire, isAuthLoading, navigate]);
 
   useEffect(() => {
-    const token = getAuthToken();
-    initializeQuestionnaire(token || undefined);
-  }, [initializeQuestionnaire]);
+    // Only initialize if the user hasn't completed it yet
+    if (!isAuthLoading && !completedFutureQuestionnaire) {
+      const token = getAuthToken();
+      initializeQuestionnaire(token || undefined);
+    }
+  }, [initializeQuestionnaire, isAuthLoading, completedFutureQuestionnaire]);
 
   useEffect(() => {
     if (isCompleted) {
       const redirectTimeout = setTimeout(() => {
-        navigate("/results");
-      }, 2000);
+        navigate("/self-discovery-summary");
+      }, 1000); // Shortened timeout
       return () => clearTimeout(redirectTimeout);
     }
   }, [isCompleted, navigate]);
@@ -56,19 +73,16 @@ const OnboardingQuestionnaire = () => {
     previousQuestion(token || undefined);
   };
 
-  const overallPercentage =
-    (pillarProgress.career +
-      pillarProgress.finances +
-      pillarProgress.health +
-      pillarProgress.connections) /
-    4;
-
-  // Dynamic spacing based on mobile state
   const getQuestionSpacing = () => {
-    if (!isMobile) return "mt-12"; // Desktop: original spacing
-    if (isExpanded) return "mt-4"; // Mobile expanded: moderate spacing
-    return "mt-2"; // Mobile collapsed: minimal spacing
+    if (!isMobile) return "mt-12";
+    if (isExpanded) return "mt-4";
+    return "mt-2";
   };
+
+  // --- NEW: Show a loading spinner while auth is checked ---
+  if (isAuthLoading) {
+    return <PageLoading />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#16161a]">
@@ -86,8 +100,10 @@ const OnboardingQuestionnaire = () => {
 
           <ClarityRings progress={pillarProgress} threshold={80} />
 
-          <div className={cn("transition-all duration-300", getQuestionSpacing())}>
-            {isLoading && (
+          <div
+            className={cn("transition-all duration-300", getQuestionSpacing())}
+          >
+            {isQuestionLoading && (
               <div className="text-center text-white py-10">
                 <h2 className="text-2xl font-bold">Loading...</h2>
               </div>
@@ -95,26 +111,24 @@ const OnboardingQuestionnaire = () => {
             {isCompleted && (
               <div className="text-center text-white py-10">
                 <h2 className="text-2xl font-bold">Questionnaire Complete!</h2>
-                <p className="text-gray-400 mt-2">
-                  Taking you to your results...
-                </p>
+                <p className="text-gray-400 mt-2">Crafting your summary...</p>
               </div>
             )}
-            {!isLoading && !isCompleted && currentQuestion && (
+            {!isQuestionLoading && !isCompleted && currentQuestion && (
               <QuestionBox
                 key={currentQuestion.id}
                 question={currentQuestion}
                 value={answers[currentQuestion.id]}
                 onSubmit={handleSubmitAnswer}
-                isSubmitting={isLoading}
+                isSubmitting={isQuestionLoading}
                 onPrevious={handlePrevious}
                 isFirstQuestion={currentQuestionIndex === 0}
               />
             )}
           </div>
 
-          {!isCompleted && !isLoading && (
-            <OverallProgressBar value={overallPercentage} />
+          {!isCompleted && !isQuestionLoading && (
+            <OverallProgressBar value={overallProgress} />
           )}
         </div>
       </main>

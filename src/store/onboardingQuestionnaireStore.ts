@@ -1,4 +1,9 @@
 import { create } from "zustand";
+import {
+  generateSummary,
+  getSummary,
+  SummaryResponse,
+} from "@/services/apiService";
 
 // Define the shape of a single question
 export interface Question {
@@ -36,15 +41,20 @@ interface QuestionnaireState {
   finalScores: Record<string, any> | null;
   pillarProgress: PillarProgress;
   currentQuestionIndex: number;
+  isGeneratingSummary: boolean;
+  summary: SummaryResponse | null;
+  summaryError: string | null;
+  overallProgress: number; // Added for the progress bar fix
   initializeQuestionnaire: (authToken?: string) => Promise<void>;
   submitAnswer: (
     questionId: string,
     answer: any,
     authToken?: string
   ) => Promise<void>;
-  // --- UPDATED --- Renamed for clarity and made async
   previousQuestion: (authToken?: string) => Promise<void>;
   saveGuestProgressAfterLogin: (authToken: string) => Promise<void>;
+  fetchSummary: (authToken: string) => Promise<SummaryResponse | null>;
+  clearSummary: () => void;
 }
 
 // Use the API Gateway URL
@@ -61,9 +71,12 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
     finalScores: null,
     pillarProgress: { career: 0, finances: 0, health: 0, connections: 0 },
     currentQuestionIndex: 0,
+    isGeneratingSummary: false,
+    summary: null,
+    summaryError: null,
+    overallProgress: 0,
 
     // ACTIONS
-
     initializeQuestionnaire: async (authToken) => {
       if (authToken) {
         set({ isLoading: true });
@@ -85,7 +98,6 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
               health: 0,
               connections: 0,
             },
-            // --- FIX --- Set index from the backend's response
             currentQuestionIndex:
               data.currentQuestionIndex ||
               Object.keys(data.answers || {}).length,
@@ -111,7 +123,6 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
     submitAnswer: async (questionId, answer, authToken) => {
       const updatedAnswers = { ...get().answers, [questionId]: answer };
       set({ answers: updatedAnswers, isLoading: true });
-
       const headers: HeadersInit = {
         "Content-Type": "application/json",
         ...(authToken && { Authorization: `Bearer ${authToken}` }),
@@ -129,29 +140,45 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
         const data = await response.json();
 
         if (data.status === "completed") {
-          if (!authToken) {
-            localStorage.setItem(
-              "guestResults",
-              JSON.stringify({
-                finalScores: data.finalScores,
-                pillarProgress: data.pillarProgress,
-                answers: updatedAnswers,
-              })
-            );
-          }
+          // Set completion immediately to allow redirect
           set({
-            isCompleted: true,
-            currentQuestion: null,
-            finalScores: data.finalScores,
             pillarProgress: data.pillarProgress,
+            finalScores: data.finalScores,
+            overallProgress: 100,
             isLoading: false,
+            isCompleted: true, // Set immediately for redirect
+            isGeneratingSummary: true, // Show the "Crafting..." message
           });
+
+          // Generate summary in background without blocking completion
+          if (authToken) {
+            generateSummary(updatedAnswers, authToken)
+              .then((summaryData) => {
+                set({
+                  summary: summaryData,
+                  isGeneratingSummary: false,
+                });
+              })
+              .catch((summaryError) => {
+                console.log("Summary generation failed (expected due to timeout):", summaryError);
+                set({
+                  summaryError: "Summary generation in progress...",
+                  isGeneratingSummary: false,
+                });
+              });
+          } else {
+            set({
+              summaryError:
+                "You must be logged in to generate a personalized summary.",
+              isGeneratingSummary: false,
+            });
+          }
         } else {
           set({
             currentQuestion: data.nextQuestion,
             pillarProgress: data.pillarProgress,
-            // --- FIX --- Set the index from the backend's response
             currentQuestionIndex: data.currentQuestionIndex,
+            overallProgress: data.overallProgress,
             isLoading: false,
           });
         }
@@ -161,7 +188,6 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
       }
     },
 
-    // --- THIS REPLACES your old goToPreviousQuestion function ---
     previousQuestion: async (authToken) => {
       const { currentQuestion, answers, currentQuestionIndex } = get();
       if (!currentQuestion || currentQuestionIndex === 0) return;
@@ -193,7 +219,6 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
           currentQuestion: data.previousQuestion,
           pillarProgress: data.pillarProgress,
           answers: data.updatedAnswers,
-          // --- FIX --- Set the index from the backend's response
           currentQuestionIndex: data.currentQuestionIndex,
           isLoading: false,
         });
@@ -220,6 +245,22 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
       } catch (error) {
         console.error("Failed to save guest progress:", error);
       }
+    },
+
+    fetchSummary: async (authToken: string) => {
+      if (get().summary) return get().summary;
+      try {
+        const summaryData = await getSummary(authToken);
+        set({ summary: summaryData });
+        return summaryData;
+      } catch (error) {
+        set({ summaryError: (error as Error).message });
+        return null;
+      }
+    },
+
+    clearSummary: () => {
+      set({ summary: null, isCompleted: false });
     },
   })
 );

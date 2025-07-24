@@ -49,7 +49,7 @@ const FutureQuestionnaire: React.FC = () => {
       ).reduce((sum: number, count: number) => sum + count, 0) as number;
 
       // Check if 3 or more questions have been answered.
-      if (totalQuestionsAnswered >= 3) {
+      if ((totalQuestionsAnswered as number) >= 3) {
         setIsChatComplete(true);
       }
     }
