@@ -4,6 +4,7 @@ import type React from "react";
 import { Target, TrendingUp, Heart, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMobileRings } from "@/hooks/use-mobile-rings";
+import { useProgressCalculation } from "@/hooks/useProgressCalculation";
 
 interface PillarProgress {
   career: number;
@@ -99,11 +100,14 @@ function ClarityRing({
 }
 
 function CompactProgressBar({ progress, onClick }: { progress: PillarProgress; onClick: () => void }) {
+  const { calculateCurrentProgress } = useProgressCalculation();
+  const calculatedProgress = calculateCurrentProgress();
+  
   const rings = [
-    { key: "career", progress: progress.career, color: "#a855f7", label: "Career" },
-    { key: "finances", progress: progress.finances, color: "#3b82f6", label: "Financials" },
-    { key: "health", progress: progress.health, color: "#22c55e", label: "Health" },
-    { key: "connections", progress: progress.connections, color: "#f97316", label: "Connections" },
+    { key: "career", progress: calculatedProgress.career, color: "#a855f7", label: "Career" },
+    { key: "finances", progress: calculatedProgress.finances, color: "#3b82f6", label: "Financials" },
+    { key: "health", progress: calculatedProgress.health, color: "#22c55e", label: "Health" },
+    { key: "connections", progress: calculatedProgress.connections, color: "#f97316", label: "Connections" },
   ];
 
   return (
@@ -133,11 +137,15 @@ function CompactProgressBar({ progress, onClick }: { progress: PillarProgress; o
 
 export function ClarityRings({ progress, threshold }: ClarityRingsProps) {
   const { isMobile, isExpanded, toggleExpanded, shouldShowRings } = useMobileRings();
+  const { calculateCurrentProgress } = useProgressCalculation();
+  
+  // Use calculated progress that includes section completion logic
+  const calculatedProgress = calculateCurrentProgress();
 
   const rings = [
     {
       key: "career",
-      progress: progress.career,
+      progress: calculatedProgress.career,
       color: "#a855f7",
       textColor: "text-purple-400",
       icon: <Target className="w-6 h-6" />,
@@ -145,7 +153,7 @@ export function ClarityRings({ progress, threshold }: ClarityRingsProps) {
     },
     {
       key: "finances",
-      progress: progress.finances,
+      progress: calculatedProgress.finances,
       color: "#3b82f6",
       textColor: "text-blue-400",
       icon: <TrendingUp className="w-6 h-6" />,
@@ -153,7 +161,7 @@ export function ClarityRings({ progress, threshold }: ClarityRingsProps) {
     },
     {
       key: "health",
-      progress: progress.health,
+      progress: calculatedProgress.health,
       color: "#22c55e",
       textColor: "text-green-400",
       icon: <Heart className="w-6 h-6" />,
@@ -161,7 +169,7 @@ export function ClarityRings({ progress, threshold }: ClarityRingsProps) {
     },
     {
       key: "connections",
-      progress: progress.connections,
+      progress: calculatedProgress.connections,
       color: "#f97316",
       textColor: "text-orange-400",
       icon: <Users className="w-6 h-6" />,
@@ -175,7 +183,7 @@ export function ClarityRings({ progress, threshold }: ClarityRingsProps) {
       {isMobile && (
         <div className="mb-4">
           {!isExpanded && (
-            <CompactProgressBar progress={progress} onClick={toggleExpanded} />
+            <CompactProgressBar progress={calculatedProgress} onClick={toggleExpanded} />
           )}
         </div>
       )}

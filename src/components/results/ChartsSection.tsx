@@ -8,7 +8,6 @@ interface ChartsSectionProps {
   futureProgress: PillarProgress;
   onPillarClick: (pillar: string) => void;
   activePillar?: string;
-  onStartFutureQuestionnaire: () => void;
 }
 
 const ChartsSection = ({

@@ -45,6 +45,7 @@ interface QuestionnaireState {
   summary: SummaryResponse | null;
   summaryError: string | null;
   overallProgress: number; // Added for the progress bar fix
+  currentSection: string | null; // Track current section for UI purposes
   initializeQuestionnaire: (authToken?: string) => Promise<void>;
   submitAnswer: (
     questionId: string,
@@ -75,6 +76,7 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
     summary: null,
     summaryError: null,
     overallProgress: 0,
+    currentSection: null,
 
     // ACTIONS
     initializeQuestionnaire: async (authToken) => {
@@ -101,6 +103,7 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
             currentQuestionIndex:
               data.currentQuestionIndex ||
               Object.keys(data.answers || {}).length,
+            currentSection: data.nextQuestion?.section || null,
             isLoading: false,
           });
         } catch (error) {
@@ -113,6 +116,7 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
           answers: {},
           pillarProgress: { career: 0, finances: 0, health: 0, connections: 0 },
           currentQuestionIndex: 0,
+          currentSection: GUEST_USER_FIRST_QUESTION.section,
           isLoading: false,
           isCompleted: false,
           finalScores: null,
@@ -179,6 +183,7 @@ export const useOnboardingQuestionnaireStore = create<QuestionnaireState>(
             pillarProgress: data.pillarProgress,
             currentQuestionIndex: data.currentQuestionIndex,
             overallProgress: data.overallProgress,
+            currentSection: data.nextQuestion?.section,
             isLoading: false,
           });
         }
