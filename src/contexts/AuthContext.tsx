@@ -8,6 +8,7 @@ import React, {
   useCallback,
   useMemo,
   useReducer,
+  useRef,
 } from "react";
 import { jwtDecode } from "jwt-decode";
 import { getUserDataStatus, getUserSettings } from "@/services/apiService";
@@ -110,6 +111,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Cache refs for memoization
   const tokenCacheRef = useState<TokenCache | null>(null)[0];
   const dataCacheRef = useState<DataCache | null>(null)[0];
+
+  // Race condition prevention refs
+  const loginInProgressRef = useRef(false);
+  const pendingRequestsRef = useRef<Map<string, Promise<any>>>(new Map());
+  const retryControllersRef = useRef<Map<string, AbortController>>(new Map());
 
   // Memoized token validation with caching
   const validateAndDecodeToken = useCallback((token: string): User | null => {
