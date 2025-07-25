@@ -86,6 +86,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     initializeAuth();
   }, [fetchAndSetAuthStatus]);
 
+  // Delayed user data fetching with retry logic
+  const fetchUserDataWithDelay = useCallback(async (token: string, retryCount = 0) => {
+    const maxRetries = 3;
+    const delay = 500 + (retryCount * 500); // Increasing delay: 500ms, 1s, 1.5s
+    
+    try {
+      console.log(`[Auth] Fetching user data (attempt ${retryCount + 1})`);
+      
+      // Wait before making API calls to avoid CORS timing issues
+      await new Promise(resolve => setTimeout(resolve, delay));
+      
+      const [statusRes, settingsRes] = await Promise.all([
+        getUserDataStatus(token),
+        getUserSettings(token),
+      ]);
+      
+      setHasPulseCheckData(statusRes.hasPulseCheckData);
+      setHasFutureSelfData(statusRes.hasFutureSelfData);
+      setCompletedFutureQuestionnaire(settingsRes.completedFutureQuestionnaire);
+      console.log("[Auth] User data fetched successfully");
+    } catch (error) {
+      console.warn(`[Auth] Failed to fetch user data (attempt ${retryCount + 1}):`, error);
+      
+      // Retry if it's a network/CORS error and we haven't exceeded max retries
+      if (retryCount < maxRetries) {
+        console.log(`[Auth] Retrying user data fetch in ${delay}ms...`);
+        setTimeout(() => {
+          fetchUserDataWithDelay(token, retryCount + 1);
+        }, delay);
+      } else {
+        console.warn("[Auth] Max retries exceeded for user data fetching");
+      }
+    }
+  }, []);
+
   const login = async (newToken: string) => {
     try {
       console.log("[Auth] Starting login with token");
@@ -96,27 +131,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw new Error("Token is expired");
       }
       
-      // Store token and set user immediately
+      // Store token and set user immediately (core authentication only)
       localStorage.setItem("infinitelife_jwt", newToken);
       setUser(decodedUser);
       setAuthToken(newToken);
       console.log("[Auth] Core authentication successful");
       
-      // Fetch additional user data in background (non-blocking)
-      try {
-        const [statusRes, settingsRes] = await Promise.all([
-          getUserDataStatus(newToken),
-          getUserSettings(newToken),
-        ]);
-        
-        setHasPulseCheckData(statusRes.hasPulseCheckData);
-        setHasFutureSelfData(statusRes.hasFutureSelfData);
-        setCompletedFutureQuestionnaire(settingsRes.completedFutureQuestionnaire);
-        console.log("[Auth] User data fetched successfully");
-      } catch (dataError) {
-        console.warn("[Auth] Failed to fetch user data, but login still successful:", dataError);
-        // Don't throw here - user is still authenticated
-      }
+      // Defer user data fetching to avoid CORS timing issues
+      fetchUserDataWithDelay(newToken);
+      
     } catch (error) {
       console.error("[Auth] Login failed:", error);
       localStorage.removeItem("infinitelife_jwt");
