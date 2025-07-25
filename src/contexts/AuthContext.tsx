@@ -117,7 +117,52 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const pendingRequestsRef = useRef<Map<string, Promise<any>>>(new Map());
   const retryControllersRef = useRef<Map<string, AbortController>>(new Map());
 
-  // Memoized token validation with caching
+  // Request deduplication helper
+  const withRequestDeduplication = useCallback((key: string, requestFn: () => Promise<any>): Promise<any> => {
+    const existingRequest = pendingRequestsRef.current.get(key);
+    if (existingRequest) {
+      performanceRef.cacheHits++;
+      return existingRequest;
+    }
+
+    const newRequest = requestFn().finally(() => {
+      pendingRequestsRef.current.delete(key);
+    });
+    
+    pendingRequestsRef.current.set(key, newRequest);
+    performanceRef.cacheMisses++;
+    return newRequest;
+  }, [performanceRef]);
+
+  // Atomic cache operations to prevent race conditions
+  const updateTokenCacheAtomically = useCallback((token: string, decodedUser: User) => {
+    if (tokenCacheRef) {
+      // Atomic update - all or nothing
+      const newCache = {
+        token,
+        decodedUser,
+        expiry: decodedUser.exp * 1000
+      };
+      Object.assign(tokenCacheRef, newCache);
+    }
+  }, [tokenCacheRef]);
+
+  const updateDataCacheAtomically = useCallback((data: any) => {
+    if (dataCacheRef) {
+      const now = Date.now();
+      const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+      
+      // Atomic update
+      const newCache = {
+        data,
+        timestamp: now,
+        ttl: CACHE_TTL
+      };
+      Object.assign(dataCacheRef, newCache);
+    }
+  }, [dataCacheRef]);
+
+  // Memoized token validation with atomic cache updates
   const validateAndDecodeToken = useCallback((token: string): User | null => {
     performanceRef.authChecks++;
     
@@ -137,19 +182,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return null;
       }
 
-      // Update cache
-      if (tokenCacheRef) {
-        tokenCacheRef.token = token;
-        tokenCacheRef.decodedUser = decodedUser;
-        tokenCacheRef.expiry = decodedUser.exp * 1000;
-      }
-
+      // Atomic cache update
+      updateTokenCacheAtomically(token, decodedUser);
       return decodedUser;
     } catch (error) {
       console.error("Token validation failed:", error);
       return null;
     }
-  }, [tokenCacheRef, performanceRef]);
+  }, [tokenCacheRef, performanceRef, updateTokenCacheAtomically]);
 
   // Cache-aware data fetching
   const fetchUserDataCached = useCallback(async (token: string): Promise<void> => {
