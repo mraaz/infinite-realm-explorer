@@ -88,11 +88,40 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (newToken: string) => {
     try {
+      console.log("[Auth] Starting login with token");
+      
+      // First, validate and store the token
+      const decodedUser = jwtDecode<User>(newToken);
+      if (decodedUser.exp * 1000 <= Date.now()) {
+        throw new Error("Token is expired");
+      }
+      
+      // Store token and set user immediately
       localStorage.setItem("infinitelife_jwt", newToken);
-      await fetchAndSetAuthStatus(newToken);
+      setUser(decodedUser);
+      setAuthToken(newToken);
+      console.log("[Auth] Core authentication successful");
+      
+      // Fetch additional user data in background (non-blocking)
+      try {
+        const [statusRes, settingsRes] = await Promise.all([
+          getUserDataStatus(newToken),
+          getUserSettings(newToken),
+        ]);
+        
+        setHasPulseCheckData(statusRes.hasPulseCheckData);
+        setHasFutureSelfData(statusRes.hasFutureSelfData);
+        setCompletedFutureQuestionnaire(settingsRes.completedFutureQuestionnaire);
+        console.log("[Auth] User data fetched successfully");
+      } catch (dataError) {
+        console.warn("[Auth] Failed to fetch user data, but login still successful:", dataError);
+        // Don't throw here - user is still authenticated
+      }
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error("[Auth] Login failed:", error);
       localStorage.removeItem("infinitelife_jwt");
+      setUser(null);
+      setAuthToken(null);
       throw error;
     }
   };
