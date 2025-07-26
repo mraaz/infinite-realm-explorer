@@ -74,22 +74,74 @@ def get_previous_question_id(current_question_id):
     except (ValueError, IndexError):
         return None
 
-def calculate_pillar_progress(section_scores, questions_config):
-    pillars = {"career": {"earned": 0, "possible": 0}, "finances": {"earned": 0, "possible": 0}, "health": {"earned": 0, "possible": 0}, "connections": {"earned": 0, "possible": 0}}
+def get_pillar_from_section(section_id):
+    """Map section ID to pillar name."""
+    pillar_key = section_id.split('_')[0]
+    return 'finances' if pillar_key == 'financials' else pillar_key
+
+def get_sections_for_pillar(pillar_name, questions_config):
+    """Get all section IDs that belong to a specific pillar."""
+    sections = []
+    for section_id in questions_config.get('sections', {}):
+        if get_pillar_from_section(section_id) == pillar_name:
+            sections.append(section_id)
+    return sections
+
+def is_pillar_completed(pillar_name, current_question_id, questions_config):
+    """Check if we've completed all sections of a pillar."""
+    pillar_sections = get_sections_for_pillar(pillar_name, questions_config)
+    if not pillar_sections:
+        return False
     
+    # Get the last section of this pillar
+    last_section = pillar_sections[-1]
+    last_section_config = questions_config.get('sections', {}).get(last_section)
+    if not last_section_config:
+        return False
+    
+    # Get the last question of the last section
+    last_question_in_pillar = last_section_config.get('questions', [])[-1]
+    
+    # Check if we've passed this question
+    question_flow = questions_config.get('question_flow', [])
+    try:
+        current_index = question_flow.index(current_question_id)
+        last_question_index = question_flow.index(last_question_in_pillar)
+        return current_index > last_question_index
+    except ValueError:
+        return False
+
+def calculate_pillar_progress(section_scores, questions_config, current_question_id=None, completed_pillars=None):
+    """Calculate pillar progress with proper completion tracking."""
+    if completed_pillars is None:
+        completed_pillars = set()
+    
+    pillars = {"career": {"earned": 0, "possible": 0}, "finances": {"earned": 0, "possible": 0}, 
+               "health": {"earned": 0, "possible": 0}, "connections": {"earned": 0, "possible": 0}}
+    
+    # Calculate base scores from all sections
     for section_id, section_data in questions_config.get('sections', {}).items():
-        pillar_key = section_id.split('_')[0]
-        if pillar_key == 'financials':
-            pillar_key = 'finances'
-            
+        pillar_key = get_pillar_from_section(section_id)
         if pillar_key in pillars:
             pillars[pillar_key]['possible'] += section_data.get('total_points', 0)
             pillars[pillar_key]['earned'] += section_scores.get(section_id, 0)
 
+    # Check for pillar completion if we have current question context
+    if current_question_id:
+        for pillar_name in pillars.keys():
+            if is_pillar_completed(pillar_name, current_question_id, questions_config):
+                completed_pillars.add(pillar_name)
+
+    # Calculate final percentages
     pillar_percentages = {}
     for pillar_key, scores in pillars.items():
-        percentage = (scores['earned'] / scores['possible']) * 100 if scores['possible'] > 0 else 0
-        pillar_percentages[pillar_key] = min(round(percentage, 2), 100)
+        if pillar_key in completed_pillars:
+            # Completed pillars are always 100%
+            pillar_percentages[pillar_key] = 100
+        else:
+            # Active pillar shows actual progress
+            percentage = (scores['earned'] / scores['possible']) * 100 if scores['possible'] > 0 else 0
+            pillar_percentages[pillar_key] = min(round(percentage, 2), 100)
         
     return pillar_percentages
 
@@ -147,27 +199,12 @@ def handle_answer(event_body, user):
         except Exception as e:
             print(f"ERROR saving state for user {user['sub']}: {e}")
     
-    # 5. Prepare the response.
-    progress_for_rings = calculate_pillar_progress(visual_section_scores, QUESTIONS_CONFIG)
-    
-    # --- NEW LOGIC TO SET PILLAR TO 100% ON COMPLETION ---
-    if next_question_id:
-        current_question_data = QUESTIONS_CONFIG['questions'].get(question_id)
-        next_question_data = QUESTIONS_CONFIG['questions'].get(next_question_id)
-
-        if current_question_data and next_question_data:
-            current_section_id = current_question_data.get('section')
-            next_section_id = next_question_data.get('section')
-
-            if current_section_id != next_section_id:
-                # We've transitioned. The pillar for the *current* section is now complete.
-                current_pillar_key = current_section_id.split('_')[0]
-                if current_pillar_key == 'financials':
-                    current_pillar_key = 'finances'
-                
-                if current_pillar_key in progress_for_rings:
-                    progress_for_rings[current_pillar_key] = 100
-    # --- END NEW LOGIC ---
+    # 5. Prepare the response with improved pillar progress calculation.
+    progress_for_rings = calculate_pillar_progress(
+        visual_section_scores, 
+        QUESTIONS_CONFIG, 
+        current_question_id=next_question_id if next_question_id else question_id
+    )
 
     if next_question_id:
         next_question_data = QUESTIONS_CONFIG['questions'][next_question_id]
@@ -214,7 +251,11 @@ def handle_previous(event_body, user):
             section_id = q_data.get('section', 'unknown')
             section_scores[section_id] = section_scores.get(section_id, 0) + score
     
-    progress = calculate_pillar_progress(section_scores, QUESTIONS_CONFIG)
+    progress = calculate_pillar_progress(
+        section_scores, 
+        QUESTIONS_CONFIG, 
+        current_question_id=previous_question_id
+    )
     previous_question_data = QUESTIONS_CONFIG['questions'].get(previous_question_id)
     question_flow = QUESTIONS_CONFIG.get('question_flow', [])
     previous_question_index = question_flow.index(previous_question_id) if previous_question_id in question_flow else 0
@@ -256,9 +297,13 @@ def handle_get_state(user):
         response = table.get_item(Key={'userId': user['sub']})
         if 'Item' in response:
             user_state = response['Item']
-            progress = calculate_pillar_progress(user_state.get('section_scores', {}), QUESTIONS_CONFIG)
-            user_state['pillarProgress'] = progress
             next_question_id = user_state.get('lastQuestionId')
+            progress = calculate_pillar_progress(
+                user_state.get('section_scores', {}), 
+                QUESTIONS_CONFIG, 
+                current_question_id=next_question_id
+            )
+            user_state['pillarProgress'] = progress
             if next_question_id and next_question_id != 'completed':
                 next_question_object = QUESTIONS_CONFIG['questions'].get(next_question_id)
                 user_state['nextQuestion'] = next_question_object
@@ -268,7 +313,7 @@ def handle_get_state(user):
             print(f"No state found for user {user['sub']}. Sending first question.")
             first_question_id = QUESTIONS_CONFIG['question_flow'][0]
             first_question = QUESTIONS_CONFIG['questions'][first_question_id]
-            initial_progress = calculate_pillar_progress({}, QUESTIONS_CONFIG)
+            initial_progress = calculate_pillar_progress({}, QUESTIONS_CONFIG, current_question_id=first_question_id)
             response_body = {'nextQuestion': first_question, 'pillarProgress': initial_progress}
             return {'statusCode': 200, 'body': json.dumps(response_body)}
     except Exception as e:
