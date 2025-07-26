@@ -1,3 +1,5 @@
+// src/components/results/insights/InsightCard.tsx
+
 import React from "react";
 import { RotateCcw } from "lucide-react";
 import { Insight } from "@/types/insights";
@@ -26,14 +28,10 @@ const InsightCard = ({
   const colorTheme = getInsightColor(insight.color);
 
   return (
-    <div
-      className="flip-card cursor-pointer h-48 group" // Added group for hover effects
-      onClick={onClick}
-    >
+    <div className="flip-card cursor-pointer h-48 group" onClick={onClick}>
       <div
-        className={`flip-card-inner ${isFlipped ? "flipped" : ""} ${
-          showPeekAnimation && isFirstCard ? "animate-peek" : ""
-        }`}
+        // FIX: Removed the 'animate-peek' logic from this className
+        className={`flip-card-inner ${isFlipped ? "flipped" : ""}`}
         style={{
           animationDelay: showPeekAnimation ? `${animationDelay}ms` : undefined,
         }}
@@ -42,7 +40,7 @@ const InsightCard = ({
         <div
           className={cn(
             "flip-card-front bg-[#1e1e24] p-6 rounded-2xl shadow-2xl border-t-4 overflow-hidden flex flex-col justify-between transition-all duration-300 transform group-hover:-translate-y-1",
-            colorTheme.border // Applies the dynamic border color (e.g., border-t-purple-500)
+            colorTheme.border
           )}
         >
           <div>
@@ -61,7 +59,7 @@ const InsightCard = ({
             </p>
           </div>
           {isFirstCard && (
-            <div className="flex items-center justify-end text-xs text-gray-500 animate-pulse">
+            <div className="flex items-center justify-end text-xs text-gray-500 animate-pulse pointer-events-none">
               <RotateCcw className="h-3 w-3 mr-1.5 flex-shrink-0" />
               <span>Click to flip</span>
             </div>
@@ -86,7 +84,7 @@ const InsightCard = ({
             </p>
           </div>
           {isFirstCard && (
-            <div className="flex items-center justify-end text-sm text-gray-400">
+            <div className="flex items-center justify-end text-sm text-gray-400 pointer-events-none">
               <RotateCcw className="h-3 w-3 mr-1.5 flex-shrink-0" />
               <span>Click to flip back</span>
             </div>
