@@ -9,6 +9,8 @@ import {
   QuestionnaireStatePayload,
   getPulseCheckState,
   PulseCheckStatePayload,
+  getSummary, // 1. Import getSummary
+  SummaryResponse, // 1. Import SummaryResponse type
 } from "@/services/apiService";
 
 // --- Component Imports ---
@@ -18,38 +20,11 @@ import ChartsSection from "@/components/results/ChartsSection";
 import InsightSynthesis from "@/components/results/InsightSynthesis";
 import ResultsFooter from "@/components/results/ResultsFooter";
 import PageLoading from "@/components/ui/page-loading";
-import { X } from "lucide-react"; // For the modal close icon
+import { X } from "lucide-react";
 
 // --- Type Imports ---
 import { PillarProgress } from "@/components/NewQuadrantChart";
 import { Insight } from "@/types/insights";
-
-// Mock data for InsightSynthesis
-const mockInsights: Insight[] = [
-  {
-    title: "Emphasis on Growth",
-    description:
-      "Your answers indicate a strong desire for personal and professional development.",
-    icon: "TrendingUp",
-    color: "purple",
-    backContent: {
-      title: "Actionable Insight",
-      content: "Consider setting SMART goals to channel this motivation.",
-    },
-  },
-  {
-    title: "Connection Oriented",
-    description:
-      "You frequently mention the importance of relationships and community.",
-    icon: "Users",
-    color: "orange",
-    backContent: {
-      title: "Actionable Insight",
-      content:
-        "Schedule regular time for networking or strengthening personal bonds.",
-    },
-  },
-];
 
 // --- Helper function for chart data ---
 const formatScoresForChart = (
@@ -114,7 +89,7 @@ const formatScoresForChart = (
   return progress;
 };
 
-// --- MERGED: SelfDiscoverySurvey Component with your text and my responsive classes ---
+// --- SelfDiscoverySurvey Component ---
 const SelfDiscoverySurvey = ({
   onStartClick,
 }: {
@@ -137,7 +112,7 @@ const SelfDiscoverySurvey = ({
   </section>
 );
 
-// --- MERGED: SurveyModal Component with your text and my responsive classes ---
+// --- SurveyModal Component ---
 const SurveyModal = ({
   isOpen,
   onClose,
@@ -185,15 +160,57 @@ const Results = () => {
     useState<QuestionnaireStatePayload | null>(null);
   const [pulseCheckState, setPulseCheckState] =
     useState<PulseCheckStatePayload | null>(null);
+  const [summary, setSummary] = useState<SummaryResponse | null>(null); // 2. Add state for summary
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activePillar, setActivePillar] = useState<string | undefined>();
-
   const [isSurveyModalOpen, setSurveyModalOpen] = useState(false);
 
   const { authToken, isLoggedIn, completedFutureQuestionnaire } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // 4. Update useMemo to use the new 'summary' state
+  const insights = useMemo(() => {
+    // The data now comes from the 'summary' state variable.
+    const actionableSteps = summary?.actionableSteps;
+
+    // The data from getSummary is clean JSON, so we don't need to parse DynamoDB format.
+    if (!actionableSteps || !Array.isArray(actionableSteps)) {
+      return [];
+    }
+
+    const pillarConfig: {
+      [key: string]: { icon: string; color: string };
+    } = {
+      Career: { icon: "Briefcase", color: "blue" },
+      Finances: { icon: "Landmark", color: "green" },
+      Health: { icon: "HeartPulse", color: "red" },
+      Connections: { icon: "Users", color: "orange" },
+    };
+
+    return actionableSteps.map((step) => {
+      const pillar = step.pillar;
+      const recommendation = step.recommendation;
+      const firstStep = step.firstStep;
+
+      const config = pillarConfig[pillar] || {
+        icon: "HelpCircle",
+        color: "gray",
+      };
+
+      return {
+        title: pillar,
+        description: recommendation,
+        icon: config.icon,
+        color: config.color,
+        backContent: {
+          title: "Your First Step",
+          content: firstStep,
+        },
+      } as Insight;
+    });
+  }, [summary]); // Dependency is now 'summary'
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -204,13 +221,16 @@ const Results = () => {
     const fetchAllData = async () => {
       if (authToken) {
         try {
-          const [questionnaireRes, pulseRes] = await Promise.all([
+          // 3. Fetch summary data along with other state
+          const [questionnaireRes, pulseRes, summaryRes] = await Promise.all([
             getQuestionnaireState(authToken),
             getPulseCheckState(authToken),
+            getSummary(authToken),
           ]);
 
           setQuestionnaireState(questionnaireRes);
           setPulseCheckState(pulseRes);
+          setSummary(summaryRes);
         } catch (err) {
           setError("Failed to load your results. Please try again later.");
           toast({
@@ -265,7 +285,7 @@ const Results = () => {
           />
 
           {completedFutureQuestionnaire ? (
-            <InsightSynthesis insights={mockInsights} />
+            <InsightSynthesis insights={insights} />
           ) : (
             <SelfDiscoverySurvey
               onStartClick={() => setSurveyModalOpen(true)}
