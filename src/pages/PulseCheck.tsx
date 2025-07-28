@@ -19,7 +19,8 @@ import {
 import { useAIResults } from "@/hooks/useAIResults";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate, useLocation } from "react-router-dom"; // Import useLocation
+import { useNavigate, useLocation } from "react-router-dom";
+import { logger } from "@/utils/logger";
 
 // Import sidebar component
 import YourJourneySidebar from "@/components/YourJourneySidebar";
@@ -61,17 +62,16 @@ const PulseCheck = () => {
   const isGuest =
     new URLSearchParams(window.location.search).get("guest") === "true";
 
-  // --- NEW useEffect for redirection logic ---
+  // Redirect logged-in users from guest mode
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const guestParam = params.get("guest");
 
-    // If guest=true is in the URL AND the user is logged in, redirect
     if (guestParam === "true" && isLoggedIn) {
-      console.log("Logged-in user accessed with ?guest=true. Redirecting...");
-      navigate("/pulse-check", { replace: true }); // Use replace to avoid adding to history stack
+      logger.info("Logged-in user accessed with guest mode, redirecting");
+      navigate("/pulse-check", { replace: true });
     }
-  }, [isLoggedIn, location.search, navigate]); // Depend on isLoggedIn and location.search
+  }, [isLoggedIn, location.search, navigate]);
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -82,17 +82,12 @@ const PulseCheck = () => {
     return () => window.removeEventListener("resize", checkIsMobile);
   }, []);
 
-  // Effect to check if user has already completed Pulse Check and redirect
+  // Check if user has already completed Pulse Check
   useEffect(() => {
-    const checkIfPulseCheckCompleted = async () => {
-      // Only proceed if user is logged in and NOT in guest mode (i.e., truly authenticated)
+    const checkCompletion = async () => {
       if (isLoggedIn && !isGuest && user?.sub && authToken) {
-        console.log(
-          "Checking if Pulse Check is already completed for user:",
-          user.sub
-        );
+        logger.debug("Checking pulse check completion for user", { userId: user.sub });
         try {
-          // --- REPLACE THIS PLACEHOLDER URL WITH YOUR ACTUAL LAMBDA API GATEWAY ENDPOINT for CHECKING ---
           const checkEndpoint = `https://ffwkwcix01.execute-api.us-east-1.amazonaws.com/prod/pulse-check-data/user/${user.sub}`;
 
           const response = await fetch(checkEndpoint, {
@@ -105,36 +100,29 @@ const PulseCheck = () => {
 
           if (response.ok) {
             const data = await response.json();
-            if (data && data.publicId) {
-              console.log(
-                "Pulse Check already completed. Redirecting to results page:",
-                data.publicId
-              );
+            if (data?.publicId) {
+              logger.info("Pulse check already completed, redirecting", { publicId: data.publicId });
               navigate(`/pulse-check-results?id=${data.publicId}`);
               toast({
                 title: "Welcome Back!",
-                description:
-                  "You've already completed your Pulse Check. Here are your results.",
+                description: "You've already completed your Pulse Check. Here are your results.",
               });
               return;
             }
           }
-          console.log(
-            "No existing Pulse Check data found or issue checking. User can proceed."
-          );
+          logger.debug("No existing pulse check data found, user can proceed");
         } catch (error) {
-          console.error("Error checking existing Pulse Check data:", error);
+          logger.error("Error checking pulse check completion", { error });
           toast({
             title: "Error",
-            description:
-              "Could not verify existing Pulse Check data. You may proceed.",
+            description: "Could not verify existing Pulse Check data. You may proceed.",
             variant: "destructive",
           });
         }
       }
     };
 
-    checkIfPulseCheckCompleted();
+    checkCompletion();
   }, [isLoggedIn, isGuest, user, authToken, navigate, toast]);
 
   const toggleMobileBars = () => {
@@ -204,27 +192,21 @@ const PulseCheck = () => {
       isCompleted &&
       aiResults &&
       !aiLoading &&
-      !isSavingResults && // Ensure we only try to save once
+      !isSavingResults &&
       isLoggedIn &&
-      !isGuest // Crucial: only save if truly logged in and not in guest URL mode
+      !isGuest
     ) {
-      console.log(
-        "AI Results available and user signed in. Attempting to save to DB."
-      );
+      logger.info("AI results ready, attempting to save to database");
       savePulseCheckResultsToDB(aiResults);
     }
-  }, [isCompleted, aiResults, aiLoading, isSavingResults, isLoggedIn, isGuest]); // Added isSavingResults to dependencies
+  }, [isCompleted, aiResults, aiLoading, isSavingResults, isLoggedIn, isGuest]);
 
   const savePulseCheckResultsToDB = async (results: typeof aiResults) => {
     if (!user || isGuest || !authToken) {
-      // Re-check conditions here for safety
-      console.log(
-        "Not saving results: User is not signed in, is a guest, or token is missing."
-      );
+      logger.warn("Cannot save results - user not authenticated or is guest");
       toast({
         title: "Sign in to save!",
-        description:
-          "Your results will be saved if you sign in. Otherwise, you can share an image or PDF.",
+        description: "Your results will be saved if you sign in. Otherwise, you can share an image or PDF.",
         variant: "default",
       });
       return;
@@ -249,10 +231,7 @@ const PulseCheck = () => {
         createdAt: createdAt,
       };
 
-      console.log(
-        "Sending Pulse Check results payload to backend for saving:",
-        payload
-      );
+      logger.debug("Sending pulse check results to backend", { payload });
 
       // --- REPLACE THIS PLACEHOLDER URL WITH YOUR ACTUAL LAMBDA API GATEWAY ENDPOINT for SAVING ---
       const lambdaEndpoint =
@@ -282,10 +261,7 @@ const PulseCheck = () => {
         throw new Error("Backend did not return a public ID for the results.");
       }
 
-      console.log(
-        "Pulse Check results saved successfully. Public ID:",
-        receivedPublicId
-      );
+      logger.info("Pulse check results saved successfully", { publicId: receivedPublicId });
       toast({
         title: "Results Saved!",
         description:
@@ -295,7 +271,7 @@ const PulseCheck = () => {
       // Redirect to the public results page after successful save, using the ID from backend
       navigate(`/pulse-check-results?id=${receivedPublicId}`);
     } catch (error: any) {
-      console.error("Error saving Pulse Check results:", error);
+      logger.error("Error saving pulse check results", { error });
       toast({
         title: "Save Failed",
         description:
