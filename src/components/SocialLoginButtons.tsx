@@ -2,6 +2,8 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { useSocialAuth } from '@/hooks/useSocialAuth';
+import { isDevelopment, generateMockJWT } from '@/utils/devAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SocialLoginButtonsProps {
   onLoginClick?: () => void;
@@ -11,10 +13,23 @@ interface SocialLoginButtonsProps {
 
 const SocialLoginButtons = ({ onLoginClick, showGuestOption = false, inModal = false }: SocialLoginButtonsProps) => {
   const { handleLoginClick } = useSocialAuth();
+  const { login } = useAuth();
 
   const handleProviderClick = (provider: 'google' | 'facebook' | 'discord') => {
     onLoginClick?.();
     handleLoginClick(provider);
+  };
+
+  const handleDevLogin = async () => {
+    if (!isDevelopment()) return;
+    
+    try {
+      const mockJWT = generateMockJWT();
+      onLoginClick?.();
+      await login(mockJWT);
+    } catch (error) {
+      console.error('Development login failed:', error);
+    }
   };
 
   // Remove problematic transforms when in modal
@@ -24,6 +39,19 @@ const SocialLoginButtons = ({ onLoginClick, showGuestOption = false, inModal = f
 
   return (
     <div className="space-y-4">
+      {/* Development Login Button - Only visible in development */}
+      {isDevelopment() && (
+        <Button
+          onClick={handleDevLogin}
+          className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-medium py-6 px-4 rounded-lg flex items-center justify-center gap-3 transition-all duration-300 border-2 border-green-500"
+        >
+          <div className="w-5 h-5 bg-green-400 rounded-full flex items-center justify-center">
+            <span className="text-green-800 text-xs font-bold">DEV</span>
+          </div>
+          Login as Dev User
+        </Button>
+      )}
+      
       {/* --- Google Button --- */}
       <Button
         onClick={() => handleProviderClick('google')}

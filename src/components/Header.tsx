@@ -7,6 +7,7 @@ import SocialLoginModal from "@/components/SocialLoginModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { branding } from "@/config/branding";
+import { isDevelopment, DEV_USER_CONFIG } from "@/utils/devAuth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -181,6 +182,13 @@ const Header = () => {
         </div>
 
         <div className="flex items-center space-x-4">
+          {/* Development Mode Indicator */}
+          {isDevelopment() && isLoggedIn && user?.email === DEV_USER_CONFIG.email && (
+            <div className="hidden sm:flex items-center px-2 py-1 bg-green-600/20 border border-green-500/30 rounded-md">
+              <span className="text-green-400 text-xs font-medium">DEV MODE</span>
+            </div>
+          )}
+          
           {isLoggedIn ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
