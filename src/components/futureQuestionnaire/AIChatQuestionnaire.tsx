@@ -5,6 +5,7 @@ import { Send, Loader2, ChevronDown, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Pillar } from "@/components/priority-ranking/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { logger } from "@/utils/logger";
 import {
   getQuestionnaireState,
   saveQuestionnaireProgress,
@@ -163,11 +164,11 @@ export const AIChatQuestionnaire: React.FC<AIChatQuestionnaireProps> = ({
         isFinalAnswer: isFinalAnswer,
       };
 
-      console.log("Sending payload to backend:", payload);
+      logger.debug("Sending payload to backend", { payload });
 
       const aiResponse = await processChatAnswer(payload, authToken!);
 
-      console.log("AI Response Received:", aiResponse);
+      logger.debug("AI response received", { aiResponse });
 
       let newHistory = [...conversationState.answers.history, userMessage];
       let tempState = JSON.parse(JSON.stringify(conversationState));

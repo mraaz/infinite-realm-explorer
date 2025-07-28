@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { PulseCheckCard } from '@/data/pulseCheckCards';
+import { logger } from '@/utils/logger';
 
 interface AIResults {
   Career: number;
@@ -55,28 +56,28 @@ export function useAIResults() {
         };
       });
 
-      console.log('Calling generate-scores with results:', results);
+      logger.debug('Calling generate-scores edge function', { results });
 
       const { data, error: functionError } = await supabase.functions.invoke('generate-scores', {
         body: { results }
       });
 
       if (functionError) {
-        console.error('Edge function error:', functionError);
+        logger.error('Edge function error', { functionError });
         throw new Error(functionError.message);
       }
 
       if (data.error) {
-        console.error('AI generation error:', data.error);
+        logger.error('AI generation error', { error: data.error });
         // Use fallback scores if AI fails
         const fallbackResults = generateFallbackScores(answers, cards);
         setAiResults(fallbackResults);
       } else {
-        console.log('AI results received:', data);
+        logger.info('AI results received successfully', { data });
         setAiResults(data as AIResults);
       }
     } catch (err) {
-      console.error('Error generating AI results:', err);
+      logger.error('Error generating AI results', { err });
       setError(err instanceof Error ? err.message : 'Failed to generate results');
       
       // Use fallback scores
