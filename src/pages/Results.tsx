@@ -218,27 +218,58 @@ const Results = () => {
       return;
     }
 
+    // src/pages/Results.tsx
+
     const fetchAllData = async () => {
       if (authToken) {
+        setIsLoading(true);
         try {
-          // 3. Fetch summary data along with other state
-          const [questionnaireRes, pulseRes, summaryRes] = await Promise.all([
-            getQuestionnaireState(authToken),
-            getPulseCheckState(authToken),
-            getSummary(authToken),
-          ]);
+          const [questionnaireRes, pulseRes, summaryRes] =
+            await Promise.allSettled([
+              getQuestionnaireState(authToken),
+              getPulseCheckState(authToken),
+              getSummary(authToken),
+            ]);
 
-          setQuestionnaireState(questionnaireRes);
-          setPulseCheckState(pulseRes);
-          setSummary(summaryRes);
+          if (questionnaireRes.status === "fulfilled") {
+            setQuestionnaireState(questionnaireRes.value);
+          } else {
+            console.error(
+              "Failed to get questionnaire state:",
+              questionnaireRes.reason
+            );
+            // Optionally, set an error specific to this part of the UI
+          }
+
+          if (pulseRes.status === "fulfilled") {
+            setPulseCheckState(pulseRes.value);
+          } else {
+            console.error("Failed to get pulse check state:", pulseRes.reason);
+          }
+
+          if (summaryRes.status === "fulfilled") {
+            setSummary(summaryRes.value);
+          } else {
+            console.error("Failed to get summary:", summaryRes.reason);
+            toast({
+              title: "Error Loading Insights",
+              description:
+                "There was a problem fetching your personalized insights.",
+              variant: "destructive",
+            });
+          }
+
+          // Check if all failed to show a general error
+          if (
+            questionnaireRes.status === "rejected" &&
+            pulseRes.status === "rejected"
+          ) {
+            setError("Failed to load your results. Please try again later.");
+          }
         } catch (err) {
-          setError("Failed to load your results. Please try again later.");
-          toast({
-            title: "Error Loading Data",
-            description:
-              "There was a problem fetching your results. Please refresh the page.",
-            variant: "destructive",
-          });
+          // This catch is a fallback, but Promise.allSettled should prevent it from being hit for API errors.
+          setError("An unexpected error occurred.");
+          console.error("Unexpected error in fetchAllData:", err);
         } finally {
           setIsLoading(false);
         }
