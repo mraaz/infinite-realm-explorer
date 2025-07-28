@@ -72,6 +72,32 @@ export interface SummaryResponse {
 const API_BASE_URL =
   "https://ffwkwcix01.execute-api.us-east-1.amazonaws.com/prod";
 
+/**
+ * Refresh the user's authentication token
+ */
+export const refreshAuthToken = async (currentToken: string): Promise<string> => {
+  const url = `${API_BASE_URL}/auth/refresh`;
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${currentToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error("Failed to refresh authentication token");
+    }
+    
+    const data = await response.json();
+    return data.token;
+  } catch (error) {
+    console.error("Token refresh failed:", error);
+    throw error;
+  }
+};
+
 export const getQuestionnaireState = async (
   token: string
 ): Promise<QuestionnaireStatePayload> => {
