@@ -73,7 +73,7 @@ const API_BASE_URL =
   "https://ffwkwcix01.execute-api.us-east-1.amazonaws.com/prod";
 
 /**
- * Refresh the user's authentication token
+ * Refresh the user's authentication token using secure cookies
  */
 export const refreshAuthToken = async (currentToken: string): Promise<string> => {
   const url = `${API_BASE_URL}/auth/refresh`;
@@ -81,9 +81,9 @@ export const refreshAuthToken = async (currentToken: string): Promise<string> =>
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${currentToken}`,
         "Content-Type": "application/json",
       },
+      credentials: 'include', // Include cookies in request
     });
     
     if (!response.ok) {
@@ -106,9 +106,9 @@ export const getQuestionnaireState = async (
     const response = await fetch(url, {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
+      credentials: 'include',
     });
     if (!response.ok) throw new Error("Failed to fetch questionnaire state.");
     return await response.json();
@@ -127,9 +127,9 @@ export const saveQuestionnaireProgress = async (
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
+      credentials: 'include',
       body: JSON.stringify(payload),
     });
     if (!response.ok) throw new Error("Failed to save progress.");
@@ -149,9 +149,9 @@ export const processChatAnswer = async (
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
+      credentials: 'include',
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
@@ -174,9 +174,9 @@ export const generateBlueprint = async (
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
+      credentials: 'include',
       body: JSON.stringify(payload),
     });
     if (!response.ok) throw new Error("Failed to generate blueprint.");
@@ -197,9 +197,9 @@ export const getPulseCheckState = async (
     const response = await fetch(url, {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
+      credentials: 'include',
     });
     if (response.status === 404) {
       console.log("No Pulse Check data found for the user.");
@@ -228,8 +228,9 @@ export const getUserDataStatus = async (token: string) => {
     const response = await fetch(url, {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
+      credentials: 'include',
     });
     if (!response.ok) {
       throw new Error("Failed to fetch user data status");
@@ -254,8 +255,8 @@ export const getUserSettings = async (
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     },
+    credentials: 'include',
   });
 
   if (!response.ok) {
@@ -283,8 +284,8 @@ export const generateSummary = async (
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
+      credentials: 'include',
       body: JSON.stringify({ answers }),
     });
     
@@ -311,8 +312,8 @@ export const getSummary = async (token: string): Promise<SummaryResponse> => {
     method: "GET", // This is a GET request
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     },
+    credentials: 'include',
   });
 
   if (!response.ok) {

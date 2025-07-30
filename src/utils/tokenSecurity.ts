@@ -102,44 +102,39 @@ export const CookieUtils = {
 }
 
 /**
- * Secure storage manager that handles both localStorage and cookies
+ * Secure storage manager using only secure HTTP-only cookies
  */
 export const SecureStorage = {
   /**
-   * Store token with both localStorage (for backward compatibility) and secure storage
+   * Store token in secure HTTP-only cookie only (no localStorage)
    */
   setToken: (token: string): void => {
     try {
-      // Primary storage - localStorage for immediate compatibility
-      localStorage.setItem('infinitelife_jwt', token)
+      // Remove any existing localStorage token for security
+      localStorage.removeItem('infinitelife_jwt')
       
-      // Secondary storage - secure cookie for enhanced security
+      // Store only in secure cookie
       CookieUtils.setSecureCookie('infinitelife_session', token, 7)
       
-      logger.debug('Token stored in secure storage')
+      logger.debug('Token stored in secure cookie only')
     } catch (error) {
       logger.error('Failed to store token securely:', error)
-      // Fallback to localStorage only
-      localStorage.setItem('infinitelife_jwt', token)
+      throw error
     }
   },
 
   /**
-   * Retrieve token from storage (prioritize localStorage for compatibility)
+   * Retrieve token from memory/state only (cookies are sent automatically)
+   * Returns null since we rely on automatic cookie transmission
    */
   getToken: (): string | null => {
     try {
-      // Check localStorage first for backward compatibility
-      const localToken = localStorage.getItem('infinitelife_jwt')
-      if (localToken && !isTokenExpired(localToken)) {
-        return localToken
-      }
-
-      // Fallback to secure cookie
+      // Remove any lingering localStorage tokens
+      localStorage.removeItem('infinitelife_jwt')
+      
+      // Check if we have a valid cookie (for validation purposes only)
       const cookieToken = CookieUtils.getCookie('infinitelife_session')
       if (cookieToken && !isTokenExpired(cookieToken)) {
-        // Sync back to localStorage if cookie token is valid
-        localStorage.setItem('infinitelife_jwt', cookieToken)
         return cookieToken
       }
 
@@ -168,7 +163,7 @@ export const SecureStorage = {
    */
   clearAll: (): void => {
     try {
-      // Clear localStorage
+      // Clear localStorage completely
       localStorage.removeItem('infinitelife_jwt')
       localStorage.removeItem('preLoginPath')
       
