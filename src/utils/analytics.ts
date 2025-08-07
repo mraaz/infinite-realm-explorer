@@ -1,11 +1,13 @@
-// Google Analytics 4 utility functions
+// Google Analytics 4 and Microsoft Clarity utility functions
 declare global {
   interface Window {
     gtag: (...args: any[]) => void;
+    clarity: (...args: any[]) => void;
   }
 }
 
 const GA_MEASUREMENT_ID = 'G-R27QR2D9VJ';
+const CLARITY_PROJECT_ID = 'sqzvgwr8bi';
 const isDev = import.meta.env.DEV;
 
 // Initialize GA4 (already done in index.html, but this ensures proper typing)
@@ -15,6 +17,21 @@ export const initGA = () => {
       console.log('[Analytics] GA4 initialized in development mode');
     }
   }
+};
+
+// Initialize Clarity (already done in index.html, but this ensures proper typing)
+export const initClarity = () => {
+  if (typeof window !== 'undefined' && window.clarity) {
+    if (isDev) {
+      console.log('[Analytics] Clarity initialized in development mode');
+    }
+  }
+};
+
+// Initialize all analytics services
+export const initAnalytics = () => {
+  initGA();
+  initClarity();
 };
 
 // Track page views
@@ -109,6 +126,37 @@ export const setUserProperty = (property: string, value: string) => {
     
     if (isDev) {
       console.log('[Analytics] User property set:', property, value);
+    }
+  }
+};
+
+// Clarity functions
+export const clarityIdentify = (userId: string, sessionId?: string, pageId?: string) => {
+  if (typeof window !== 'undefined' && window.clarity) {
+    window.clarity('identify', userId, sessionId, pageId);
+    
+    if (isDev) {
+      console.log('[Analytics] Clarity user identified:', userId);
+    }
+  }
+};
+
+export const clarityConsent = (consent: boolean) => {
+  if (typeof window !== 'undefined' && window.clarity) {
+    window.clarity('consent', consent);
+    
+    if (isDev) {
+      console.log('[Analytics] Clarity consent set:', consent);
+    }
+  }
+};
+
+export const clarityEvent = (eventName: string) => {
+  if (typeof window !== 'undefined' && window.clarity) {
+    window.clarity('event', eventName);
+    
+    if (isDev) {
+      console.log('[Analytics] Clarity event tracked:', eventName);
     }
   }
 };

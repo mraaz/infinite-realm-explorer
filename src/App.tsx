@@ -9,7 +9,7 @@ import { ResultsBoundary } from "./components/error-boundaries/ResultsBoundary";
 import { AuthBoundary } from "./components/error-boundaries/AuthBoundary";
 import PageLoading from "./components/ui/page-loading";
 import { Toaster } from "@/components/ui/toaster";
-import { initGA, trackPageView } from "./utils/analytics";
+import { initAnalytics, trackPageView } from "./utils/analytics";
 
 // --- DEBUGGING: Import Index directly to find hidden errors ---
 import Index from "./pages/Index";
@@ -41,7 +41,7 @@ const AnalyticsTracker = () => {
   const location = useLocation();
 
   useEffect(() => {
-    initGA();
+    initAnalytics();
   }, []);
 
   useEffect(() => {
