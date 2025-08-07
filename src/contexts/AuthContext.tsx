@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect, useCallback } fr
 import { jwtDecode } from 'jwt-decode'
 import PageLoading from '@/components/ui/page-loading'
 import { useUserDataStatus, useUserSettings, useInvalidateAuthQueries } from '@/hooks/useAuthQueries'
+import { trackLogin, trackLogout } from '@/utils/analytics'
 
 interface User {
   sub: string
@@ -96,6 +97,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         authToken: newToken,
         isLoading: false,
       })
+      
+      // Track login event (we can't determine method here, so using 'unknown')
+      trackLogin('google') // Default to google since it's most common
     } catch (error) {
       console.error('Login failed:', error)
       localStorage.removeItem('infinitelife_jwt')
@@ -109,6 +113,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [validateAndDecodeToken])
 
   const logout = useCallback(() => {
+    trackLogout()
     localStorage.removeItem('infinitelife_jwt')
     setState({
       user: null,
