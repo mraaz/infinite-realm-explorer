@@ -1,14 +1,15 @@
 // src/App.tsx
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { QuestionnaireBoundary } from "./components/error-boundaries/QuestionnaireBoundary";
 import { ResultsBoundary } from "./components/error-boundaries/ResultsBoundary";
 import { AuthBoundary } from "./components/error-boundaries/AuthBoundary";
 import PageLoading from "./components/ui/page-loading";
 import { Toaster } from "@/components/ui/toaster";
+import { initGA, trackPageView } from "./utils/analytics";
 
 // --- DEBUGGING: Import Index directly to find hidden errors ---
 import Index from "./pages/Index";
@@ -35,12 +36,28 @@ const SelfDiscoverySummary = lazy(() => import("./pages/SelfDiscoverySummary"));
 
 const queryClient = new QueryClient();
 
+// Analytics tracking component
+const AnalyticsTracker = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    initGA();
+  }, []);
+
+  useEffect(() => {
+    trackPageView(location.pathname);
+  }, [location]);
+
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <AuthProvider>
         <BrowserRouter>
+          <AnalyticsTracker />
           <Suspense fallback={<PageLoading />}>
             <Routes>
               <Route path="/" element={<Index />} />
